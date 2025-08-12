@@ -1,0 +1,51 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Check Node.js version
+        run: |
+          echo "Node version in shell:"
+          which node
+          node --version
+
+      - name: Clean npm cache
+        run: npm cache clean --force
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Pull latest code on server
+        uses: appleboy/ssh-action@master
+        with:
+          host: "91.204.209.6"
+          username: "biniyaiq"
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/biniyaiq/beauty-salon.biniyammarkos.com/beauty-salon
+            git stash
+            git clean -f -d
+            git pull origin master
+
+            exit 0
+ 
