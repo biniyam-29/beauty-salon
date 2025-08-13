@@ -12,8 +12,8 @@ class Database {
     // --- Database Credentials ---
     private static string $host = 'localhost';
     private static string $db_name = 'skin_clinic_db';
-    private static string $username = 'root';
-    private static string $password = ''; // Your MySQL password
+    private static string $username = 'clinic_user'; // UPDATED: Using the new, more secure user
+    private static string $password = 'your_secure_password'; 
 
     // Holds the single instance of the database connection
     private static ?PDO $conn = null;

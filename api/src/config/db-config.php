@@ -12,9 +12,9 @@ define('DB_PATH', __DIR__ . '/../../db/skin_clinic.sqlite');
 
 // MySQL Configuration (for future use)
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'skin_clinic_db');
+define('DB_NAME', 'skin_clinic_');
 define('DB_USER', 'root');
-define('DB_PASS', ''); // Your MySQL password
+define('DB_PASS', 'password'); // Your MySQL password
 
 // --- ESTABLISH CONNECTION ---
 
