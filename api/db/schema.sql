@@ -126,7 +126,6 @@ CREATE TABLE IF NOT EXISTS `reminders` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `customer_id` INT UNSIGNED NOT NULL,
   `consultation_id` INT UNSIGNED NULL,
-  `message` VARCHAR(255) NOT NULL,
   `reminder_date` DATE NOT NULL,
   `status` ENUM('pending', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
