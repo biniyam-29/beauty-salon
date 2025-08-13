@@ -1,9 +1,7 @@
--- Create the database if it doesn't exist
-CREATE DATABASE IF NOT EXISTS skin_clinic_db;
-USE skin_clinic_db;
+-- db/schema.sql (MySQL Version)
 
 -- -----------------------------------------------------
--- Table `users`: System operators (staff)
+-- Table `users`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `users` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -16,10 +14,10 @@ CREATE TABLE IF NOT EXISTS `users` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `customers`: Clinic clients
+-- Table `customers`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `customers` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -35,10 +33,10 @@ CREATE TABLE IF NOT EXISTS `customers` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `products`: Inventory for treatments and sale
+-- Table `products`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `products` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -51,52 +49,50 @@ CREATE TABLE IF NOT EXISTS `products` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `skin_concerns`: Lookup for consistent data
-[cite_start]-- From the form section: SKIN CONCERNS [cite: 58-74]
+-- Table `skin_concerns`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `skin_concerns` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(100) NOT NULL UNIQUE,
   PRIMARY KEY (`id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `health_conditions`: Lookup for consistent data
-[cite_start]-- From the form section: HEALTH HISTORY [cite: 87-103]
+-- Table `health_conditions`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `health_conditions` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(100) NOT NULL UNIQUE,
   PRIMARY KEY (`id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `customer_skin_concerns`: Links customers to their concerns
+-- Table `customer_skin_concerns`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `customer_skin_concerns` (
   `customer_id` INT UNSIGNED NOT NULL,
   `concern_id` INT UNSIGNED NOT NULL,
   PRIMARY KEY (`customer_id`, `concern_id`),
-  FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`concern_id`) REFERENCES `skin_concerns`(`id`) ON DELETE CASCADE
-);
+  CONSTRAINT `fk_csc_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_csc_concern` FOREIGN KEY (`concern_id`) REFERENCES `skin_concerns`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `customer_health_conditions`: Links customers to their health conditions
+-- Table `customer_health_conditions`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `customer_health_conditions` (
   `customer_id` INT UNSIGNED NOT NULL,
   `condition_id` INT UNSIGNED NOT NULL,
   PRIMARY KEY (`customer_id`, `condition_id`),
-  FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`condition_id`) REFERENCES `health_conditions`(`id`) ON DELETE CASCADE
-);
+  CONSTRAINT `fk_chc_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_chc_condition` FOREIGN KEY (`condition_id`) REFERENCES `health_conditions`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `customer_profile`: Stores detailed answers from the form
+-- Table `customer_profile`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `customer_profile` (
   `customer_id` INT UNSIGNED NOT NULL,
@@ -104,7 +100,7 @@ CREATE TABLE IF NOT EXISTS `customer_profile` (
   `sun_exposure` ENUM('Never', 'Light', 'Moderate', 'Excessive') NULL,
   `bruises_easily` BOOLEAN NULL,
   `known_allergies_details` TEXT NULL,
-  `uses_retinoids_acids` BOOLEAN NULL COMMENT 'Used Retin-A, Glycolic Acid, etc.',
+  `uses_retinoids_acids` BOOLEAN NULL,
   `recent_dermal_fillers` BOOLEAN NULL,
   `previous_acne_medication` TEXT NULL,
   `drinks_smokes` BOOLEAN NULL,
@@ -112,14 +108,11 @@ CREATE TABLE IF NOT EXISTS `customer_profile` (
   `other_medication` TEXT NULL,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`customer_id`),
-  CONSTRAINT `fk_customer_profile_customers`
-    FOREIGN KEY (`customer_id`)
-    REFERENCES `customers` (`id`)
-    ON DELETE CASCADE ON UPDATE CASCADE
-);
+  CONSTRAINT `fk_cp_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `consultations`: Records of each client visit (REVISED)
+-- Table `consultations`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `consultations` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -132,18 +125,12 @@ CREATE TABLE IF NOT EXISTS `consultations` (
   `follow_up_date` DATE NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  CONSTRAINT `fk_consultations_customers`
-    FOREIGN KEY (`customer_id`)
-    REFERENCES `customers` (`id`)
-    ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `fk_consultations_users`
-    FOREIGN KEY (`doctor_id`)
-    REFERENCES `users` (`id`)
-    ON DELETE RESTRICT ON UPDATE CASCADE
-);
+  CONSTRAINT `fk_con_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_con_user` FOREIGN KEY (`doctor_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `prescriptions`: Products prescribed during a consultation
+-- Table `prescriptions`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `prescriptions` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -153,18 +140,12 @@ CREATE TABLE IF NOT EXISTS `prescriptions` (
   `instructions` TEXT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  CONSTRAINT `fk_prescriptions_consultations`
-    FOREIGN KEY (`consultation_id`)
-    REFERENCES `consultations` (`id`)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_prescriptions_products`
-    FOREIGN KEY (`product_id`)
-    REFERENCES `products` (`id`)
-    ON DELETE RESTRICT ON UPDATE CASCADE
-);
+  CONSTRAINT `fk_pre_consultation` FOREIGN KEY (`consultation_id`) REFERENCES `consultations`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pre_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `consultation_images`: Progress photos for a consultation
+-- Table `consultation_images`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `consultation_images` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -173,14 +154,11 @@ CREATE TABLE IF NOT EXISTS `consultation_images` (
   `description` VARCHAR(255) NULL,
   `uploaded_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  CONSTRAINT `fk_consultation_images_consultations`
-    FOREIGN KEY (`consultation_id`)
-    REFERENCES `consultations` (`id`)
-    ON DELETE CASCADE ON UPDATE CASCADE
-);
+  CONSTRAINT `fk_ci_consultation` FOREIGN KEY (`consultation_id`) REFERENCES `consultations`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `reminders`: For follow-up appointments
+-- Table `reminders`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `reminders` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -191,38 +169,32 @@ CREATE TABLE IF NOT EXISTS `reminders` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  CONSTRAINT `fk_reminders_customers`
-    FOREIGN KEY (`customer_id`)
-    REFERENCES `customers` (`id`)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_reminders_consultations`
-    FOREIGN KEY (`consultation_id`)
-    REFERENCES `consultations` (`id`)
-    ON DELETE SET NULL ON UPDATE CASCADE
-);
+  CONSTRAINT `fk_rem_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_rem_consultation` FOREIGN KEY (`consultation_id`) REFERENCES `consultations`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `product_contraindications`: THE RULES ENGINE for safety alerts
+-- Table `product_contraindications`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `product_contraindications` (
   `product_id` INT UNSIGNED NOT NULL,
   `condition_id` INT UNSIGNED NOT NULL,
   `reason` VARCHAR(255) NULL,
   PRIMARY KEY (`product_id`, `condition_id`),
-  FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`condition_id`) REFERENCES `health_conditions`(`id`) ON DELETE CASCADE
-);
+  CONSTRAINT `fk_pc_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pc_condition` FOREIGN KEY (`condition_id`) REFERENCES `health_conditions`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `audit_log`: Records important events, like alert overrides
+-- Table `audit_log`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `audit_log` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` INT UNSIGNED NOT NULL,
-  `action` VARCHAR(255) NOT NULL COMMENT 'e.g., ALERT_OVERRIDE',
-  `details` TEXT NULL COMMENT 'e.g., Overrode alert for Product X on Customer Y',
-  `justification` TEXT NULL COMMENT 'Reason provided by the user for the override',
+  `action` VARCHAR(255) NOT NULL,
+  `details` TEXT NULL,
+  `justification` TEXT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE NO ACTION
-);
+  CONSTRAINT `fk_al_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
