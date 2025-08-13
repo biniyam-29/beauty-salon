@@ -12,15 +12,16 @@ use src\config\Database;
 use PDO;
 use Faker\Factory as FakerFactory;
 use src\common\Mailer;
+use Exception;
 
 class AuthService{
     private PDO $conn;
-    private Mailer $mailer;
+    //private Mailer $mailer;
 
     public function __construct() {
         $this->conn = Database::connect();
         AuthConstants::initialize();
-        $this->mailer = Mailer::getInstance();
+        //$this->mailer = Mailer::getInstance();
     }
 
     public function logIn($body) {
@@ -159,7 +160,7 @@ class AuthService{
             $this->conn->commit();
             $emailBody = 'Hello ' . $data->name . ', your account has been created successfully. Your password is ' . $password;
             $subject = "Welcome to Dire Delivery";
-            $this->mailer->send($data->email, $subject, $emailBody);
+           // $this->mailer->send($data->email, $subject, $emailBody);
             
             return json_encode(["message" => "employee successfully created", 'email' => $data->email, 'password' => $password]);
         } catch (Exception $e) {
@@ -184,7 +185,7 @@ class AuthService{
             $stmt->execute([$data->email, $token, date('Y-m-d H:i:s')]);
             $emailBody = "Hello $user[name], click the link below to reset your password: https://dire-delivery.netlify.app/" . addslashes($token);
             $subject = "Reset Password";
-            $this->mailer->send($data->email, $subject, $emailBody);
+            //$this->mailer->send($data->email, $subject, $emailBody);
 
             return json_encode(["message" => "Email sent successfully!"]);
         }catch(Exception $e){

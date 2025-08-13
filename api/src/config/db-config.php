@@ -1,39 +1,58 @@
 <?php
-namespace src\config;
+// src/config/db-config.php
 
-use PDO;
-use PDOException;
+// --- DATABASE SWITCH ---
+// Change this to 'mysql' for production or 'sqlite' for development.
+define('DB_DRIVER', 'mysql'); 
 
-class Database {
-    private static ?PDO $conn = null;
-    private static string $host = "localhost";
-    private static string $dbname = "";
-    private static string $username = "";
-    private static string $password = "";
+// --- DATABASE CREDENTIALS ---
 
-    public static function connect(): PDO {
-        if (self::$conn === null) {
-            try {
-                $conn = new PDO("mysql:host=" . self::$host, self::$username, self::$password);
-                $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+// SQLite Configuration
+define('DB_PATH', __DIR__ . '/../../db/skin_clinic.sqlite');
 
-                $conn->exec("CREATE DATABASE IF NOT EXISTS " . self::$dbname);
+// MySQL Configuration (for future use)
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'skin_clinic_db');
+define('DB_USER', 'root');
+define('DB_PASS', ''); // Your MySQL password
 
-                self::$conn = new PDO("mysql:host=" . self::$host . ";dbname=" . self::$dbname . ";charset=utf8mb4", self::$username, self::$password);
-                self::$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+// --- ESTABLISH CONNECTION ---
 
-                $sqlFile = __DIR__ . "../../db/schema.sql"; 
-                if (file_exists($sqlFile)) {
-                    $sql = file_get_contents($sqlFile);
-                    self::$conn->exec($sql);
-                } else {
-                    die("Error: db.sql file not found.");
-                }
-            } catch (PDOException $e) {
-                die("Connection failed: " . $e->getMessage());
-            }
-        }
-        return self::$conn;
+$dsn = ''; // Data Source Name
+$pdo = null;
+
+try {
+    switch (DB_DRIVER) {
+        case 'sqlite':
+            $dsn = 'sqlite:' . DB_PATH;
+            $pdo = new PDO($dsn);
+            break;
+
+        case 'mysql':
+            // The connection logic for MySQL will try to create the database if it doesn't exist.
+            // This requires the user to have CREATE privileges.
+            $pdo_init = new PDO('mysql:host=' . DB_HOST, DB_USER, DB_PASS);
+            $pdo_init->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $pdo_init->exec('CREATE DATABASE IF NOT EXISTS ' . DB_NAME);
+
+            // Now connect to the specific database.
+            $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
+            $pdo = new PDO($dsn, DB_USER, DB_PASS);
+            break;
+        
+        default:
+            die("Error: Invalid database driver specified.");
     }
+
+    // Set common PDO attributes for consistent behavior across drivers.
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+
+} catch (PDOException $e) {
+    // If the connection fails, stop the script and display an error message.
+    // In a production environment, you would log this error instead of displaying it.
+    die("Database connection failed: " . $e->getMessage());
 }
+
+// The $pdo variable is now available for use in any file that includes this one.
 ?>

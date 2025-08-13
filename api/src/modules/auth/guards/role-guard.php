@@ -2,12 +2,9 @@
 namespace src\modules\auth\guards;
 
 require_once 'vendor/autoload.php';
-require_once 'src/common/constants/auth-constants.php';
+require_once __DIR__ . '/../../../config/auth-constants.php';
 require_once 'src/modules/auth/guards/auth-guard.php';
 
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
-use src\common\constants\AuthConstants;
 use src\modules\auth\guards\AuthGuard;
 use Exception;
 

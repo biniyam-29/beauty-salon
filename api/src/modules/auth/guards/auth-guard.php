@@ -1,9 +1,9 @@
 <?php
 namespace src\modules\auth\guards;
 
-require_once 'vendor/autoload.php';
-require_once 'src/common/constants/auth-constants.php';
-require_once 'src/config/db-config.php';
+require_once __DIR__ . '/../../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../config/auth-constants.php';
+require_once __DIR__ . '/../../../config/Database.php';
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;

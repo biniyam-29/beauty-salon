@@ -1,6 +1,7 @@
 <?php
 namespace src\common\constants;
 
+use \Exception;
 class AuthConstants {
     public static string $secretKey;
     public static int $expirationTime;
