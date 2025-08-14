@@ -44,6 +44,12 @@ class CustomerController implements ControllerInterface {
                 if ($subResource === 'health-conditions') {
                     return $this->customerService->addHealthCondition($id, $body);
                 }
+
+                // POST /customers/{id}/consent
+                if ($id && $subResource === 'consent') {
+                    return $this->customerService->addConsent($id, $body);
+                }
+
                 // POST /customers
                 return $this->customerService->createCustomer($body);
 
@@ -85,6 +91,12 @@ class CustomerController implements ControllerInterface {
                 if ($subResource === 'health-conditions' && $subResourceId) {
                     return $this->customerService->deleteHealthCondition($id, $subResourceId);
                 }
+
+                // DELETE /customers/{id}/consent/{consentId}
+                if ($id && $subResource === 'consent' && $subResourceId) {
+                    return $this->customerService->deleteConsent($id, $subResourceId);
+                }
+                
                 // DELETE /customers/{id}
                 return $this->customerService->deleteCustomer($id);
 

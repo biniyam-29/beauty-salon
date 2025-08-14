@@ -211,7 +211,10 @@ CREATE TABLE IF NOT EXISTS `audit_log` (
   CONSTRAINT `fk_al_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE `token` (
+-- -----------------------------------------------------
+-- Table `token` (NEW)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `token` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `userId` INT UNSIGNED NOT NULL,
     `token` TEXT NOT NULL,
@@ -219,5 +222,18 @@ CREATE TABLE `token` (
     CONSTRAINT `fk_token_user`
         FOREIGN KEY (`userId`) REFERENCES `users`(`id`)
         ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------
+-- Table `customer_consents` (NEW)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `customer_consents` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `customer_id` INT UNSIGNED NOT NULL,
+  `signature_data` TEXT NOT NULL COMMENT 'Stores base64 encoded signature image',
+  `consent_date` DATE NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_cc_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

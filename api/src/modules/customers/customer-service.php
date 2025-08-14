@@ -173,6 +173,11 @@ class CustomerService {
             $stmt->execute([':id' => $id]);
             $customer['health_conditions'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+            //Get customer consents
+            $stmt = $this->conn->prepare("SELECT id, signature_data, consent_date, created_at FROM customer_consents WHERE customer_id = :id ORDER BY consent_date DESC");
+            $stmt->execute([':id' => $id]);
+            $customer['consents'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
             $this->conn->commit();
             return json_encode($customer);
 
@@ -338,6 +343,59 @@ class CustomerService {
             $sql = "UPDATE `$tableName` SET " . implode(', ', $fieldsToUpdate) . " WHERE `$idColumn` = :id";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute($params);
+        }
+    }
+
+    /**
+     * Adds a consent record for a customer.
+     */
+    public function addConsent(int $customerId, ?string $body): string {
+        $data = json_decode($body, true);
+        if (!isset($data['signature_data']) || !isset($data['consent_date'])) {
+            http_response_code(400);
+            return json_encode(['error' => 'Bad request: signature_data and consent_date are required.']);
+        }
+
+        try {
+            $stmt = $this->conn->prepare(
+                "INSERT INTO customer_consents (customer_id, signature_data, consent_date) VALUES (:customer_id, :signature_data, :consent_date)"
+            );
+            $stmt->execute([
+                ':customer_id' => $customerId,
+                ':signature_data' => $data['signature_data'],
+                ':consent_date' => $data['consent_date']
+            ]);
+
+            return json_encode(['message' => 'Consent recorded successfully.']);
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+        }
+    }
+
+
+    /**
+     * Deletes a specific consent record.
+     */
+    public function deleteConsent(int $customerId, int $consentId): string {
+        try {
+            $stmt = $this->conn->prepare(
+                "DELETE FROM customer_consents WHERE id = :consent_id AND customer_id = :customer_id"
+            );
+            $stmt->execute([
+                ':consent_id' => $consentId,
+                ':customer_id' => $customerId
+            ]);
+
+            if ($stmt->rowCount() === 0) {
+                http_response_code(404);
+                return json_encode(['error' => 'Consent record not found for this customer.']);
+            }
+
+            return json_encode(['message' => 'Consent record deleted successfully.']);
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
         }
     }
 }
