@@ -2,25 +2,27 @@
 namespace src\modules\auth;
 
 require_once 'vendor/autoload.php';
-require_once 'src/common/constants/auth-constants.php';
+// CORRECT
+require_once __DIR__ . '/../../config/auth-constants.php';
 require_once 'src/config/db-config.php';
-require_once 'src/common/mailer.php';
+//require_once 'src/common/mailer.php';
 
 use \Firebase\JWT\JWT;
 use src\common\constants\AuthConstants;
 use src\config\Database;
 use PDO;
 use Faker\Factory as FakerFactory;
-use src\common\Mailer;
+//use src\common\Mailer;
+use Exception;
 
 class AuthService{
     private PDO $conn;
-    private Mailer $mailer;
+    //private Mailer $mailer;
 
     public function __construct() {
         $this->conn = Database::connect();
         AuthConstants::initialize();
-        $this->mailer = Mailer::getInstance();
+        //$this->mailer = Mailer::getInstance();
     }
 
     public function logIn($body) {
@@ -40,15 +42,15 @@ class AuthService{
                 return json_encode(["message" => "Unauthorized! Invalid email or password!"]);
             }
 
-            if (!password_verify($data->password, $user['password'])) {
+            if (!password_verify($data->password, $user['password_hash'])) {
                 http_response_code(401);
                 return json_encode(["message" => "Unauthorized! Invalid password!"]);
             }
 
-           if (($user['isActive'] == 0) && ($user['role'] !== 'OWNER')) {
-                $token = $this->generateToken($user, $user['id']);
-                return json_encode(["message" => "New user: please fill out information", "token" => $token, "payload" => $user['id']]);
-            }
+        //    if (($user['isActive'] == 0) && ($user['role'] !== 'OWNER')) {
+        //         $token = $this->generateToken($user, $user['id']);
+        //         return json_encode(["message" => "New user: please fill out information", "token" => $token, "payload" => $user['id']]);
+        //     }
 
             $token = $this->generateToken($user, $user['id']);
             return json_encode(['token' => $token, 'payload' => $user]);
@@ -159,7 +161,7 @@ class AuthService{
             $this->conn->commit();
             $emailBody = 'Hello ' . $data->name . ', your account has been created successfully. Your password is ' . $password;
             $subject = "Welcome to Dire Delivery";
-            $this->mailer->send($data->email, $subject, $emailBody);
+           // $this->mailer->send($data->email, $subject, $emailBody);
             
             return json_encode(["message" => "employee successfully created", 'email' => $data->email, 'password' => $password]);
         } catch (Exception $e) {
@@ -184,7 +186,7 @@ class AuthService{
             $stmt->execute([$data->email, $token, date('Y-m-d H:i:s')]);
             $emailBody = "Hello $user[name], click the link below to reset your password: https://dire-delivery.netlify.app/" . addslashes($token);
             $subject = "Reset Password";
-            $this->mailer->send($data->email, $subject, $emailBody);
+            //$this->mailer->send($data->email, $subject, $emailBody);
 
             return json_encode(["message" => "Email sent successfully!"]);
         }catch(Exception $e){
@@ -242,12 +244,12 @@ class AuthService{
             $exp = $exp ? time() + $exp : time() + AuthConstants::$expirationTime;
             $payload = ['iat' => time(), 'exp' => $exp, 'data' => $payload];
             $token = JWT::encode($payload, AuthConstants::$secretKey, 'HS256');
-            $sql = 'INSERT INTO token (token, userId) VALUES (?, ?)';
+            // $sql = 'INSERT INTO token (token, userId) VALUES (?, ?)';
 
-            $this->conn->beginTransaction();
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$token, $id]);
-            $this->conn->commit();
+            // $this->conn->beginTransaction();
+            // $stmt = $this->conn->prepare($sql);
+            // $stmt->execute([$token, $id]);
+            // $this->conn->commit();
 
             return $token;
         } catch (Exception $e) {
@@ -257,7 +259,7 @@ class AuthService{
     }
 
     public function rememberMe($token) {
-        try {
+        try {                                                        
             $tokenData = $this->fetchData('token', $token, 'token');
             if (!$tokenData) {
                 return json_encode(["message" => "Invalid token!"]);

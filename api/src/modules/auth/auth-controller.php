@@ -1,102 +1,122 @@
 <?php
 namespace src\modules\auth;
 
-require_once 'auth-service.php';
-require_once 'src/modules/controller-interface.php';
-require_once 'src/common/constants/request-constants.php';
-require_once 'src/modules/auth/guards/auth-guard.php';
-require_once 'src/modules/auth/guards/role-guard.php';
+// --- DEPENDENCIES ---
+// It's best practice to include all dependencies at the top.
+require_once __DIR__ . '/../../modules/controller-interface.php';
+require_once __DIR__ . '/auth-service.php';
+require_once __DIR__ . '/guards/auth-guard.php';
+require_once __DIR__ . '/guards/role-guard.php';
 
 use src\modules\ControllerInterface;
-use src\common\constants\FormatRequest;
-use src\modules\auth\AuthService;
 use src\modules\auth\guards\AuthGuard;
 use src\modules\auth\guards\RoleGuard;
 use Exception;
 
 class AuthController implements ControllerInterface {
     private AuthService $authService;
-    private FormatRequest $request;
 
     public function __construct() {
         $this->authService = new AuthService();
-        $this->request = new FormatRequest();
     }
 
-    public function handleRequest() {
+    /**
+     * Handles incoming requests for the auth module.
+     * @param array $paths The parts of the URL path, e.g., ['auth', 'login'].
+     * @param string $method The HTTP request method (GET, POST, etc.).
+     * @param string|null $body The raw request body.
+     */
+    public function handleRequest(array $paths, string $method, ?string $body) {
         try {
-            switch ($this->request->method) {
-                case 'GET':
-                    if (isset($this->request->paths[2]) && isset($this->request->paths[1])) {
-                        switch($this->request->paths[2]){
-                            case 'log-out':
-                                if(AuthGuard::authenticate()){
-                                    return $this->authService->logOut($this->request->paths[1]);
-                                }else{
-                                    http_response_code(401);
-                                    return json_encode(["message" => "Unauthorized!"]);
-                                }
-                                break;
-                            case 'all-log-out':
-                                if(AuthGuard::authenticate()){
-                                    return $this->authService->allLogOut($this->request->paths[1]);
-                                }else{
-                                    http_response_code(401);
-                                    return json_encode(["message" => "Unauthorized!"]);
-                                }
-                            case 'remember-me':
-                                if(AuthGuard::authenticate()){
-                                    $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
-                                    $token = str_replace("Bearer ", "", $authHeader);
-                                    return $this->authService->rememberMe($token);
-                                }else{
-                                    http_response_code(401);
-                                    return json_encode(["message" => "Unauthorized!"]);
-                                }
-                        }
-                    }
-                    return json_encode(['message' => 'Invalid request!']);
-                    break;
-                
+            switch ($method) {
                 case 'POST':
-                    if (isset($this->request->paths[1])) {
-
-                        if(isset($this->request->paths[2]) && ($this->request->paths[1] !== 'reset-password')) {
-                            switch ($this->request->paths[2]) {
-                                case 'sign-up':
-                                    if (AuthGuard::authenticate("newUser")) {
-                                        return $this->authService->addDetails($this->request->body, $this->request->paths[1]);
-                                    }
-                                    break;
-                                case 'add-user':
-                                    if (AuthGuard::authenticate() && (RoleGuard::roleGuard('OWNER') || RoleGuard::roleGuard('ADMIN'))) {
-                                        return $this->authService->addUser($this->request->body);
-                                    }
-                                    break;
-                                default:
-                                    return json_encode(['message' => 'Invalid request!']);
-                            }
-                        }
-
-                        switch ($this->request->paths[1]) {
-                            case 'log-in':
-                                return $this->authService->logIn($this->request->body);
-                                break;
-                            case 'reset-password':
-                                return $this->authService->resetPassword($this->request->body, $this->request->paths[2]);
-                                break;
-                            case 'forgot-password':
-                                return $this->authService->forgotPassword($this->request->body);
-                                break;
-                        }
-                    }
-                    return json_encode(['message' => 'Invalid request!']);
-                
+                    return $this->handlePostRequest($paths, $body);
+                case 'GET':
+                    return $this->handleGetRequest($paths);
                 default:
-                    return json_encode(['message' => 'Invalid request!']);
+                    http_response_code(405); // Method Not Allowed
+                    return json_encode(['message' => 'Invalid request method for auth module']);
             }
         } catch (Exception $e) {
-            return json_encode(['error' => $e->getMessage()]);
+            http_response_code(500);
+            return json_encode(['error' => 'An internal server error occurred: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Handles all POST requests for the auth module.
+     */
+    private function handlePostRequest(array $paths, ?string $body) {
+        $action = $paths[1] ?? null; // e.g., 'login', 'add-user'
+        $userId = $paths[2] ?? null; // e.g., the user ID for sign-up
+
+        switch ($action) {
+            case 'login':
+                return $this->authService->logIn($body);
+
+            case 'add-user':
+                if (AuthGuard::authenticate() && (RoleGuard::roleGuard('super-admin'))) {
+                    return $this->authService->addUser($body);
+                }
+                http_response_code(403);
+                return json_encode(['message' => 'Forbidden: You do not have permission to add users.']);
+
+            case 'sign-up':
+                // Assuming the path is /auth/sign-up/{userId}
+                if (AuthGuard::authenticate("newUser")) {
+                    return $this->authService->addDetails($body, $userId);
+                }
+                 http_response_code(401);
+                 return json_encode(["message" => "Unauthorized!"]);
+
+            case 'forgot-password':
+                return $this->authService->forgotPassword($body);
+
+            case 'reset-password':
+                 // Assuming the path is /auth/reset-password/{resetToken}
+                $resetToken = $paths[2] ?? null;
+                return $this->authService->resetPassword($body, $resetToken);
+
+            default:
+                http_response_code(404);
+                return json_encode(['message' => 'Invalid auth endpoint for POST request.']);
+        }
+    }
+
+    /**
+     * Handles all GET requests for the auth module.
+     */
+    private function handleGetRequest(array $paths) {
+        $action = $paths[1] ?? null; // e.g., 'logout'
+        $userId = $paths[2] ?? null; // e.g., the user ID for logout
+
+        switch ($action) {
+            case 'logout':
+                if (AuthGuard::authenticate()) {
+                    return $this->authService->logOut($userId);
+                }
+                 http_response_code(401);
+                 return json_encode(["message" => "Unauthorized!"]);
+
+            case 'all-logout':
+                if (AuthGuard::authenticate()) {
+                    return $this->authService->allLogOut($userId);
+                }
+                 http_response_code(401);
+                 return json_encode(["message" => "Unauthorized!"]);
+
+            case 'remember-me':
+                if (AuthGuard::authenticate()) {
+                    $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+                    $token = str_replace("Bearer ", "", $authHeader);
+                    return $this->authService->rememberMe($token);
+                }
+                 http_response_code(401);
+                 return json_encode(["message" => "Unauthorized!"]);
+
+            default:
+                http_response_code(404);
+                return json_encode(['message' => 'Invalid auth endpoint for GET request.']);
         }
     }
 }
