@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import type { PatientData } from "../types";
+import type { PatientData } from "../../types";
 // import { dbUrl } from '../config'; // This is removed to prevent configuration conflicts.
 import {
   Card,
@@ -8,8 +8,8 @@ import {
   CardContent,
   CardTitle,
   Button,
-} from "../components/ui";
-import { CustomerDetailView } from "../components/CustomerDetailView";
+} from "../../components/ui";
+import { CustomerDetailView } from "../../components/CustomerDetailView";
 
 // =================================================================================
 // FILE: src/pages/UserProfilePage.tsx

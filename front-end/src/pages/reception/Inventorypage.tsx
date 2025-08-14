@@ -1,5 +1,5 @@
-import { Sidebar } from "../components/sidebar"
-import { InventoryManagementView } from "../components/inventory-management-view"
+import { Sidebar } from "../../components/sidebar";
+import { InventoryManagementView } from "../../components/inventory-management-view";
 
 export default function InventoryPage() {
   return (
@@ -9,5 +9,5 @@ export default function InventoryPage() {
         <InventoryManagementView />
       </main>
     </div>
-  )
+  );
 }

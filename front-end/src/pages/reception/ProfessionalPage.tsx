@@ -1,5 +1,5 @@
-import { Sidebar } from "../components/sidebar"
-import { DashboardContent } from "../components/dashboard-content"
+import { Sidebar } from "../../components/sidebar"
+import { DashboardContent } from "../../components/dashboard-content"
 
 export default function ProfessionalPage() {
   return (

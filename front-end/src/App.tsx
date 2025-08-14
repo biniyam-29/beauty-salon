@@ -7,12 +7,12 @@ import {
   useNavigate,
 } from "react-router-dom";
 import type { PatientData } from "./types";
-import { WelcomePage } from "./pages/WelcomePage";
-import { CustomerListPage } from "./pages/CustomerListPage";
-import { PhoneNumberCheckPage } from "./pages/PhoneNumberCheckPage";
-import { UserProfilePage } from "./pages/UserProfilePage";
+import { WelcomePage } from "./pages/reception/WelcomePage";
+import { CustomerListPage } from "./pages/reception/CustomerListPage";
+import { PhoneNumberCheckPage } from "./pages/reception/PhoneNumberCheckPage";
+import { UserProfilePage } from "./pages/reception/UserProfilePage";
 import { PatientRegistrationWizard } from "./components/PatientRegistrationWizard";
-import { LoginPage }  from "./pages/LoginPage";
+import { LoginPage } from "./pages/LoginPage";
 
 // =================================================================================
 // FILE: src/App.tsx

@@ -1,5 +1,5 @@
-import { Sidebar } from "../components/sidebar"
-import { UserManagementView } from "../components/user-management-view"
+import { Sidebar } from "../../components/sidebar";
+import { UserManagementView } from "../../components/user-management-view";
 
 export default function UsersPage() {
   return (
@@ -9,5 +9,5 @@ export default function UsersPage() {
         <UserManagementView />
       </main>
     </div>
-  )
+  );
 }

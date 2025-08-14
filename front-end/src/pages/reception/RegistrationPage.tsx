@@ -1,7 +1,7 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import type { PatientData } from "../types";
-import { PatientRegistrationWizard } from "../components/PatientRegistrationWizard";
+import type { PatientData } from "../../types";
+import { PatientRegistrationWizard } from "../../components/PatientRegistrationWizard";
 
 // =================================================================================
 // FILE: src/pages/RegistrationPage.tsx
