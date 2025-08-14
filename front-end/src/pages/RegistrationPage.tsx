@@ -18,8 +18,10 @@ const RegistrationPage: React.FC = () => {
   // Define what happens after a new user is successfully created
   const handleRegistrationComplete = (newUser: PatientData) => {
     if (newUser.id) {
-      // Navigate to the new user's profile page
-      navigate(`/reception/profile/${newUser.id}`);
+      // Navigate to the new user's profile page and pass a state to indicate it's a new registration
+      navigate(`/reception/profile/${newUser.id}`, {
+        state: { fromRegistration: true },
+      });
     }
   };
 

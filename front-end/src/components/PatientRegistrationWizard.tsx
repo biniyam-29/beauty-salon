@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import type { PatientData } from "../types";
-import { dbUrl } from "../config";
+import React, { useState, useEffect, useMemo } from "react";
+import type { PatientData, ProfessionalData } from "../types";
+// import { dbUrl } from '../config'; // Removed to define locally and ensure correctness
 import {
   Card,
   CardHeader,
@@ -24,6 +24,10 @@ import {
 // =================================================================================
 // FILE: src/components/PatientRegistrationWizard.tsx
 // =================================================================================
+
+// --- Local Configuration ---
+// This ensures the correct base URL is used for all API calls within this component.
+const dbUrl = "http://localhost:3001";
 
 // --- Registration Step Components (Internal to the Wizard) ---
 type StepProps = {
@@ -436,6 +440,98 @@ const CompleteRegistrationStep: React.FC<StepProps> = ({
   );
 };
 
+const AssignmentStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
+  const [professionals, setProfessionals] = useState<ProfessionalData[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfessionals = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${dbUrl}/professionals`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setProfessionals(data);
+      } catch (error) {
+        console.error("Could not fetch professionals", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProfessionals();
+  }, []);
+
+  const filteredProfessionals = useMemo(() => {
+    if (!searchTerm) {
+      return professionals;
+    }
+    return professionals.filter((prof) =>
+      prof.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [professionals, searchTerm]);
+
+  return (
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <Label htmlFor="conclusionNote">Conclusion Note</Label>
+        <Textarea
+          id="conclusionNote"
+          value={formData.conclusionNote || ""}
+          onChange={(e) => updateFormData({ conclusionNote: e.target.value })}
+          placeholder="Add a short conclusion note for the professional..."
+          rows={4}
+        />
+      </div>
+      <div className="space-y-4">
+        <Label htmlFor="professionalSearch">
+          Search & Assign a Professional
+        </Label>
+        <Input
+          id="professionalSearch"
+          type="text"
+          placeholder="Start typing a professional's name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        {isLoading ? (
+          <p className="text-sm text-gray-500 text-center py-4">
+            Loading professionals...
+          </p>
+        ) : filteredProfessionals.length > 0 ? (
+          <RadioGroup className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-60 overflow-y-auto p-2 bg-gray-50/50 rounded-lg">
+            {filteredProfessionals.map((prof) => (
+              <RadioGroupItem
+                key={prof.id}
+                value={prof.id}
+                name="professional"
+                id={`prof-${prof.id}`}
+                checked={formData.assignedProfessionalId === prof.id}
+                onChange={() =>
+                  updateFormData({ assignedProfessionalId: prof.id })
+                }
+              >
+                <div>
+                  <p className="font-bold">{prof.name}</p>
+                  <p className="text-xs text-gray-500">
+                    {prof.skills.join(", ")}
+                  </p>
+                </div>
+              </RadioGroupItem>
+            ))}
+          </RadioGroup>
+        ) : (
+          <p className="text-sm text-gray-500 text-center py-4">
+            No professionals match your search.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // --- Main Registration Wizard Component ---
 const initialData: PatientData = {
   name: "",
@@ -513,9 +609,15 @@ export const PatientRegistrationWizard: React.FC<
     },
     {
       id: 5,
-      name: "Complete",
+      name: "Consent",
       title: "Consent & Completion",
       component: CompleteRegistrationStep,
+    },
+    {
+      id: 6,
+      name: "Assignment",
+      title: "Assign Professional",
+      component: AssignmentStep,
     },
   ];
 
@@ -533,7 +635,7 @@ export const PatientRegistrationWizard: React.FC<
       signatureDate: new Date().toISOString().split("T")[0],
     };
     try {
-      const response = await fetch(dbUrl, {
+      const response = await fetch(`${dbUrl}/customers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newUser),
@@ -543,6 +645,9 @@ export const PatientRegistrationWizard: React.FC<
       onRegistrationComplete(savedUser);
     } catch (error) {
       console.error("Failed to save user:", error);
+      alert(
+        `Failed to save user: ${error}. Please ensure the server is running.`
+      );
     }
   };
 

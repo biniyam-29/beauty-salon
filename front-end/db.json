@@ -46,28 +46,36 @@
       "prescriptionMedsDetails": "",
       "alcoholOrSmoke": true,
       "signature": "Jane Doe",
-      "signatureDate": "2023-10-27"
+      "signatureDate": "2023-10-27",
+      "conclusionNote": "Client has combination skin with concerns about acne. Recommended a clarifying facial.",
+      "assignedProfessionalId": "2"
     },
     {
-      "id": "2827",
-      "name": "",
-      "address": "",
-      "phone": "099999999999",
-      "city": "",
+      "id": "be5e",
+      "name": "Biniyam Birhanu",
+      "address": "Addis Ababa",
+      "phone": "0999999999",
+      "city": "Addis Ababa",
       "dateOfBirth": "",
-      "email": "",
+      "email": "bnmmarkos@gmail.com",
       "emergencyContact": "",
-      "emergencyPhone": "",
+      "emergencyPhone": "0973983018",
       "heardFrom": "",
-      "skinType": "",
-      "skinFeel": [],
-      "sunExposure": "",
+      "skinType": "Dry",
+      "skinFeel": [
+        "Redish"
+      ],
+      "sunExposure": "Excessive",
       "foundationType": "",
       "skinHeal": "",
       "bruiseEasily": false,
-      "usedProducts": [],
+      "usedProducts": [
+        "Face scrub"
+      ],
       "otherProducts": "",
-      "skinConcerns": [],
+      "skinConcerns": [
+        "Rosacea"
+      ],
       "firstFacial": true,
       "previousTreatmentLikes": "",
       "treatmentGoal": "",
@@ -75,14 +83,50 @@
       "hadFillers": false,
       "acneMedication": false,
       "acneMedicationDetails": "",
-      "healthConditions": [],
+      "healthConditions": [
+        "Pregnant"
+      ],
       "otherConditions": "",
       "knownAllergies": false,
       "supplements": false,
       "alcoholOrSmoke": false,
-      "signature": "",
+      "signature": "Biniyam Markos Birhanu",
       "signatureDate": "2025-08-14",
-      "prescriptionMeds": false
+      "prescriptionMeds": false,
+      "conclusionNote": "skin",
+      "assignedProfessionalId": "3"
+    }
+  ],
+  "professionals": [
+    {
+      "id": "1",
+      "name": "Dr. Evelyn Reed",
+      "skills": [
+        "Aging",
+        "Wrinkles",
+        "Sun damage",
+        "Hyperpigmentation"
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Carlos Martinez",
+      "skills": [
+        "Acne",
+        "Acne scarring",
+        "Oily skin",
+        "Milia"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Aisha Khan",
+      "skills": [
+        "Dryness",
+        "Sensitivity",
+        "Rosacea",
+        "Redness"
+      ]
     }
   ]
 }

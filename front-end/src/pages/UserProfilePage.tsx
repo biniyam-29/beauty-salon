@@ -30,7 +30,7 @@ export const UserProfilePage: React.FC = () => {
         return;
       }
       try {
-        const response = await fetch(`${dbUrl}/${customerId}`);
+        const response = await fetch(`${dbUrl}/customers/${customerId}`);
         if (!response.ok) throw new Error("Customer not found");
         const data = await response.json();
         setUser(data);

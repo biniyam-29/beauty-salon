@@ -1,3 +1,7 @@
+// =================================================================================
+// FILE: src/types.ts
+// =================================================================================
+
 // Defines the main data structure for a patient/customer.
 export interface PatientData {
   id?: string;
@@ -37,8 +41,17 @@ export interface PatientData {
   alcoholOrSmoke: boolean;
   signature: string;
   signatureDate: string;
+  conclusionNote?: string;
+  assignedProfessionalId?: string;
 }
 
-// Defines the possible views/pages in the application.
-export type View = "welcome" | "phone_check" | "register" | "profile" | "list";
+// Defines the data structure for a professional.
+export interface ProfessionalData {
+  id: string;
+  name: string;
+  skills: string[];
+}
 
+// =================================================================================
+// END FILE: src/types.ts
+// =================================================================================
