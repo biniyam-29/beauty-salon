@@ -75,6 +75,8 @@ CREATE TABLE IF NOT EXISTS `health_conditions` (
 CREATE TABLE IF NOT EXISTS `customer_skin_concerns` (
   `customer_id` INT UNSIGNED NOT NULL,
   `concern_id` INT UNSIGNED NOT NULL,
+  `start_date` DATE NOT NULL DEFAULT (CURDATE()),
+  `end_date` DATE NULL,
   PRIMARY KEY (`customer_id`, `concern_id`),
   CONSTRAINT `fk_csc_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_csc_concern` FOREIGN KEY (`concern_id`) REFERENCES `skin_concerns`(`id`) ON DELETE CASCADE
@@ -86,6 +88,8 @@ CREATE TABLE IF NOT EXISTS `customer_skin_concerns` (
 CREATE TABLE IF NOT EXISTS `customer_health_conditions` (
   `customer_id` INT UNSIGNED NOT NULL,
   `condition_id` INT UNSIGNED NOT NULL,
+  `start_date` DATE NOT NULL DEFAULT (CURDATE()),
+  `end_date` DATE NULL,
   PRIMARY KEY (`customer_id`, `condition_id`),
   CONSTRAINT `fk_chc_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_chc_condition` FOREIGN KEY (`condition_id`) REFERENCES `health_conditions`(`id`) ON DELETE CASCADE
