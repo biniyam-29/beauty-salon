@@ -26,7 +26,12 @@ interface UserFormProps {
   onCancel: () => void
 }
 
-const roles: UserRole[] = ["reception", "doctor", "inventory-manager", "super-admin"]
+const roles: UserRole[] = [
+  "reception",
+  "professional",
+  "inventory-manager",
+  "super-admin",
+];
 const statuses = ["active", "inactive", "pending"] as const
 const departments = [
   "Front Desk",
@@ -96,9 +101,9 @@ export function UserForm({ initialData, onSubmit, onCancel }: UserFormProps) {
   }
 
   const getRoleDescription = (role: UserRole) => {
-    const descriptions = {
+    const descriptions: Record<UserRole, string> = {
       reception: "Manage patient registration, appointments, and front desk operations",
-      doctor: "Access patient records, consultations, and medical treatments",
+      professional: "Full patient records access, consultations, and treatment planning",
       "inventory-manager": "Manage product inventory, stock levels, and suppliers",
       "super-admin": "Full system access including user management and system settings",
     }
@@ -120,7 +125,9 @@ export function UserForm({ initialData, onSubmit, onCancel }: UserFormProps) {
               placeholder="Enter full name"
               className={errors.name ? "border-red-500" : ""}
             />
-            {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
+            {errors.name && (
+              <p className="text-sm text-red-600">{errors.name}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -133,7 +140,9 @@ export function UserForm({ initialData, onSubmit, onCancel }: UserFormProps) {
               placeholder="Enter email address"
               className={errors.email ? "border-red-500" : ""}
             />
-            {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
+            {errors.email && (
+              <p className="text-sm text-red-600">{errors.email}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -145,14 +154,18 @@ export function UserForm({ initialData, onSubmit, onCancel }: UserFormProps) {
               placeholder="(555) 123-4567"
               className={errors.phone ? "border-red-500" : ""}
             />
-            {errors.phone && <p className="text-sm text-red-600">{errors.phone}</p>}
+            {errors.phone && (
+              <p className="text-sm text-red-600">{errors.phone}</p>
+            )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="department">Department</Label>
             <Select
               value={formData.department}
-              onValueChange={(value: string) => updateFormData("department", value)}
+              onValueChange={(value: string) =>
+                updateFormData("department", value)
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select department" />
@@ -171,29 +184,46 @@ export function UserForm({ initialData, onSubmit, onCancel }: UserFormProps) {
 
       {/* Role & Permissions */}
       <div className="space-y-4">
-        <h3 className="text-lg font-medium text-gray-900">Role & Permissions</h3>
+        <h3 className="text-lg font-medium text-gray-900">
+          Role & Permissions
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="role">User Role *</Label>
-            <Select value={formData.role} onValueChange={(value: string) => updateFormData("role", value as UserRole)}>
+            <Select
+              value={formData.role}
+              onValueChange={(value: string) =>
+                updateFormData("role", value as UserRole)
+              }
+            >
               <SelectTrigger className={errors.role ? "border-red-500" : ""}>
                 <SelectValue placeholder="Select user role" />
               </SelectTrigger>
               <SelectContent>
                 {roles.map((role) => (
                   <SelectItem key={role} value={role}>
-                    {role.charAt(0).toUpperCase() + role.slice(1).replace("-", " ")}
+                    {role.charAt(0).toUpperCase() +
+                      role.slice(1).replace("-", " ")}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {errors.role && <p className="text-sm text-red-600">{errors.role}</p>}
-            {formData.role && <p className="text-sm text-gray-600 mt-1">{getRoleDescription(formData.role)}</p>}
+            {errors.role && (
+              <p className="text-sm text-red-600">{errors.role}</p>
+            )}
+            {formData.role && (
+              <p className="text-sm text-gray-600 mt-1">
+                {getRoleDescription(formData.role)}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="status">Account Status</Label>
-            <Select value={formData.status} onValueChange={(value: string) => updateFormData("status", value)}>
+            <Select
+              value={formData.status}
+              onValueChange={(value: string) => updateFormData("status", value)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -211,11 +241,15 @@ export function UserForm({ initialData, onSubmit, onCancel }: UserFormProps) {
 
       {/* Role Permissions Overview */}
       <div className="space-y-4">
-        <h3 className="text-lg font-medium text-gray-900">Permissions Overview</h3>
+        <h3 className="text-lg font-medium text-gray-900">
+          Permissions Overview
+        </h3>
         <div className="bg-gray-50 rounded-lg p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-              <h4 className="font-medium text-gray-900 mb-2">Access Permissions:</h4>
+              <h4 className="font-medium text-gray-900 mb-2">
+                Access Permissions:
+              </h4>
               <ul className="space-y-1 text-gray-600">
                 {formData.role === "reception" && (
                   <>
@@ -224,7 +258,7 @@ export function UserForm({ initialData, onSubmit, onCancel }: UserFormProps) {
                     <li>• Basic patient information access</li>
                   </>
                 )}
-                {formData.role === "doctor" && (
+                {formData.role === "professional" && (
                   <>
                     <li>• Full patient records access</li>
                     <li>• Consultation management</li>
@@ -248,18 +282,27 @@ export function UserForm({ initialData, onSubmit, onCancel }: UserFormProps) {
               </ul>
             </div>
             <div>
-              <h4 className="font-medium text-gray-900 mb-2">Navigation Access:</h4>
+              <h4 className="font-medium text-gray-900 mb-2">
+                Navigation Access:
+              </h4>
               <ul className="space-y-1 text-gray-600">
                 <li>• Dashboard</li>
-                {(formData.role === "reception" || formData.role === "super-admin") && <li>• Patient Registration</li>}
-                {(formData.role === "doctor" || formData.role === "reception" || formData.role === "super-admin") && (
+                {(formData.role === "reception" ||
+                  formData.role === "super-admin") && (
+                  <li>• Patient Registration</li>
+                )}
+                {(formData.role === "professional" ||
+                  formData.role === "reception" ||
+                  formData.role === "super-admin") && (
                   <>
                     <li>• Patients List</li>
                     <li>• Appointments</li>
                   </>
                 )}
-                {(formData.role === "doctor" || formData.role === "super-admin") && <li>• Consultations</li>}
-                {(formData.role === "inventory-manager" || formData.role === "super-admin") && <li>• Inventory</li>}
+                {(formData.role === "professional" ||
+                  formData.role === "super-admin") && <li>• Consultations</li>}
+                {(formData.role === "inventory-manager" ||
+                  formData.role === "super-admin") && <li>• Inventory</li>}
                 {formData.role === "super-admin" && <li>• User Management</li>}
               </ul>
             </div>
@@ -277,5 +320,5 @@ export function UserForm({ initialData, onSubmit, onCancel }: UserFormProps) {
         </Button>
       </div>
     </form>
-  )
+  );
 }

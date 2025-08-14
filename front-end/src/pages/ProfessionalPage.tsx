@@ -1,8 +1,7 @@
 import { Sidebar } from "../components/sidebar"
 import { DashboardContent } from "../components/dashboard-content"
 
-export default function HomePage() {
-
+export default function ProfessionalPage() {
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
@@ -10,5 +9,5 @@ export default function HomePage() {
         <DashboardContent />
       </main>
     </div>
-  )
+  );
 }

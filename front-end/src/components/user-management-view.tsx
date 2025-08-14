@@ -65,7 +65,7 @@ const mockUsers: SystemUser[] = [
     id: "2",
     name: "Dr. Michael Chen",
     email: "doctor@clinic.com",
-    role: "doctor",
+    role: "professional",
     status: "active",
     lastLogin: "2024-01-15",
     createdAt: "2024-01-01",
@@ -98,7 +98,7 @@ const mockUsers: SystemUser[] = [
     id: "5",
     name: "Dr. Emily Watson",
     email: "emily.watson@clinic.com",
-    role: "doctor",
+    role: "professional",
     status: "inactive",
     lastLogin: "2024-01-10",
     createdAt: "2024-01-05",
@@ -115,7 +115,7 @@ const mockUsers: SystemUser[] = [
     department: "Front Desk",
     phone: "(555) 678-9012",
   },
-]
+];
 
 export function UserManagementView() {
   const [users, setUsers] = useState<SystemUser[]>(mockUsers)
@@ -125,7 +125,13 @@ export function UserManagementView() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
-  const roles: (UserRole | "all")[] = ["all", "reception", "doctor", "inventory-manager", "super-admin"]
+  const roles: (UserRole | "all")[] = [
+    "all",
+    "reception",
+    "professional",
+    "inventory-manager",
+    "super-admin",
+  ];
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
@@ -192,6 +198,7 @@ export function UserManagementView() {
     const roleColors = {
       reception: "bg-blue-100 text-blue-800",
       doctor: "bg-green-100 text-green-800",
+      professional: "bg-green-100 text-green-800",
       "inventory-manager": "bg-purple-100 text-purple-800",
       "super-admin": "bg-red-100 text-red-800",
     }
@@ -199,6 +206,7 @@ export function UserManagementView() {
     const roleLabels = {
       reception: "Reception",
       doctor: "Doctor",
+      professional: "Professional",
       "inventory-manager": "Inventory Manager",
       "super-admin": "Super Admin",
     }

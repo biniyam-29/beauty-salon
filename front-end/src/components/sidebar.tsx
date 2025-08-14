@@ -54,7 +54,7 @@ const navigation: NavigationItem[] = [
     name: "Dashboard",
     href: "/",
     icon: HomeIcon,
-    roles: ["reception", "doctor", "inventory-manager", "super-admin"],
+    roles: ["reception", "professional", "inventory-manager", "super-admin"],
   },
   {
     name: "Register Patient",
@@ -66,19 +66,19 @@ const navigation: NavigationItem[] = [
     name: "Patients",
     href: "/patients",
     icon: UsersIcon,
-    roles: ["reception", "doctor", "super-admin"],
+    roles: ["reception", "professional", "super-admin"],
   },
   {
     name: "Appointments",
     href: "/appointments",
     icon: CalendarIcon,
-    roles: ["reception", "doctor", "super-admin"],
+    roles: ["reception", "professional", "super-admin"],
   },
   {
     name: "Consultations",
     href: "/consultations",
     icon: DocumentTextIcon,
-    roles: ["doctor", "super-admin"],
+    roles: ["professional", "super-admin"],
   },
   {
     name: "Inventory",
@@ -92,7 +92,7 @@ const navigation: NavigationItem[] = [
     icon: CogIcon,
     roles: ["super-admin"],
   },
-]
+];
 
 export function Sidebar() {
   const location = useLocation()

@@ -212,10 +212,10 @@ export function DashboardContent() {
 
   switch (user.role) {
     case "reception":
-      return renderReceptionDashboard()
-    case "doctor":
-      return renderDoctorDashboard()
+      return renderReceptionDashboard();
+    case "professional":
+      return renderDoctorDashboard();
     default:
-      return renderDefaultDashboard()
+      return renderDefaultDashboard();
   }
 }

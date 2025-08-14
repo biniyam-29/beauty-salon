@@ -1,4 +1,8 @@
-export type UserRole = "reception" | "doctor" | "inventory-manager" | "super-admin"
+export type UserRole =
+  | "reception"
+  | "professional"
+  | "inventory-manager"
+  | "super-admin";
 
 export interface User {
   id: string
@@ -20,7 +24,7 @@ export const mockUsers: User[] = [
     id: "2",
     name: "Dr. Michael Chen",
     email: "doctor@clinic.com",
-    role: "doctor",
+    role: "professional",
   },
   {
     id: "3",
@@ -34,7 +38,7 @@ export const mockUsers: User[] = [
     email: "admin@clinic.com",
     role: "super-admin",
   },
-]
+];
 
 let currentUser: User | null = null
 
@@ -64,14 +68,14 @@ export const isAuthenticated = (): boolean => {
 export const getRoleDashboardRoute = (role: UserRole): string => {
   switch (role) {
     case "super-admin":
-      return "/users"
+      return "/users";
     case "inventory-manager":
-      return "/inventory"
+      return "/inventory";
     case "reception":
       return "/reception";
-    case "doctor":
-      return "/patients"
+    case "professional":
+      return "/professionals";
     default:
-      return "/"
+      return "/";
   }
 }
