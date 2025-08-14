@@ -244,12 +244,12 @@ class AuthService{
             $exp = $exp ? time() + $exp : time() + AuthConstants::$expirationTime;
             $payload = ['iat' => time(), 'exp' => $exp, 'data' => $payload];
             $token = JWT::encode($payload, AuthConstants::$secretKey, 'HS256');
-            // $sql = 'INSERT INTO token (token, userId) VALUES (?, ?)';
+            $sql = 'INSERT INTO token (token, userId) VALUES (?, ?)';
 
-            // $this->conn->beginTransaction();
-            // $stmt = $this->conn->prepare($sql);
-            // $stmt->execute([$token, $id]);
-            // $this->conn->commit();
+            $this->conn->beginTransaction();
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$token, $id]);
+            $this->conn->commit();
 
             return $token;
         } catch (Exception $e) {
