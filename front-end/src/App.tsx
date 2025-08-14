@@ -12,7 +12,7 @@ import { CustomerListPage } from "./pages/CustomerListPage";
 import { PhoneNumberCheckPage } from "./pages/PhoneNumberCheckPage";
 import { UserProfilePage } from "./pages/UserProfilePage";
 import { PatientRegistrationWizard } from "./components/PatientRegistrationWizard";
-import LoginPage  from "./pages/LoginPage";
+import { LoginPage }  from "./pages/LoginPage";
 
 // =================================================================================
 // FILE: src/App.tsx

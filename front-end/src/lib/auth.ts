@@ -20,24 +20,24 @@ export const mockUsers: User[] = [
     email: "reception@clinic.com",
     role: "reception",
   },
-  {
-    id: "2",
-    name: "Dr. Michael Chen",
-    email: "doctor@clinic.com",
-    role: "professional",
-  },
-  {
-    id: "3",
-    name: "Lisa Rodriguez",
-    email: "inventory@clinic.com",
-    role: "inventory-manager",
-  },
-  {
-    id: "4",
-    name: "Admin User",
-    email: "admin@clinic.com",
-    role: "super-admin",
-  },
+//   {
+//     id: "2",
+//     name: "Dr. Michael Chen",
+//     email: "doctor@clinic.com",
+//     role: "professional",
+//   },
+//   {
+//     id: "3",
+//     name: "Lisa Rodriguez",
+//     email: "inventory@clinic.com",
+//     role: "inventory-manager",
+//   },
+//   {
+//     id: "4",
+//     name: "Admin User",
+//     email: "admin@clinic.com",
+//     role: "super-admin",
+//   },
 ];
 
 let currentUser: User | null = null
@@ -67,14 +67,14 @@ export const isAuthenticated = (): boolean => {
 
 export const getRoleDashboardRoute = (role: UserRole): string => {
   switch (role) {
-    case "super-admin":
-      return "/users";
-    case "inventory-manager":
-      return "/inventory";
+    // case "super-admin":
+    //   return "/users";
+    // case "inventory-manager":
+    //   return "/inventory";
     case "reception":
       return "/reception";
-    case "professional":
-      return "/professionals";
+    // case "professional":
+    //   return "/professionals";
     default:
       return "/";
   }

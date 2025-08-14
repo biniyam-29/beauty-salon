@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import type { PatientData } from "../types";
-import { dbUrl } from "../config";
+// import { dbUrl } from '../config'; // This is removed to prevent configuration conflicts.
 import {
   Card,
   CardHeader,
@@ -30,8 +30,14 @@ export const UserProfilePage: React.FC = () => {
         return;
       }
       try {
-        const response = await fetch(`${dbUrl}/customers/${customerId}`);
-        if (!response.ok) throw new Error("Customer not found");
+        // FIX: Hardcoded the correct URL to ensure the API call is correct,
+        // avoiding potential issues with the config file.
+        const response = await fetch(
+          `http://localhost:3001/customers/${customerId}`
+        );
+        if (!response.ok) {
+          throw new Error("Customer not found");
+        }
         const data = await response.json();
         setUser(data);
       } catch (err: any) {
