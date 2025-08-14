@@ -9,12 +9,14 @@ header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers
 // Include all controller files
 require_once __DIR__ . '/src/modules/auth/auth-controller.php';
 require_once __DIR__ . '/src/modules/user/user-controller.php';
+require_once __DIR__ . '/src/modules/customers/customer-controller.php';
 require_once __DIR__ . '/src/modules/lookups/lookup-controller.php';
 // Add other controllers as you create them...
 
 use src\modules\auth\AuthController;
 use src\modules\user\UserController;
 use src\modules\lookups\LookupController;
+use src\modules\customers\CustomerController;
 
 // --- Basic Routing ---
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -35,6 +37,9 @@ switch ($module) {
         break;
     case 'lookups':
         $controller = new LookupController();
+        break;
+    case 'customers':
+        $controller = new CustomerController();
         break;
     default:
         http_response_code(404);
