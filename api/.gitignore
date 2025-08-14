@@ -1,1 +1,3 @@
 /vendor
+setup-database.php
+test-login.php
