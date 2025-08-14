@@ -29,13 +29,16 @@ class AuthGuard {
         self::ensureDbConnection();
         AuthConstants::initialize(); 
 
+        // 1. Check Authorization header
         if (!isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            http_response_code(401);
             return false;
         }
 
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
         $token = str_replace("Bearer ", "", $authHeader);
         if (empty($token)) {
+            http_response_code(401);
             return false;
         }
 
@@ -43,46 +46,39 @@ class AuthGuard {
             $decoded = JWT::decode($token, new Key(AuthConstants::$secretKey, 'HS256'));
 
             if (!isset($decoded->data) || !isset($decoded->data->id)) {
-                return false;
-            }
-
-            $urlParts = explode('/', trim($_SERVER['REQUEST_URI'], '/'));
-            $userId = $urlParts[1] ?? null;
-            if ($userId === null) {
-                return false;
-            }
-            $user = self::read("users", "id", $userId);            
-            if (empty($user)) {
-                return false;
-            }
-
-            if($user['isActive'] == 0 && $user['role'] !== 'OWNER' && $caller !== "newUser") {
                 http_response_code(401);
                 return false;
             }
 
-            if (!self::tokenOwnership($userId, $decoded)) {
+            $userId = $decoded->data->id;
+
+            // 3. Check user in DB
+            $user = self::read("users", "id", $userId);
+            if (empty($user)) {
+                http_response_code(401);
                 return false;
             }
-            
-            if (!self::validateToken($token, $decoded->data->id)) {
+
+            // 4. Check if user is active
+            if ($user['is_active'] == 0 && $user['role'] !== 'OWNER' && $caller !== "newUser") {
+                http_response_code(401);
                 return false;
             }
-            if ($caller === "guard"){
+
+            if (!self::validateToken($token, $userId)) {
+                http_response_code(401);
+                return false;
+            }
+            if ($caller === "guard") {
                 return $decoded->data;
             }
-            
+
             return true;
         } catch (Exception $e) {
             http_response_code(401);
             return false;
         }
     }
-
-    private static function tokenOwnership($userId, $decoded) {
-        return $userId && isset($decoded->data->id) && (string) $userId === (string) $decoded->data->id;
-    }
-
     private static function validateToken($token, $id) {
         self::ensureDbConnection();
         try {
@@ -90,16 +86,13 @@ class AuthGuard {
             $stmt = self::$conn->prepare($sql);
             $stmt->execute([$id, $token]);
             $userToken = $stmt->fetch(PDO::FETCH_ASSOC);
-            if (!$userToken) {
-                return false;
-            }
-            return true;
+            return (bool) $userToken;
         } catch (Exception $e) {
             return false;
         }
     }
 
-    private static function read($table, $column = 'id', $value = null){
+    private static function read($table, $column = 'id', $value = null) {
         try {
             $sql = "SELECT * FROM $table WHERE $column = :value";
             $stmt = self::$conn->prepare($sql);
@@ -107,7 +100,7 @@ class AuthGuard {
             $stmt->execute();
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
-            return json_encode(['error' => $e->getMessage()]);
+            return null;
         }
     }
 }
