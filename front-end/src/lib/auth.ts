@@ -68,7 +68,7 @@ export const getRoleDashboardRoute = (role: UserRole): string => {
     case "inventory-manager":
       return "/inventory"
     case "reception":
-      return "/"
+      return "/reception";
     case "doctor":
       return "/patients"
     default:
