@@ -1,12 +1,11 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import FormPage from "./pages/FormPage.tsx";
+import LoginPage from "./pages/LoginPage.tsx";
 
 const App: React.FC = () => (
   <Router>
     <Routes>
-      <Route path="/" element={<FormPage />} />
-      {/* Add more routes here if needed */}
+      <Route path="/" element={<LoginPage />} />
     </Routes>
   </Router>
 );
