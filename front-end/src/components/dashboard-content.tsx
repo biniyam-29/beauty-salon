@@ -75,8 +75,10 @@ export function DashboardContent() {
   const renderReceptionDashboard = () => (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Reception Dashboard</h1>
-        <Link to="/patients/register">
+        <h1 className="text-2xl font-semibold text-gray-900">
+          Reception Dashboard
+        </h1>
+        <Link to="/professional/register">
           <Button className="bg-teal-600 hover:bg-teal-700">
             <UserPlusIcon className="h-4 w-4 mr-2" />
             Register New Patient
@@ -92,18 +94,33 @@ export function DashboardContent() {
               <CalendarIcon className="h-5 w-5 mr-2 text-teal-600" />
               Today's Appointments
             </CardTitle>
-            <CardDescription>{todaysAppointments.length} appointments scheduled</CardDescription>
+            <CardDescription>
+              {todaysAppointments.length} appointments scheduled
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {todaysAppointments.map((appointment) => (
-              <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div
+                key={appointment.id}
+                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              >
                 <div>
-                  <p className="font-medium text-gray-900">{appointment.patientName}</p>
+                  <p className="font-medium text-gray-900">
+                    {appointment.patientName}
+                  </p>
                   <p className="text-sm text-gray-500">{appointment.type}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">{appointment.time}</p>
-                  <Badge variant={appointment.status === "confirmed" ? "default" : "secondary"}>
+                  <p className="text-sm font-medium text-gray-900">
+                    {appointment.time}
+                  </p>
+                  <Badge
+                    variant={
+                      appointment.status === "confirmed"
+                        ? "default"
+                        : "secondary"
+                    }
+                  >
                     {appointment.status}
                   </Badge>
                 </div>
@@ -119,17 +136,28 @@ export function DashboardContent() {
               <ClockIcon className="h-5 w-5 mr-2 text-orange-600" />
               Follow-up Reminders
             </CardTitle>
-            <CardDescription>Patients requiring follow-up contact</CardDescription>
+            <CardDescription>
+              Patients requiring follow-up contact
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {followUpReminders.map((reminder) => (
-              <div key={reminder.id} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+              <div
+                key={reminder.id}
+                className="flex items-center justify-between p-3 bg-orange-50 rounded-lg"
+              >
                 <div>
-                  <p className="font-medium text-gray-900">{reminder.patientName}</p>
-                  <p className="text-sm text-gray-500">Last visit: {reminder.lastVisit}</p>
+                  <p className="font-medium text-gray-900">
+                    {reminder.patientName}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Last visit: {reminder.lastVisit}
+                  </p>
                 </div>
                 <div className="text-right">
-                  <Badge variant="destructive">{reminder.daysOverdue} days overdue</Badge>
+                  <Badge variant="destructive">
+                    {reminder.daysOverdue} days overdue
+                  </Badge>
                 </div>
               </div>
             ))}
@@ -137,7 +165,7 @@ export function DashboardContent() {
         </Card>
       </div>
     </div>
-  )
+  );
 
   const renderDoctorDashboard = () => (
     <div className="p-6 space-y-6">

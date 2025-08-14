@@ -58,13 +58,13 @@ const navigation: NavigationItem[] = [
   },
   {
     name: "Register Patient",
-    href: "/patients/register",
+    href: "/professional/register",
     icon: UserPlusIcon,
     roles: ["reception", "super-admin"],
   },
   {
     name: "Patients",
-    href: "/patients",
+    href: "/professional",
     icon: UsersIcon,
     roles: ["reception", "professional", "super-admin"],
   },
