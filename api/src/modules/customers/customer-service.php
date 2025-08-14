@@ -61,22 +61,30 @@ class CustomerService {
             $customerId = $this->conn->lastInsertId();
 
             // 2. Insert into `customer_profile` table
+            $profile = $data['profile'] ?? [];
             $stmt = $this->conn->prepare(
-                "INSERT INTO customer_profile (customer_id, skin_type, sun_exposure, bruises_easily, known_allergies_details, uses_retinoids_acids, recent_dermal_fillers, previous_acne_medication, drinks_smokes, dietary_supplements, other_medication)
-                 VALUES (:customer_id, :skin_type, :sun_exposure, :bruises_easily, :known_allergies_details, :uses_retinoids_acids, :recent_dermal_fillers, :previous_acne_medication, :drinks_smokes, :dietary_supplements, :other_medication)"
+                "INSERT INTO customer_profile (customer_id, skin_type, skin_feel, sun_exposure, foundation_type, healing_profile, bruises_easily, used_products, uses_retinoids_acids, recent_dermal_fillers, previous_acne_medication, known_allergies_details, dietary_supplements, current_prescription, other_conditions, other_medication, smokes, drinks)
+                 VALUES (:customer_id, :skin_type, :skin_feel, :sun_exposure, :foundation_type, :healing_profile, :bruises_easily, :used_products, :uses_retinoids_acids, :recent_dermal_fillers, :previous_acne_medication, :known_allergies_details, :dietary_supplements, :current_prescription, :other_conditions, :other_medication, :smokes, :drinks)"
             );
             $stmt->execute([
                 ':customer_id' => $customerId,
-                ':skin_type' => $data['profile']['skin_type'] ?? null,
-                ':sun_exposure' => $data['profile']['sun_exposure'] ?? null,
-                ':bruises_easily' => $data['profile']['bruises_easily'] ?? null,
-                ':known_allergies_details' => $data['profile']['known_allergies_details'] ?? null,
-                ':uses_retinoids_acids' => $data['profile']['uses_retinoids_acids'] ?? null,
-                ':recent_dermal_fillers' => $data['profile']['recent_dermal_fillers'] ?? null,
-                ':previous_acne_medication' => $data['profile']['previous_acne_medication'] ?? null,
-                ':drinks_smokes' => $data['profile']['drinks_smokes'] ?? null,
-                ':dietary_supplements' => $data['profile']['dietary_supplements'] ?? null,
-                ':other_medication' => $data['profile']['other_medication'] ?? null
+                ':skin_type' => $profile['skin_type'] ?? null,
+                ':skin_feel' => $profile['skin_feel'] ?? null,
+                ':sun_exposure' => $profile['sun_exposure'] ?? null,
+                ':foundation_type' => $profile['foundation_type'] ?? null,
+                ':healing_profile' => $profile['healing_profile'] ?? null,
+                ':bruises_easily' => $profile['bruises_easily'] ?? 0,
+                ':used_products' => isset($profile['used_products']) ? json_encode($profile['used_products']) : null,
+                ':uses_retinoids_acids' => $profile['uses_retinoids_acids'] ?? 0,
+                ':recent_dermal_fillers' => $profile['recent_dermal_fillers'] ?? 0,
+                ':previous_acne_medication' => $profile['previous_acne_medication'] ?? null,
+                ':known_allergies_details' => $profile['known_allergies_details'] ?? null,
+                ':dietary_supplements' => $profile['dietary_supplements'] ?? null,
+                ':current_prescription' => $profile['current_prescription'] ?? null,
+                ':other_conditions' => $profile['other_conditions'] ?? null,
+                ':other_medication' => $profile['other_medication'] ?? null,
+                ':smokes' => $profile['smokes'] ?? 0,
+                ':drinks' => $profile['drinks'] ?? 0
             ]);
 
             // 3. Insert into `customer_skin_concerns`
@@ -193,7 +201,13 @@ class CustomerService {
             
             // Update the `customer_profile` table
             if (isset($data['profile'])) {
-                $this->updateTable('customer_profile', $id, $data['profile'], ['skin_type', 'sun_exposure', 'bruises_easily', 'known_allergies_details', 'uses_retinoids_acids', 'recent_dermal_fillers', 'previous_acne_medication', 'drinks_smokes', 'dietary_supplements', 'other_medication'], 'customer_id');
+                $allowedProfileFields = [
+                    'skin_type', 'skin_feel', 'sun_exposure', 'foundation_type', 'healing_profile', 
+                    'bruises_easily', 'used_products', 'uses_retinoids_acids', 'recent_dermal_fillers', 
+                    'previous_acne_medication', 'known_allergies_details', 'dietary_supplements', 
+                    'current_prescription', 'other_conditions', 'other_medication', 'smokes', 'drinks'
+                ];
+                $this->updateTable('customer_profile', $id, $data['profile'], $allowedProfileFields, 'customer_id');
             }
 
             $this->conn->commit();
