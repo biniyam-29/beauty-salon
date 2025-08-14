@@ -101,19 +101,27 @@ CREATE TABLE IF NOT EXISTS `customer_health_conditions` (
 CREATE TABLE IF NOT EXISTS `customer_profile` (
   `customer_id` INT UNSIGNED NOT NULL,
   `skin_type` ENUM('Normal', 'Dry', 'Oily', 'Combo') NULL,
+  `skin_feel` VARCHAR(255) NULL,
   `sun_exposure` ENUM('Never', 'Light', 'Moderate', 'Excessive') NULL,
+  `foundation_type` VARCHAR(255) NULL,
+  `healing_profile` VARCHAR(255) NULL,
   `bruises_easily` BOOLEAN NULL,
-  `known_allergies_details` TEXT NULL,
+  `used_products` JSON NULL,
   `uses_retinoids_acids` BOOLEAN NULL,
   `recent_dermal_fillers` BOOLEAN NULL,
   `previous_acne_medication` TEXT NULL,
-  `drinks_smokes` BOOLEAN NULL,
+  `known_allergies_details` TEXT NULL,
   `dietary_supplements` TEXT NULL,
+  `current_prescription` TEXT NULL,
+  `other_conditions` TEXT NULL,
   `other_medication` TEXT NULL,
+  `smokes` BOOLEAN NULL,
+  `drinks` BOOLEAN NULL,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`customer_id`),
   CONSTRAINT `fk_cp_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 -- -----------------------------------------------------
 -- Table `consultations`
