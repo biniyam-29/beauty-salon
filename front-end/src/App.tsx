@@ -16,6 +16,10 @@ import { LoginPage } from "./pages/LoginPage";
 import { ProfessionalLoginPage } from "./pages/professionals/ProfessionalLoginPage";
 import { ProfessionalDashboardPage } from "./pages/professionals/ProfessionalDashboardPage";
 import { ProfessionalSessionPage } from "./pages/professionals/ProfessionalSessionPage";
+import { RemindersPage } from "./pages/reception/RemindersPage";
+import { ProductManagementPage } from "./pages/admin/ProductManagementPage";
+import { AdminLoginPage } from "./pages/admin/AdminLoginPage";
+import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 
 // =================================================================================
 // FILE: src/App.tsx
@@ -31,6 +35,7 @@ const FontLink = () => (
 );
 
 // --- Registration Page Wrapper ---
+// This component is needed to get the 'phone' state passed from the PhoneNumberCheckPage
 const RegistrationPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -60,15 +65,16 @@ const App: React.FC = () => (
       <div className="max-w-7xl mx-auto">
         <Router>
           <Routes>
-            {/* Login and Main Welcome */}
+            {/* Login Routes */}
             <Route path="/" element={<LoginPage />} />
             <Route
               path="/professional-login"
               element={<ProfessionalLoginPage />}
             />
-            <Route path="/reception" element={<WelcomePage />} />
+            <Route path="/admin-login" element={<AdminLoginPage />} />
 
             {/* Receptionist Routes */}
+            <Route path="/reception" element={<WelcomePage />} />
             <Route path="/reception/find" element={<PhoneNumberCheckPage />} />
             <Route path="/reception/customers" element={<CustomerListPage />} />
             <Route path="/reception/register" element={<RegistrationPage />} />
@@ -76,6 +82,7 @@ const App: React.FC = () => (
               path="/reception/profile/:customerId"
               element={<UserProfilePage />}
             />
+            <Route path="/reception/reminders" element={<RemindersPage />} />
 
             {/* Professional Routes */}
             <Route
@@ -86,6 +93,10 @@ const App: React.FC = () => (
               path="/professional/session/:customerId"
               element={<ProfessionalSessionPage />}
             />
+
+            {/* Admin Routes */}
+            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+            <Route path="/admin/products" element={<ProductManagementPage />} />
           </Routes>
         </Router>
       </div>

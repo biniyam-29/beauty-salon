@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React from "react";
+import { useNavigate, Link } from "react-router-dom";
 import {
   Button,
   Card,
@@ -15,39 +15,18 @@ import {
 // =================================================================================
 
 export const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-
-  // A mock user for the demo login
-  const demoUser = {
-    email: "receptionist@clinic.com",
-    password: "demoPassword123",
-  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    // Simulate a network request
-    setTimeout(() => {
-      // In a real app, you'd verify credentials against a server.
-      // For this demo, we'll just navigate on any submission.
-      console.log(`Logging in with ${email}`);
-      setIsLoading(false);
-      navigate("/reception");
-    }, 1000);
-  };
-
-  const handleDemoLogin = () => {
-    setEmail(demoUser.email);
-    setPassword(demoUser.password);
+    // In a real app, you would have authentication logic here.
+    // For this demo, we'll just navigate to the reception page.
+    navigate("/reception");
   };
 
   return (
-    <div className="w-full max-w-md mx-auto animate-fade-in">
-      <div className="text-center mb-8">
+    <div className="w-full max-w-sm mx-auto animate-fade-in space-y-6">
+      <div className="text-center">
         <h1 className="text-5xl font-bold font-display text-pink-900">
           SkinCare Clinic
         </h1>
@@ -55,43 +34,39 @@ export const LoginPage: React.FC = () => {
       </div>
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-pink-800">Welcome Back</CardTitle>
+          <CardTitle className="text-pink-800">Receptionist Login</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="e.g., your.email@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+              <Label htmlFor="username">Username</Label>
+              <Input id="username" type="text" defaultValue="receptionist" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <Input id="password" type="password" defaultValue="password" />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing In..." : "Sign In"}
+            <Button type="submit" className="w-full">
+              Login
             </Button>
           </form>
-          <div className="mt-6 text-center">
-            <Button onClick={handleDemoLogin} variant="outline" size="sm">
-              Login as Demo User
-            </Button>
-          </div>
         </CardContent>
       </Card>
+      <div className="text-center space-y-2">
+        <Link
+          to="/professional-login"
+          className="text-sm text-pink-700 hover:underline"
+        >
+          Are you a Professional? Login here
+        </Link>
+        <span className="mx-2 text-gray-400">|</span>
+        <Link
+          to="/admin-login"
+          className="text-sm text-pink-700 hover:underline"
+        >
+          Super Admin Login
+        </Link>
+      </div>
     </div>
   );
 };

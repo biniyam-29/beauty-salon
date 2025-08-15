@@ -12,23 +12,14 @@
       "emergencyPhone": "555-765-4321",
       "heardFrom": "Social Media",
       "skinType": "Combination",
-      "skinFeel": [
-        "Tight"
-      ],
+      "skinFeel": ["Tight"],
       "sunExposure": "Moderate",
       "foundationType": "Liquid",
       "skinHeal": "Fast",
       "bruiseEasily": false,
-      "usedProducts": [
-        "Facial cleanser",
-        "Moisturizer",
-        "Sunscreen"
-      ],
+      "usedProducts": ["Facial cleanser", "Moisturizer", "Sunscreen"],
       "otherProducts": "",
-      "skinConcerns": [
-        "Acne",
-        "Oily skin"
-      ],
+      "skinConcerns": ["Acne", "Oily skin"],
       "firstFacial": false,
       "previousTreatmentLikes": "The relaxing massage.",
       "treatmentGoal": "Clearer skin and less oiliness.",
@@ -48,133 +39,24 @@
       "signature": "Jane Doe",
       "signatureDate": "2023-10-27",
       "conclusionNote": "Client has combination skin with concerns about acne. Recommended a clarifying facial.",
-      "assignedProfessionalId": "null"
-    },
-    {
-      "id": "49ee",
-      "name": "Biniyam Birhanu",
-      "address": "Addis Ababa",
-      "phone": "0999999990",
-      "city": "Addis Ababa",
-      "dateOfBirth": "",
-      "email": "bnmmarkos@gmail.com",
-      "emergencyContact": "",
-      "emergencyPhone": "0973983018",
-      "heardFrom": "",
-      "skinType": "Normal",
-      "skinFeel": [
-        "Flaky"
-      ],
-      "sunExposure": "Light",
-      "foundationType": "",
-      "skinHeal": "",
-      "bruiseEasily": false,
-      "usedProducts": [
-        "Sunscreen",
-        "Face scrub"
-      ],
-      "otherProducts": "",
-      "skinConcerns": [
-        "Rosacea"
-      ],
-      "firstFacial": true,
-      "previousTreatmentLikes": "",
-      "treatmentGoal": "",
-      "usedRetinoids": true,
-      "hadFillers": false,
-      "acneMedication": false,
-      "acneMedicationDetails": "",
-      "healthConditions": [
-        "Arthritis",
-        "Warts"
-      ],
-      "otherConditions": "",
-      "knownAllergies": false,
-      "supplements": false,
-      "alcoholOrSmoke": false,
-      "signature": "Biniyam Markos Birhanu",
-      "signatureDate": "2025-08-15",
-      "prescriptionMeds": false,
-      "conclusionNote": "",
-      "assignedProfessionalId": "null"
-    },
-    {
-      "id": "984d",
-      "name": "Biniyam Birhanu",
-      "address": "Addis Ababa",
-      "phone": "0999999999",
-      "city": "Addis Ababa",
-      "dateOfBirth": "",
-      "email": "bnmmarkos@gmail.com",
-      "emergencyContact": "",
-      "emergencyPhone": "0973983018",
-      "heardFrom": "",
-      "skinType": "Dry",
-      "skinFeel": [
-        "Redish"
-      ],
-      "sunExposure": "Excessive",
-      "foundationType": "",
-      "skinHeal": "",
-      "bruiseEasily": false,
-      "usedProducts": [
-        "Sunscreen"
-      ],
-      "otherProducts": "",
-      "skinConcerns": [
-        "Dryness"
-      ],
-      "firstFacial": true,
-      "previousTreatmentLikes": "",
-      "treatmentGoal": "",
-      "usedRetinoids": true,
-      "hadFillers": false,
-      "acneMedication": false,
-      "acneMedicationDetails": "",
-      "healthConditions": [
-        "Warts"
-      ],
-      "otherConditions": "",
-      "knownAllergies": false,
-      "supplements": false,
-      "alcoholOrSmoke": false,
-      "signature": "Biniyam Markos Birhanu",
-      "signatureDate": "2025-08-15",
-      "prescriptionMeds": false,
-      "assignedProfessionalId": "null",
-      "conclusionNote": "this is a Conclusion Note"
+      "assignedProfessionalId": "2"
     }
   ],
   "professionals": [
     {
       "id": "1",
       "name": "Dr. Evelyn Reed",
-      "skills": [
-        "Aging",
-        "Wrinkles",
-        "Sun damage",
-        "Hyperpigmentation"
-      ]
+      "skills": ["Aging", "Wrinkles", "Sun damage", "Hyperpigmentation"]
     },
     {
       "id": "2",
       "name": "Carlos Martinez",
-      "skills": [
-        "Acne",
-        "Acne scarring",
-        "Oily skin",
-        "Milia"
-      ]
+      "skills": ["Acne", "Acne scarring", "Oily skin", "Milia"]
     },
     {
       "id": "3",
       "name": "Aisha Khan",
-      "skills": [
-        "Dryness",
-        "Sensitivity",
-        "Rosacea",
-        "Redness"
-      ]
+      "skills": ["Dryness", "Sensitivity", "Rosacea", "Redness"]
     }
   ],
   "sessions": [
@@ -185,133 +67,49 @@
       "date": "2023-10-28",
       "notes": "Initial consultation. Client presents with moderate comedonal acne on the T-zone. Skin is otherwise healthy. No signs of inflammation.",
       "prescription": "Begin with a gentle salicylic acid cleanser twice daily. Follow with a non-comedogenic moisturizer. Follow up in 4 weeks.",
-      "images": [
-        "images/placeholder1.jpg",
-        "images/placeholder2.jpg"
-      ]
+      "images": ["images/placeholder1.jpg", "images/placeholder2.jpg"],
+      "reminderDismissed": false
+    }
+  ],
+  "products": [
+    {
+      "id": "1",
+      "name": "Hydrating Cleanser",
+      "brand": "CeraVe",
+      "category": "Cleanser",
+      "stock": 50,
+      "price": 14.99
     },
     {
-      "id": "03fc",
-      "customerId": "984d",
-      "professionalId": "2",
-      "date": "2025-08-15",
-      "notes": "this is great",
-      "prescription": "run all the way",
-      "images": [
-        "images/images.jfif"
-      ]
+      "id": "2",
+      "name": "Vitamin C Serum",
+      "brand": "The Ordinary",
+      "category": "Serum",
+      "stock": 35,
+      "price": 8.7
     },
     {
-      "id": "3125",
-      "customerId": "984d",
-      "professionalId": "2",
-      "date": "2025-08-15",
-      "notes": "jlah fa",
-      "prescription": "afafaafa",
-      "images": [
-        "images/raising-site.png"
-      ]
+      "id": "3",
+      "name": "Daily Moisturizing Lotion",
+      "brand": "Cetaphil",
+      "category": "Moisturizer",
+      "stock": 60,
+      "price": 12.5
     },
     {
-      "id": "c507",
-      "customerId": "1",
-      "professionalId": "2",
-      "date": "2025-08-15",
-      "notes": "fafaf",
-      "prescription": "fafafafaf",
-      "images": []
-    },
+      "id": "4",
+      "name": "Anthelios Mineral Sunscreen",
+      "brand": "La Roche-Posay",
+      "category": "Sunscreen",
+      "stock": 25,
+      "price": 29.99
+    }
+  ],
+  "admins": [
     {
-      "id": "4fe3",
-      "customerId": "1",
-      "professionalId": null,
-      "date": "2025-08-15",
-      "notes": "afaf",
-      "prescription": "afafafa",
-      "images": []
-    },
-    {
-      "id": "b860",
-      "customerId": "1",
-      "professionalId": null,
-      "date": "2025-08-15",
-      "notes": "fafafafafasf",
-      "prescription": "afafaf",
-      "images": []
-    },
-    {
-      "id": "4e02",
-      "customerId": "984d",
-      "professionalId": null,
-      "date": "2025-08-15",
-      "notes": "afaf",
-      "prescription": "afsfasfa",
-      "images": []
-    },
-    {
-      "id": "39ac",
-      "customerId": "984d",
-      "professionalId": null,
-      "date": "2025-08-15",
-      "notes": "fasf",
-      "prescription": "afafa",
-      "images": [
-        "images/footer-bg.png"
-      ]
-    },
-    {
-      "id": "9d7e",
-      "customerId": "1",
-      "professionalId": null,
-      "date": "2025-08-15",
-      "notes": "jlk;fl;f a;ljakf",
-      "prescription": "fklj f;a;jlkf",
-      "images": []
-    },
-    {
-      "id": "a683",
-      "customerId": "1",
-      "professionalId": null,
-      "date": "2025-08-15",
-      "notes": "lkjlahkfa",
-      "prescription": "aafaf",
-      "images": []
-    },
-    {
-      "id": "996a",
-      "customerId": "1",
-      "professionalId": null,
-      "date": "2025-08-15",
-      "notes": "affasf",
-      "prescription": "fafaf",
-      "images": []
-    },
-    {
-      "id": "f407",
-      "customerId": "49ee",
-      "professionalId": null,
-      "date": "2025-08-15",
-      "notes": "akjflf",
-      "prescription": "lk;kjf;lf",
-      "images": []
-    },
-    {
-      "id": "9658",
-      "customerId": "1",
-      "professionalId": null,
-      "date": "2025-08-15",
-      "notes": "afj;jlkfafasf",
-      "prescription": "fa",
-      "images": []
-    },
-    {
-      "id": "1009",
-      "customerId": "49ee",
-      "professionalId": "3",
-      "date": "2025-08-15",
-      "notes": "jfkflafa",
-      "prescription": "kfla;lkjf",
-      "images": []
+      "id": "1",
+      "name": "Super Admin",
+      "email": "admin@clinic.com"
     }
   ]
 }

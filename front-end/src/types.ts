@@ -42,7 +42,7 @@ export interface PatientData {
   signature: string;
   signatureDate: string;
   conclusionNote?: string;
-  assignedProfessionalId?: string | null; // <-- UPDATED
+  assignedProfessionalId?: string | null;
   sessions?: SessionData[];
 }
 
@@ -62,6 +62,24 @@ export interface SessionData {
   notes: string;
   prescription: string;
   images: string[]; // URLs to images
+  reminderDismissed?: boolean;
+}
+
+// Defines the data structure for a product.
+export interface ProductData {
+  id?: string;
+  name: string;
+  brand: string;
+  category: string;
+  stock: number;
+  price: number;
+}
+
+// Defines the data structure for a super admin.
+export interface SuperAdminData {
+  id: string;
+  name: string;
+  email: string;
 }
 
 // =================================================================================
