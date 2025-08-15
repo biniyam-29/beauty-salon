@@ -17,6 +17,7 @@ require_once __DIR__ . '/src/modules/user/user-controller.php';
 require_once __DIR__ . '/src/modules/customers/customer-controller.php';
 require_once __DIR__ . '/src/modules/lookups/lookup-controller.php';
 require_once __DIR__ . '/src/modules/consultations/consultation-controller.php';
+require_once __DIR__ . '/src/modules/products/product-controller.php';
 // Add other controllers as you create them...
 
 use src\modules\auth\AuthController;
@@ -24,6 +25,7 @@ use src\modules\lookups\LookupController;
 use src\modules\customers\CustomerController;
 use src\modules\user\UserController;
 use src\modules\consultations\ConsultationController;
+use src\modules\products\ProductController;
 
 // --- Basic Routing ---
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -50,6 +52,9 @@ switch ($module) {
         break;
     case 'consultations':
         $controller = new ConsultationController();
+        break;
+    case 'products':
+        $controller = new ProductController();
         break;
     default:
         http_response_code(404);
