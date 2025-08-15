@@ -43,6 +43,7 @@ export interface PatientData {
   signatureDate: string;
   conclusionNote?: string;
   assignedProfessionalId?: string;
+  sessions?: SessionData[];
 }
 
 // Defines the data structure for a professional.
@@ -50,6 +51,17 @@ export interface ProfessionalData {
   id: string;
   name: string;
   skills: string[];
+}
+
+// Defines the data structure for a single session with a professional.
+export interface SessionData {
+  id: string;
+  customerId: string;
+  date: string;
+  professionalId: string;
+  notes: string;
+  prescription: string;
+  images: string[]; // URLs to images
 }
 
 // =================================================================================

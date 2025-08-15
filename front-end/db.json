@@ -51,25 +51,26 @@
       "assignedProfessionalId": "2"
     },
     {
-      "id": "be5e",
+      "id": "49ee",
       "name": "Biniyam Birhanu",
       "address": "Addis Ababa",
-      "phone": "0999999999",
+      "phone": "0999999990",
       "city": "Addis Ababa",
       "dateOfBirth": "",
       "email": "bnmmarkos@gmail.com",
       "emergencyContact": "",
       "emergencyPhone": "0973983018",
       "heardFrom": "",
-      "skinType": "Dry",
+      "skinType": "Normal",
       "skinFeel": [
-        "Redish"
+        "Flaky"
       ],
-      "sunExposure": "Excessive",
+      "sunExposure": "Light",
       "foundationType": "",
       "skinHeal": "",
       "bruiseEasily": false,
       "usedProducts": [
+        "Sunscreen",
         "Face scrub"
       ],
       "otherProducts": "",
@@ -79,21 +80,22 @@
       "firstFacial": true,
       "previousTreatmentLikes": "",
       "treatmentGoal": "",
-      "usedRetinoids": false,
+      "usedRetinoids": true,
       "hadFillers": false,
       "acneMedication": false,
       "acneMedicationDetails": "",
       "healthConditions": [
-        "Pregnant"
+        "Arthritis",
+        "Warts"
       ],
       "otherConditions": "",
       "knownAllergies": false,
       "supplements": false,
       "alcoholOrSmoke": false,
       "signature": "Biniyam Markos Birhanu",
-      "signatureDate": "2025-08-14",
+      "signatureDate": "2025-08-15",
       "prescriptionMeds": false,
-      "conclusionNote": "skin",
+      "conclusionNote": "needs skin treatment",
       "assignedProfessionalId": "3"
     }
   ],
@@ -126,6 +128,20 @@
         "Sensitivity",
         "Rosacea",
         "Redness"
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "id": "1",
+      "customerId": "1",
+      "professionalId": "2",
+      "date": "2023-10-28",
+      "notes": "Initial consultation. Client presents with moderate comedonal acne on the T-zone. Skin is otherwise healthy. No signs of inflammation.",
+      "prescription": "Begin with a gentle salicylic acid cleanser twice daily. Follow with a non-comedogenic moisturizer. Follow up in 4 weeks.",
+      "images": [
+        "images/placeholder1.jpg",
+        "images/placeholder2.jpg"
       ]
     }
   ]

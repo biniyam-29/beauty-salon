@@ -13,6 +13,9 @@ import { PhoneNumberCheckPage } from "./pages/reception/PhoneNumberCheckPage";
 import { UserProfilePage } from "./pages/reception/UserProfilePage";
 import { PatientRegistrationWizard } from "./components/PatientRegistrationWizard";
 import { LoginPage } from "./pages/LoginPage";
+import { ProfessionalLoginPage } from "./pages/professionals/ProfessionalLoginPage";
+import { ProfessionalDashboardPage } from "./pages/professionals/ProfessionalDashboardPage";
+import { ProfessionalSessionPage } from "./pages/professionals/ProfessionalSessionPage";
 
 // =================================================================================
 // FILE: src/App.tsx
@@ -28,15 +31,16 @@ const FontLink = () => (
 );
 
 // --- Registration Page Wrapper ---
-// This component is needed to get the 'phone' state passed from the PhoneNumberCheckPage
 const RegistrationPage: React.FC = () => {
   const location = useLocation();
-  const phone = location.state?.phone || "";
   const navigate = useNavigate();
+  const phone = location.state?.phone || "";
 
   const handleRegistrationComplete = (newUser: PatientData) => {
     if (newUser.id) {
-      navigate(`/reception/profile/${newUser.id}`);
+      navigate(`/reception/profile/${newUser.id}`, {
+        state: { fromRegistration: true },
+      });
     }
   };
 
@@ -56,14 +60,31 @@ const App: React.FC = () => (
       <div className="max-w-7xl mx-auto">
         <Router>
           <Routes>
+            {/* Login and Main Welcome */}
             <Route path="/" element={<LoginPage />} />
+            <Route
+              path="/professional-login"
+              element={<ProfessionalLoginPage />}
+            />
             <Route path="/reception" element={<WelcomePage />} />
+
+            {/* Receptionist Routes */}
             <Route path="/reception/find" element={<PhoneNumberCheckPage />} />
             <Route path="/reception/customers" element={<CustomerListPage />} />
             <Route path="/reception/register" element={<RegistrationPage />} />
             <Route
               path="/reception/profile/:customerId"
               element={<UserProfilePage />}
+            />
+
+            {/* Professional Routes */}
+            <Route
+              path="/professional/:professionalId"
+              element={<ProfessionalDashboardPage />}
+            />
+            <Route
+              path="/professional/session/:customerId"
+              element={<ProfessionalSessionPage />}
             />
           </Routes>
         </Router>

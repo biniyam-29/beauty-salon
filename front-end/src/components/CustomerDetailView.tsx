@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import type { PatientData, ProfessionalData } from "../types";
+import type { PatientData, ProfessionalData, SessionData } from "../types";
 import { dbUrl } from "../config";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui";
 
 // =================================================================================
 // FILE: src/components/CustomerDetailView.tsx
@@ -12,26 +13,43 @@ export const CustomerDetailView: React.FC<{ user: PatientData }> = ({
   const [professional, setProfessional] = useState<ProfessionalData | null>(
     null
   );
+  const [sessions, setSessions] = useState<SessionData[]>([]);
 
   useEffect(() => {
-    if (user.assignedProfessionalId) {
-      const fetchProfessional = async () => {
+    const fetchProfessionalAndSessions = async () => {
+      // Fetch assigned professional if there is one
+      if (user.assignedProfessionalId) {
         try {
-          const response = await fetch(
+          const profResponse = await fetch(
             `${dbUrl}/professionals/${user.assignedProfessionalId}`
           );
-          if (!response.ok) {
-            throw new Error("Could not fetch professional's data.");
+          if (profResponse.ok) {
+            const profData = await profResponse.json();
+            setProfessional(profData);
           }
-          const data = await response.json();
-          setProfessional(data);
         } catch (error) {
           console.error("Could not fetch professional", error);
         }
-      };
-      fetchProfessional();
-    }
-  }, [user.assignedProfessionalId]);
+      }
+
+      // Fetch sessions for the customer
+      if (user.id) {
+        try {
+          const sessResponse = await fetch(
+            `${dbUrl}/sessions?customerId=${user.id}`
+          );
+          if (sessResponse.ok) {
+            const sessData = await sessResponse.json();
+            setSessions(sessData);
+          }
+        } catch (error) {
+          console.error("Could not fetch sessions", error);
+        }
+      }
+    };
+
+    fetchProfessionalAndSessions();
+  }, [user.id, user.assignedProfessionalId]);
 
   return (
     <div className="space-y-6">
@@ -97,6 +115,39 @@ export const CustomerDetailView: React.FC<{ user: PatientData }> = ({
             <p className="text-xs text-gray-600">
               {professional.skills.join(", ")}
             </p>
+          </div>
+        </div>
+      )}
+      {sessions.length > 0 && (
+        <div className="border-t border-pink-100 pt-6">
+          <h4 className="text-lg font-bold font-display text-pink-800 mb-4">
+            Session History
+          </h4>
+          <div className="space-y-4">
+            {sessions
+              .sort(
+                (a, b) =>
+                  new Date(b.date).getTime() - new Date(a.date).getTime()
+              )
+              .map((session) => (
+                <Card key={session.id} className="bg-white/90">
+                  <CardHeader>
+                    <CardTitle className="text-base">
+                      Session on {new Date(session.date).toLocaleDateString()}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div>
+                      <h5 className="font-bold text-gray-700">Notes</h5>
+                      <p className="text-gray-600">{session.notes}</p>
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-gray-700">Prescription</h5>
+                      <p className="text-gray-600">{session.prescription}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
           </div>
         </div>
       )}

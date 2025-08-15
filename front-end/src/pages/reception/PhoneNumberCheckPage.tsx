@@ -26,7 +26,7 @@ export const PhoneNumberCheckPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${dbUrl}?phone=${phone}`);
+      const response = await fetch(`${dbUrl}/customers?phone=${phone}`);
       if (!response.ok) throw new Error("Network response was not ok");
       const data: PatientData[] = await response.json();
 
