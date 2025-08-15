@@ -42,7 +42,7 @@ export interface PatientData {
   signature: string;
   signatureDate: string;
   conclusionNote?: string;
-  assignedProfessionalId?: string;
+  assignedProfessionalId?: string | null; // <-- UPDATED
   sessions?: SessionData[];
 }
 

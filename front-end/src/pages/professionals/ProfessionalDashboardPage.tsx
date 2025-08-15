@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link, useLocation } from "react-router-dom";
 import type { PatientData, ProfessionalData } from "../../types";
 import { dbUrl } from "../../config";
 import { Card, CardContent, Button, Input } from "../../components/ui";
@@ -11,6 +11,7 @@ import { Card, CardContent, Button, Input } from "../../components/ui";
 export const ProfessionalDashboardPage: React.FC = () => {
   const { professionalId } = useParams<{ professionalId: string }>();
   const navigate = useNavigate();
+  const location = useLocation(); // FIX: Added useLocation hook to detect navigation changes.
   const [professional, setProfessional] = useState<ProfessionalData | null>(
     null
   );
@@ -21,6 +22,7 @@ export const ProfessionalDashboardPage: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true); // Ensure loading state is reset on re-fetch
       if (!professionalId) {
         setError("No professional ID provided.");
         setIsLoading(false);
@@ -51,8 +53,7 @@ export const ProfessionalDashboardPage: React.FC = () => {
       }
     };
     fetchData();
-  }, [professionalId]);
-  console.log(dbUrl);
+  }, [professionalId, location]); // FIX: Added 'location' to the dependency array to force a re-fetch on navigation.
 
   const filteredCustomers = useMemo(
     () =>
@@ -112,26 +113,28 @@ export const ProfessionalDashboardPage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCustomers.map((customer) => (
-            <Card
+            <Link
+              to={`/professional/session/${customer.id}`}
               key={customer.id}
-              onClick={() => navigate(`/professional/session/${customer.id}`)}
-              className="transition-transform duration-300 hover:scale-105 hover:shadow-pink-300/50"
+              className="no-underline"
             >
-              <CardContent className="pt-6">
-                <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-pink-100 to-rose-200 rounded-full flex items-center justify-center text-pink-600 text-2xl font-bold font-display">
-                    {customer.name?.charAt(0)}
+              <Card className="transition-transform duration-300 hover:scale-105 hover:shadow-pink-300/50 h-full">
+                <CardContent className="pt-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-pink-100 to-rose-200 rounded-full flex items-center justify-center text-pink-600 text-2xl font-bold font-display">
+                      {customer.name?.charAt(0)}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold font-display text-gray-800">
+                        {customer.name}
+                      </h3>
+                      <p className="text-sm text-gray-500">{customer.phone}</p>
+                      <p className="text-sm text-gray-500">{customer.email}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold font-display text-gray-800">
-                      {customer.name}
-                    </h3>
-                    <p className="text-sm text-gray-500">{customer.phone}</p>
-                    <p className="text-sm text-gray-500">{customer.email}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}

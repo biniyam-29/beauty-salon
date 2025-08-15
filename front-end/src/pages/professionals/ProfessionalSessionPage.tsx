@@ -12,6 +12,7 @@ import {
   Textarea,
   CameraIcon,
 } from "../../components/ui";
+import { CustomerDetailView } from "../../components/CustomerDetailView";
 
 // =================================================================================
 // FILE: src/pages/ProfessionalSessionPage.tsx
@@ -21,12 +22,12 @@ import {
 type NewSessionFormProps = {
   customerId: string;
   professionalId: string;
-  onSessionAdded: () => void; // Callback to refresh the session list
+  onProcessComplete: () => void; // Callback to navigate after completion
 };
 const NewSessionForm: React.FC<NewSessionFormProps> = ({
   customerId,
   professionalId,
-  onSessionAdded,
+  onProcessComplete,
 }) => {
   const [notes, setNotes] = useState("");
   const [prescription, setPrescription] = useState("");
@@ -43,8 +44,6 @@ const NewSessionForm: React.FC<NewSessionFormProps> = ({
     e.preventDefault();
     setIsSubmitting(true);
 
-    // In a real app, you would upload images to a storage service and get URLs.
-    // For this demo, we'll just use placeholder names.
     const imageUrls = images.map((file) => `images/${file.name}`);
 
     const newSession: Omit<SessionData, "id"> = {
@@ -57,20 +56,31 @@ const NewSessionForm: React.FC<NewSessionFormProps> = ({
     };
 
     try {
-      const response = await fetch(`${dbUrl}/sessions`, {
+      // Step 1: Save the new session
+      const sessionResponse = await fetch(`${dbUrl}/sessions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newSession),
       });
-      if (!response.ok) throw new Error("Failed to save session.");
+      if (!sessionResponse.ok) throw new Error("Failed to save session.");
 
-      // Clear form and trigger refresh
-      setNotes("");
-      setPrescription("");
-      setImages([]);
-      onSessionAdded();
+      // Step 2: Un-assign the professional from the customer
+      const customerUpdateResponse = await fetch(
+        `${dbUrl}/customers/${customerId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ assignedProfessionalId: "null" }),
+        }
+      );
+      if (!customerUpdateResponse.ok)
+        throw new Error("Failed to update customer assignment.");
+
+      // Step 3: Trigger the completion callback (which will navigate away)
+      onProcessComplete();
     } catch (error) {
-      console.error("Error saving session:", error);
+      console.error("Error completing session process:", error);
+      alert(`An error occurred: ${error}. Please try again.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -79,7 +89,7 @@ const NewSessionForm: React.FC<NewSessionFormProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Add New Session</CardTitle>
+        <CardTitle>Add New Session & Complete</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -131,7 +141,7 @@ const NewSessionForm: React.FC<NewSessionFormProps> = ({
             </div>
           </div>
           <Button type="submit" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? "Saving..." : "Save Session"}
+            {isSubmitting ? "Saving..." : "Save & Discharge Patient"}
           </Button>
         </form>
       </CardContent>
@@ -184,8 +194,8 @@ const SessionHistory: React.FC<{ sessions: SessionData[] }> = ({
                         key={index}
                         className="aspect-square bg-gray-200 rounded-lg flex items-center justify-center"
                       >
-                        <span className="text-xs text-gray-500">
-                          Image Placeholder
+                        <span className="text-xs text-gray-500 text-center p-1">
+                          Placeholder for: {img.split("/").pop()}
                         </span>
                       </div>
                     ))}
@@ -207,6 +217,8 @@ export const ProfessionalSessionPage: React.FC = () => {
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // FIX: Added state to store the professional's ID when the page loads.
+  const [professionalId, setProfessionalId] = useState<string | null>(null);
 
   const fetchSessionData = useCallback(async () => {
     if (!customerId) {
@@ -214,6 +226,7 @@ export const ProfessionalSessionPage: React.FC = () => {
       setIsLoading(false);
       return;
     }
+    setIsLoading(true);
     try {
       const [custResponse, sessResponse] = await Promise.all([
         fetch(`${dbUrl}/customers/${customerId}`),
@@ -228,6 +241,10 @@ export const ProfessionalSessionPage: React.FC = () => {
 
       setCustomer(custData);
       setSessions(sessData);
+      // FIX: Store the professional's ID in state before it gets changed.
+      if (custData.assignedProfessionalId) {
+        setProfessionalId(custData.assignedProfessionalId);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -238,6 +255,16 @@ export const ProfessionalSessionPage: React.FC = () => {
   useEffect(() => {
     fetchSessionData();
   }, [fetchSessionData]);
+
+  const handleProcessComplete = () => {
+    // FIX: Use the stored, stable professional ID for navigation.
+    if (professionalId) {
+      navigate(`/professional/${professionalId}`);
+    } else {
+      // Fallback in case the ID was not set
+      navigate("/professional-login");
+    }
+  };
 
   if (isLoading)
     return (
@@ -257,8 +284,8 @@ export const ProfessionalSessionPage: React.FC = () => {
     );
 
   return (
-    <div className="w-full animate-fade-in">
-      <div className="flex justify-between items-center mb-8">
+    <div className="w-full animate-fade-in space-y-8">
+      <div className="flex justify-between items-center">
         <div>
           <h1 className="text-4xl font-display text-pink-900">
             Patient Session: {customer.name}
@@ -268,22 +295,29 @@ export const ProfessionalSessionPage: React.FC = () => {
           </p>
         </div>
         <Button
-          onClick={() =>
-            navigate(`/professional/${customer.assignedProfessionalId}`)
-          }
+          onClick={() => navigate(`/professional/${professionalId}`)}
           variant="outline"
         >
           Back to Dashboard
         </Button>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Patient Profile</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CustomerDetailView user={customer} />
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-8">
           <h2 className="text-2xl font-display text-pink-800">New Entry</h2>
           <NewSessionForm
             customerId={customerId!}
-            professionalId={customer.assignedProfessionalId!}
-            onSessionAdded={fetchSessionData}
+            professionalId={professionalId!}
+            onProcessComplete={handleProcessComplete}
           />
         </div>
         <div className="space-y-8">
