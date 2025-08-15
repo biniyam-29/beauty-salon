@@ -53,6 +53,11 @@ class ConsultationController implements ControllerInterface {
                 return $this->consultationService->updateConsultation($id, $body);
 
             case 'GET':
+                // GET /consultations/{id}/prescriptions
+                if ($id && $subResource === 'prescriptions') {
+                return $this->prescriptionService->getPrescriptionsForConsultation($id);
+                }
+                
                 // GET /consultations/{id}
                 if ($id) {
                     return $this->consultationService->getConsultationById($id);
