@@ -44,8 +44,8 @@ class CustomerService {
 
             // 1. Insert into `customers` table
             $stmt = $this->conn->prepare(
-                "INSERT INTO customers (full_name, phone, email, address, city, birth_date, emergency_contact_name, emergency_contact_phone, how_heard)
-                 VALUES (:full_name, :phone, :email, :address, :city, :birth_date, :emergency_contact_name, :emergency_contact_phone, :how_heard)"
+                "INSERT INTO customers (full_name, phone, email, address, city, birth_date,assigned_doctor_id, emergency_contact_name, emergency_contact_phone, how_heard)
+                 VALUES (:full_name, :phone, :email, :address, :city, :birth_date, :assigned_doctor_id,:emergency_contact_name, :emergency_contact_phone, :how_heard)"
             );
             $stmt->execute([
                 ':full_name' => $data['full_name'],
@@ -54,6 +54,7 @@ class CustomerService {
                 ':address' => $data['address'] ?? null,
                 ':city' => $data['city'] ?? null,
                 ':birth_date' => $data['birth_date'] ?? null,
+                ':assigned_doctor_id' => $data['assigned_doctor_id'] ?? null,
                 ':emergency_contact_name' => $data['emergency_contact_name'] ?? null,
                 ':emergency_contact_phone' => $data['emergency_contact_phone'] ?? null,
                 ':how_heard' => $data['how_heard'] ?? null
@@ -202,7 +203,7 @@ class CustomerService {
             $this->conn->beginTransaction();
 
             // Update the main `customers` table
-            $this->updateTable('customers', $id, $data, ['full_name', 'phone', 'email', 'address', 'city', 'birth_date', 'emergency_contact_name', 'emergency_contact_phone', 'how_heard'], 'id');
+            $this->updateTable('customers', $id, $data, ['full_name', 'phone', 'email', 'address', 'city', 'birth_date', 'assigned_doctor_id', 'emergency_contact_name', 'emergency_contact_phone', 'how_heard'], 'id');
             
             // Update the `customer_profile` table
             if (isset($data['profile'])) {
