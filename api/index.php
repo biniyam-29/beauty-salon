@@ -18,6 +18,7 @@ require_once __DIR__ . '/src/modules/customers/customer-controller.php';
 require_once __DIR__ . '/src/modules/lookups/lookup-controller.php';
 require_once __DIR__ . '/src/modules/consultations/consultation-controller.php';
 require_once __DIR__ . '/src/modules/products/product-controller.php';
+require_once __DIR__ . '/src/modules/prescriptions/prescription-controller.php';
 // Add other controllers as you create them...
 
 use src\modules\auth\AuthController;
@@ -26,6 +27,7 @@ use src\modules\customers\CustomerController;
 use src\modules\user\UserController;
 use src\modules\consultations\ConsultationController;
 use src\modules\products\ProductController;
+use src\modules\prescriptions\PrescriptionController;
 
 // --- Basic Routing ---
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -56,6 +58,9 @@ switch ($module) {
     case 'products':
         $controller = new ProductController();
         break;
+    case 'prescriptions':
+            $controller = new PrescriptionController();
+            break;
     default:
         http_response_code(404);
         echo json_encode(['message' => 'Invalid main endpoint.']);

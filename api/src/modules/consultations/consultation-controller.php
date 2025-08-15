@@ -5,16 +5,20 @@ require_once __DIR__ . '/../../modules/controller-interface.php';
 require_once __DIR__ . '/consultation-service.php';
 require_once __DIR__ . '/../auth/guards/auth-guard.php';
 require_once __DIR__ . '/../auth/guards/role-guard.php';
+require_once __DIR__ . '/../prescriptions/prescription-service.php';
 
 use src\modules\ControllerInterface;
 use src\modules\auth\guards\AuthGuard;
 use src\modules\auth\guards\RoleGuard;
+use src\modules\prescriptions\PrescriptionService;
 
 class ConsultationController implements ControllerInterface {
     private ConsultationService $consultationService;
+    private PrescriptionService $prescriptionService;
 
     public function __construct() {
         $this->consultationService = new ConsultationService();
+        $this->prescriptionService = new PrescriptionService();
     }
 
     public function handleRequest(array $paths, string $method, ?string $body) {
@@ -30,9 +34,14 @@ class ConsultationController implements ControllerInterface {
         }
 
         $id = $paths[1] ?? null;
+        $subResource = $paths[2] ?? null;
 
         switch ($method) {
             case 'POST':
+                if ($id && $subResource === 'prescriptions') {
+                    return $this->prescriptionService->createPrescription($id, $body);
+                }
+
                 // POST /consultations
                 return $this->consultationService->createConsultation($body);
 
