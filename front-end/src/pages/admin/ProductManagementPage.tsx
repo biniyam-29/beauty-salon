@@ -210,8 +210,9 @@ export const ProductManagementPage: React.FC = () => {
         <h1 className="text-4xl font-display text-pink-900">
           Product Management
         </h1>
-        <Button onClick={() => navigate("/reception")} variant="outline">
-          Back to Welcome
+        {/* FIX: Corrected the navigation to point to the admin dashboard */}
+        <Button onClick={() => navigate("/admin/dashboard")} variant="outline">
+          Back to Admin Dashboard
         </Button>
       </div>
       <div className="flex justify-between items-center mb-6">

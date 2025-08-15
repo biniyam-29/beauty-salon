@@ -26,7 +26,8 @@ export const AdminDashboardPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Link to="/reception/products" className="no-underline">
+        {/* FIX: Corrected the link to point to the correct admin route. */}
+        <Link to="/admin/products" className="no-underline">
           <Card className="transition-all duration-300 hover:scale-105 hover:shadow-pink-300/50 h-full">
             <CardContent className="pt-6 text-center">
               <h2 className="text-2xl font-display text-pink-800 mb-4">
