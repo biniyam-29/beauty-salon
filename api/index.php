@@ -20,6 +20,7 @@ require_once __DIR__ . '/src/modules/consultations/consultation-controller.php';
 require_once __DIR__ . '/src/modules/products/product-controller.php';
 require_once __DIR__ . '/src/modules/prescriptions/prescription-controller.php';
 require_once __DIR__ . '/src/modules/images/image-controller.php';
+require_once __DIR__ . '/src/modules/reminders/reminder-controller.php';
 // Add other controllers as you create them...
 
 use src\modules\auth\AuthController;
@@ -30,6 +31,9 @@ use src\modules\consultations\ConsultationController;
 use src\modules\products\ProductController;
 use src\modules\prescriptions\PrescriptionController;
 use src\modules\images\ImageController;
+use src\modules\reminders\ReminderController;
+
+
 // --- Basic Routing ---
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $paths = explode('/', trim($uri, '/'));
@@ -64,6 +68,9 @@ switch ($module) {
         break;
     case 'images':
         $controller = new ImageController();
+        break;
+    case 'reminders':
+        $controller = new ReminderController();
         break;
     default:
         http_response_code(404);
