@@ -27,12 +27,14 @@ CREATE TABLE IF NOT EXISTS `customers` (
   `address` VARCHAR(255) NULL,
   `city` VARCHAR(100) NULL,
   `birth_date` DATE NULL,
+  `assigned_doctor_id` INT UNSIGNED NULL, 
   `emergency_contact_name` VARCHAR(255) NULL,
   `emergency_contact_phone` VARCHAR(20) NULL,
   `how_heard` VARCHAR(255) NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_customer_doctor` FOREIGN KEY (`assigned_doctor_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
