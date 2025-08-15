@@ -6,19 +6,23 @@ require_once __DIR__ . '/consultation-service.php';
 require_once __DIR__ . '/../auth/guards/auth-guard.php';
 require_once __DIR__ . '/../auth/guards/role-guard.php';
 require_once __DIR__ . '/../prescriptions/prescription-service.php';
+require_once __DIR__ . '/../images/image-service.php';
 
 use src\modules\ControllerInterface;
 use src\modules\auth\guards\AuthGuard;
 use src\modules\auth\guards\RoleGuard;
 use src\modules\prescriptions\PrescriptionService;
+use src\modules\images\ImageService;
 
 class ConsultationController implements ControllerInterface {
     private ConsultationService $consultationService;
     private PrescriptionService $prescriptionService;
+    private ImageService $imageService;
 
     public function __construct() {
         $this->consultationService = new ConsultationService();
         $this->prescriptionService = new PrescriptionService();
+        $this->imageService = new ImageService(); 
     }
 
     public function handleRequest(array $paths, string $method, ?string $body) {
@@ -42,6 +46,14 @@ class ConsultationController implements ControllerInterface {
                     return $this->prescriptionService->createPrescription($id, $body);
                 }
 
+                // POST /consultations/{id}/images
+                if ($id && $subResource === 'images') {
+                    // File uploads are handled via $_FILES, not $body
+                    $file = $_FILES['image'] ?? null;
+                    $description = $_POST['description'] ?? null;
+                    return $this->imageService->uploadImage($id, $file, $description);
+                }
+
                 // POST /consultations
                 return $this->consultationService->createConsultation($body);
 
@@ -56,6 +68,11 @@ class ConsultationController implements ControllerInterface {
                 // GET /consultations/{id}/prescriptions
                 if ($id && $subResource === 'prescriptions') {
                 return $this->prescriptionService->getPrescriptionsForConsultation($id);
+                }
+
+                // GET /consultations/{id}/images
+                if ($id && $subResource === 'images') {
+                    return $this->imageService->getImagesForConsultation($id);
                 }
                 
                 // GET /consultations/{id}
