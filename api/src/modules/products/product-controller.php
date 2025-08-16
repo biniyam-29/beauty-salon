@@ -5,16 +5,20 @@ require_once __DIR__ . '/../../modules/controller-interface.php';
 require_once __DIR__ . '/product-service.php';
 require_once __DIR__ . '/../auth/guards/auth-guard.php';
 require_once __DIR__ . '/../auth/guards/role-guard.php';
+require_once __DIR__ . '/../contraindications/contraindication-service.php';
 
 use src\modules\ControllerInterface;
 use src\modules\auth\guards\AuthGuard;
 use src\modules\auth\guards\RoleGuard;
+use src\modules\contraindications\ContraindicationService;
 
 class ProductController implements ControllerInterface {
     private ProductService $productService;
+    private ContraindicationService $contraindicationService;
 
     public function __construct() {
         $this->productService = new ProductService();
+        $this->contraindicationService = new ContraindicationService(); 
     }
 
     public function handleRequest(array $paths, string $method, ?string $body) {
@@ -30,6 +34,26 @@ class ProductController implements ControllerInterface {
         }
 
         $id = $paths[1] ?? null;
+        $subResource = $paths[2] ?? null;
+        $subResourceId = $paths[3] ?? null;
+
+        if ($id && $subResource === 'contraindications') {
+            if (!RoleGuard::roleGuard('super-admin')) {
+                 http_response_code(403);
+                 return json_encode(['message' => 'Forbidden: Only a super-admin can manage contraindication rules.']);
+            }
+            if ($method === 'POST') {
+                return $this->contraindicationService->addRule($id, $body);
+            }
+
+            if ($method === 'GET') {
+                return $this->contraindicationService->getRulesForProduct($id);
+            }
+            
+            if ($method === 'DELETE' && $subResourceId) {
+                return $this->contraindicationService->deleteRule($id, $subResourceId);
+            }
+        }
 
         switch ($method) {
             case 'POST':

@@ -26,15 +26,15 @@ class ConsultationController implements ControllerInterface {
     }
 
     public function handleRequest(array $paths, string $method, ?string $body) {
-        if (!AuthGuard::authenticate()) {
+        $user = AuthGuard::authenticate('guard');
+        if (!$user) {
             http_response_code(401);
             return json_encode(['message' => 'Unauthorized']);
         }
         
-        // Only doctors and super-admins can manage consultations
         if (!RoleGuard::roleGuard('doctor') && !RoleGuard::roleGuard('super-admin')) {
              http_response_code(403);
-             return json_encode(['message' => 'Forbidden: You do not have permission to manage consultations.']);
+             return json_encode(['message' => 'Forbidden']);
         }
 
         $id = $paths[1] ?? null;
@@ -43,7 +43,7 @@ class ConsultationController implements ControllerInterface {
         switch ($method) {
             case 'POST':
                 if ($id && $subResource === 'prescriptions') {
-                    return $this->prescriptionService->createPrescription($id, $body);
+                    return $this->prescriptionService->createPrescription($id, $body, $user->id);
                 }
 
                 // POST /consultations/{id}/images
