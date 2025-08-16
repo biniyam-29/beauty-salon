@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 // SVG Icon for the 'ai' logo in the corner
 // Defined as a React Functional Component for TypeScript compatibility.
@@ -28,6 +29,17 @@ const AiIcon: React.FC = () => (
 
 // The main App component, also defined as a React.FC for type safety.
 const HomePage: React.FC = () => {
+  const navigate = useNavigate();
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    // Set a timeout to trigger the fade-in effect after the component mounts
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 100); // A short delay to ensure the initial state is rendered first
+    return () => clearTimeout(timer); // Cleanup the timer
+  }, []);
+
   /**
    * Handles the error event for the background image.
    * This function is typed to work with React's synthetic events in TypeScript.
@@ -56,23 +68,32 @@ const HomePage: React.FC = () => {
 
       {/* Content Container */}
       <div className="relative z-10 h-full flex flex-col justify-center items-start text-left p-8 sm:p-12 md:p-16 lg:p-24">
-        {/* Changed the background to a very weak black (10% opacity) */}
-        <div className="max-w-md text-slate-100 p-8 rounded-2xl backdrop-blur-sm border border-white/20 shadow-lg bg-rose-600/20">
-          {/* Main Heading */}
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-4 text-shadow-lg">
+        {/* Added transform properties for the slide-in effect */}
+        <div
+          className={`max-w-3xl text-slate-300 p-8 rounded-2xl backdrop-blur-sm border border-white/20 shadow-lg bg-rose-400/20 transition-all duration-1000 ease-in-out ${
+            isVisible
+              ? "opacity-100 translate-x-0"
+              : "opacity-0 -translate-x-12"
+          }`}
+        >
+          {/* Main Heading - Made slightly bigger */}
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-4 text-shadow-lg">
             Your Expertise,
             <br />
-            Their Glow
+            <p className="text-rose-400">Their Glow</p>
           </h1>
 
-          {/* Subheading */}
-          <p className="text-lg md:text-xl mb-8 text-shadow">
+          {/* Subheading - Made slightly bigger */}
+          <p className="text-xl md:text-2xl mb-8 text-shadow">
             Every treatment you perform helps our clients shine. Thank you for
             your dedication.
           </p>
 
           {/* Call to Action Button */}
-          <button className="bg-pink-700 text-white font-sans font-semibold py-3 px-8 rounded-lg hover:bg-pink-800 transition-colors duration-300 shadow-lg">
+          <button
+            onClick={() => navigate("/login")}
+            className="bg-pink-700 text-white font-sans font-semibold py-3 px-8 rounded-lg hover:bg-pink-800 transition-colors duration-300 shadow-lg"
+          >
             Employee Login
           </button>
         </div>
