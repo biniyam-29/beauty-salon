@@ -20,6 +20,7 @@ import { RemindersPage } from "./pages/reception/RemindersPage";
 import { ProductManagementPage } from "./pages/admin/ProductManagementPage";
 import { AdminLoginPage } from "./pages/admin/AdminLoginPage";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
+import HomePage from "./pages/HomePage";
 
 // =================================================================================
 // FILE: src/App.tsx
@@ -65,8 +66,9 @@ const App: React.FC = () => (
       <div className="max-w-7xl mx-auto">
         <Router>
           <Routes>
+            <Route path="/" element={<HomePage />} />
             {/* Login Routes */}
-            <Route path="/" element={<LoginPage />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route
               path="/professional-login"
               element={<ProfessionalLoginPage />}
