@@ -2,12 +2,12 @@
 namespace src\modules\auth;
 
 require_once 'vendor/autoload.php';
-// CORRECT
 require_once __DIR__ . '/../../config/auth-constants.php';
-require_once 'src/config/db-config.php';
+require_once __DIR__ . '/../../config/Database.php';
 //require_once 'src/common/mailer.php';
 
 use \Firebase\JWT\JWT;
+use \Firebase\JWT\Key;
 use src\common\constants\AuthConstants;
 use src\config\Database;
 use PDO;
@@ -32,8 +32,8 @@ class AuthService{
                 http_response_code(400);
                 return json_encode(["message" => "Bad request! Please fill out all fields!"]);
             }
-            $sql = 'SELECT * FROM users WHERE email = ?';
-            $stmt = $this->conn->prepare($sql);
+            //$sql = 'SELECT * FROM users WHERE email = ?';
+            $stmt = $this->conn->prepare('SELECT * FROM users WHERE email = ?');
             $stmt->execute([$data->email]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -47,11 +47,6 @@ class AuthService{
                 return json_encode(["message" => "Unauthorized! Invalid password!"]);
             }
 
-        //    if (($user['isActive'] == 0) && ($user['role'] !== 'OWNER')) {
-        //         $token = $this->generateToken($user, $user['id']);
-        //         return json_encode(["message" => "New user: please fill out information", "token" => $token, "payload" => $user['id']]);
-        //     }
-
             $token = $this->generateToken($user, $user['id']);
             return json_encode(['token' => $token, 'payload' => $user]);
         } catch (Exception $e) {
@@ -59,20 +54,28 @@ class AuthService{
         }
     }
 
-    public function logOut($id) {
-        $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
-        $token = str_replace("Bearer ", "", $authHeader);
+    public function logOut() {
+        $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+        $token = trim(str_replace("Bearer ", "", $authHeader));
+    
         try {
-            $sql = 'DELETE FROM token WHERE userId = ? AND token = ?';
-            $this->conn->beginTransaction();
+            $decoded = JWT::decode($token, new Key(AuthConstants::$secretKey, 'HS256'));
+            $userId = $decoded->data->id;
+    
+            $sql = 'DELETE FROM `token` WHERE `userId` = ? AND `token` = ?';
             $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$id, $token]);
-            $this->conn->commit();
+            $stmt->execute([$userId, $token]);
+    
+            if ($stmt->rowCount() === 0) {
+                return json_encode(["error" => "No matching token found"]);
+            }
+    
             return json_encode(["message" => "Logged out successfully"]);
         } catch (Exception $e) {
             return json_encode(['error' => $e->getMessage()]);
         }
-    }
+    }    
+    
 
     public function allLogOut($id){
         try{
