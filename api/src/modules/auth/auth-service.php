@@ -4,7 +4,7 @@ namespace src\modules\auth;
 require_once 'vendor/autoload.php';
 require_once __DIR__ . '/../../config/auth-constants.php';
 require_once __DIR__ . '/../../config/Database.php';
-//require_once 'src/common/mailer.php';
+require_once __DIR__ . '/../../common/mailer.php';
 
 use \Firebase\JWT\JWT;
 use \Firebase\JWT\Key;
@@ -12,17 +12,17 @@ use src\common\constants\AuthConstants;
 use src\config\Database;
 use PDO;
 use Faker\Factory as FakerFactory;
-//use src\common\Mailer;
+use src\common\Mailer;
 use Exception;
 
 class AuthService{
     private PDO $conn;
-    //private Mailer $mailer;
+    private Mailer $mailer;
 
     public function __construct() {
         $this->conn = Database::connect();
         AuthConstants::initialize();
-        //$this->mailer = Mailer::getInstance();
+        $this->mailer = Mailer::getInstance();
     }
 
     public function logIn($body) {
@@ -88,90 +88,6 @@ class AuthService{
         }
     }
 
-    public function addDetails($body, $id) {
-        try {
-            $user = $this->fetchData('users', $id);
-            if (!$user) {
-                return json_encode(["message" => "User not found!"]);
-            }
-
-            $data = json_decode($body, true);
-            $data += ['isActive' => true];
-            $data = json_decode(json_encode($data));
-            if(!$body || !isset($data->name) || !isset($data->password) || !isset($data->location)) {
-                return json_encode(["message" => "Invalid request body!"]);
-            }
-            if($user['role'] === 'OWNER') {
-                return json_encode(["message" => "Unauthorized! Only employees can update their details!"]);
-            }
-            if ($user['isActive'] == 1) {
-                return json_encode(["message" => "User already has details!"]);
-            }
-            if (isset($data->password)) {
-                $data->password = password_hash($data->password, PASSWORD_BCRYPT);
-            }
-
-            $fields = [];
-            $values = [];
-
-            foreach ($data as $key => $value) {
-                if ($key === 'id' || $key === 'role' || $key === 'email') {
-                    continue;
-                }
-
-                $fields[] = "$key = COALESCE(NULLIF(?, ''), $key)";
-                $values[] = $value;
-            }
-
-            if (empty($fields)) {
-                return json_encode(['error' => 'No fields to update']);
-            }
-
-            $sql = "UPDATE users SET " . implode(", ", $fields) . " WHERE id = ?";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([...$values, $id]);
-
-            $returnData = $this->fetchData('users', $id);
-            
-            $token = $this->generateToken($returnData, $id);
-
-            return json_encode(['token' => $token, 'payload' => $returnData]);
-            
-        } catch (Exception $e) {
-            return json_encode(['error' => $e->getMessage()]);
-        }
-    }
-
-   public function addUser($body) {
-        try {
-            $data = json_decode($body);
-            if(!$body || !isset($data->name) || !isset($data->email) || !isset($data->phoneNumber)) {
-                return json_encode(["message" => "Invalid request body!"]);
-            }
-            if ($this->fetchData('users', $data->email, "email")) {
-                return json_encode(["message" => "User already exists!"]);
-            }
-
-            $password = FakerFactory::create()->password;
-
-            $id = trim($this->conn->query("SELECT UUID()")->fetchColumn());
-
-            $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
-
-            $this->conn->beginTransaction();
-            $stmt = $this->conn->prepare("INSERT INTO users (id, name, email, phone, password) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$id, $data->name, $data->email, $data->phoneNumber, $hashedPassword]);
-            $this->conn->commit();
-            $emailBody = 'Hello ' . $data->name . ', your account has been created successfully. Your password is ' . $password;
-            $subject = "Welcome to Dire Delivery";
-           // $this->mailer->send($data->email, $subject, $emailBody);
-            
-            return json_encode(["message" => "employee successfully created", 'email' => $data->email, 'password' => $password]);
-        } catch (Exception $e) {
-            return json_encode(['error' => $e->getMessage()]);
-        }
-    }
-
     public function forgotPassword($body) {
         try{
             $data = json_decode($body);
@@ -184,12 +100,12 @@ class AuthService{
                 return json_encode(["message" => "email is not valid!"]);
             }
             $token = bin2hex(random_bytes(32));
-            $sql = "REPLACE INTO password_reset (email, token, createdAt) VALUES (?, ?, ?)";
+            $sql = "REPLACE INTO password_reset (email, token, created_at) VALUES (?, ?, ?)";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([$data->email, $token, date('Y-m-d H:i:s')]);
             $emailBody = "Hello $user[name], click the link below to reset your password: https://dire-delivery.netlify.app/" . addslashes($token);
             $subject = "Reset Password";
-            //$this->mailer->send($data->email, $subject, $emailBody);
+            $this->mailer->send($data->email, $subject, $emailBody);
 
             return json_encode(["message" => "Email sent successfully!"]);
         }catch(Exception $e){
@@ -213,7 +129,7 @@ class AuthService{
                 return json_encode(["message" => "User not found!", "user" => $user, "cachedToken" => $cachedToken]);
             }
             $hashedPassword = password_hash($data->password, PASSWORD_BCRYPT);
-            $sql = "UPDATE users SET password = ? WHERE email = ?";
+            $sql = "UPDATE users SET password_hash = ? WHERE email = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([$hashedPassword, $cachedToken['email']]);
             $sql = "DELETE FROM password_reset WHERE email = ?";

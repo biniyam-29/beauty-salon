@@ -239,3 +239,13 @@ CREATE TABLE IF NOT EXISTS `customer_consents` (
   CONSTRAINT `fk_cc_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- -----------------------------------------------------
+-- Table `password_reset` (NEW)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `password_reset` (
+  `email` VARCHAR(255) NOT NULL COMMENT 'User email associated with the password reset',
+  `token` VARCHAR(255) NOT NULL COMMENT 'Secure password reset token',
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Token creation timestamp',
+  PRIMARY KEY (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
