@@ -11,9 +11,9 @@ use PDOException;
 class Database {
     // --- Database Credentials ---
     private static string $host = 'localhost';
-    private static string $db_name = 'skin_clinic_db';
-    private static string $username = 'clinic_user'; // UPDATED: Using the new, more secure user
-    private static string $password = 'your_secure_password'; 
+    private static string $db_name = 'beauty_db';
+    private static string $username = 'root'; // UPDATED: Using the new, more secure user
+    private static string $password = ''; 
 
     // Holds the single instance of the database connection
     private static ?PDO $conn = null;
