@@ -11,10 +11,10 @@ define('DB_DRIVER', 'mysql');
 define('DB_PATH', __DIR__ . '/../../db/schema.sql');
 
 // MySQL Configuration (for future use)
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'beauty_db');
-define('DB_USER', 'beauty');
-define('DB_PASS', 'passxsaqwer4321'); 
+define('DB_HOST', '');
+define('DB_NAME', '');
+define('DB_USER', '');
+define('DB_PASS', ''); 
 
 // --- ESTABLISH CONNECTION ---
 
