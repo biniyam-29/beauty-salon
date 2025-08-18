@@ -9,6 +9,7 @@ import {
 import type { PatientData } from "./types";
 import { WelcomePage } from "./pages/reception/WelcomePage";
 import { CustomerListPage } from "./pages/reception/CustomerListPage";
+import LandingPage from "./pages/reception/LandingPage";
 import { PhoneNumberCheckPage } from "./pages/reception/PhoneNumberCheckPage";
 import { UserProfilePage } from "./pages/reception/UserProfilePage";
 import { PatientRegistrationWizard } from "./components/PatientRegistrationWizard";
@@ -153,6 +154,15 @@ const App: React.FC = () => (
           element={
             <GradientLayout>
               <RemindersPage />
+            </GradientLayout>
+          }
+        />
+
+        <Route
+          path="/reception/xyz"
+          element={
+            <GradientLayout>
+              <LandingPage />
             </GradientLayout>
           }
         />
