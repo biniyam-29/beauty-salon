@@ -1,7 +1,14 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 // Define the type for an action object
 interface Action {
+  label: string;
+  icon: React.ReactElement;
+  path: string;
+}
+
+interface ActionCardProps {
   label: string;
   icon: React.ReactElement;
 }
@@ -13,7 +20,7 @@ interface LandingPageProps {
 // Mock data to populate the dashboard UI
 const actions: Action[] = [
   {
-    label: "Schedule New Client",
+    label: "Register New Client",
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -32,6 +39,7 @@ const actions: Action[] = [
         <line x1="22" y1="11" x2="16" y2="11"></line>
       </svg>
     ),
+    path: "/reception/register",
   },
   {
     label: "View All Clients",
@@ -53,9 +61,10 @@ const actions: Action[] = [
         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
       </svg>
     ),
+    path: "/reception/customers",
   },
   {
-    label: "Appointments Today",
+    label: "Follow-ups for Today",
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -74,11 +83,12 @@ const actions: Action[] = [
         <path d="M8 13.7V10a4 4 0 0 1 4-4"></path>
       </svg>
     ),
+    path: "/reception/reminders",
   },
 ];
 
 // Reusable component for an action card
-const ActionCard: React.FC<Action> = ({ label, icon }) => (
+const ActionCard: React.FC<ActionCardProps> = ({ label, icon }) => (
   <div className="flex flex-col items-center p-4">
     <div className="flex items-center justify-center w-24 h-24 rounded-full mb-2 bg-rose-100/50 text-rose-600 shadow-md transition-transform hover:scale-105">
       {icon}
@@ -168,11 +178,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogout }) => {
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
               {actions.map((action, index) => (
-                <ActionCard
-                  key={index}
-                  label={action.label}
-                  icon={action.icon}
-                />
+                <Link key={index} to={action.path}>
+                  <ActionCard label={action.label} icon={action.icon} />
+                </Link>
               ))}
             </div>
           </div>

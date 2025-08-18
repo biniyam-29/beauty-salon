@@ -135,19 +135,35 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/reception/customers"
         element={
-          <GradientLayout>
-            <CustomerListPage />
-          </GradientLayout>
+          <RequireAuth>
+            <GradientLayout>
+              <CustomerListPage />
+            </GradientLayout>
+          </RequireAuth>
         }
       />
       <Route
         path="/reception/register"
         element={
-          <GradientLayout>
-            <RegistrationPage />
-          </GradientLayout>
+          <RequireAuth>
+            <GradientLayout>
+              <RegistrationPage />
+            </GradientLayout>
+          </RequireAuth>
         }
       />
+
+      <Route
+        path="/reception/reminders"
+        element={
+          <RequireAuth>
+            <GradientLayout>
+              <RemindersPage />
+            </GradientLayout>
+          </RequireAuth>
+        }
+      />
+
       <Route
         path="/reception/profile/:customerId"
         element={
@@ -156,14 +172,7 @@ const AppRoutes: React.FC = () => {
           </GradientLayout>
         }
       />
-      <Route
-        path="/reception/reminders"
-        element={
-          <GradientLayout>
-            <RemindersPage />
-          </GradientLayout>
-        }
-      />
+
       <Route
         path="/reception/xyz"
         element={
