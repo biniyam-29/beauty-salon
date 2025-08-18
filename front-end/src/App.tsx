@@ -5,6 +5,7 @@ import {
   Route,
   useLocation,
   useNavigate,
+  Navigate,
 } from "react-router-dom";
 import type { PatientData } from "./types";
 import { WelcomePage } from "./pages/reception/WelcomePage";
@@ -66,146 +67,184 @@ const FullscreenLayout: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => <div className="w-screen h-screen m-0 p-0">{children}</div>;
 
-// --- Main App Controller ---
+// --- Routes & App Content ---
+const AppRoutes: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("auth_token");
+    navigate("/login", { replace: true });
+    console.log("User logged out");
+  };
+
+  return (
+    <Routes>
+      {/* Public Home */}
+      <Route
+        path="/"
+        element={
+          <GradientLayout>
+            <HomePage />
+          </GradientLayout>
+        }
+      />
+
+      {/* Login Routes */}
+      <Route
+        path="/login"
+        element={
+          <RedirectIfAuth>
+            <LoginRouteWrapper />
+          </RedirectIfAuth>
+        }
+      />
+      <Route
+        path="/professional-login"
+        element={
+          <FullscreenLayout>
+            <ProfessionalLoginPage />
+          </FullscreenLayout>
+        }
+      />
+      <Route
+        path="/admin-login"
+        element={
+          <FullscreenLayout>
+            <AdminLoginPage />
+          </FullscreenLayout>
+        }
+      />
+
+      {/* Receptionist Routes */}
+      <Route
+        path="/reception"
+        element={
+          <RequireAuth>
+            <LandingPage onLogout={handleLogout} />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/reception/find"
+        element={
+          <GradientLayout>
+            <PhoneNumberCheckPage />
+          </GradientLayout>
+        }
+      />
+      <Route
+        path="/reception/customers"
+        element={
+          <GradientLayout>
+            <CustomerListPage />
+          </GradientLayout>
+        }
+      />
+      <Route
+        path="/reception/register"
+        element={
+          <GradientLayout>
+            <RegistrationPage />
+          </GradientLayout>
+        }
+      />
+      <Route
+        path="/reception/profile/:customerId"
+        element={
+          <GradientLayout>
+            <UserProfilePage />
+          </GradientLayout>
+        }
+      />
+      <Route
+        path="/reception/reminders"
+        element={
+          <GradientLayout>
+            <RemindersPage />
+          </GradientLayout>
+        }
+      />
+      <Route
+        path="/reception/xyz"
+        element={
+          <GradientLayout>
+            <WelcomePage />
+          </GradientLayout>
+        }
+      />
+
+      {/* Professional Routes */}
+      <Route
+        path="/professional/:professionalId"
+        element={
+          <GradientLayout>
+            <ProfessionalDashboardPage />
+          </GradientLayout>
+        }
+      />
+      <Route
+        path="/professional/session/:customerId"
+        element={
+          <GradientLayout>
+            <ProfessionalSessionPage />
+          </GradientLayout>
+        }
+      />
+
+      {/* Admin Routes */}
+      <Route
+        path="/admin/dashboard"
+        element={
+          <GradientLayout>
+            <AdminDashboardPage />
+          </GradientLayout>
+        }
+      />
+      <Route
+        path="/admin/products"
+        element={
+          <GradientLayout>
+            <ProductManagementPage />
+          </GradientLayout>
+        }
+      />
+    </Routes>
+  );
+};
+
+// --- Login Wrapper ---
+const LoginRouteWrapper: React.FC = () => {
+  const navigate = useNavigate();
+
+  return (
+    <FullscreenLayout>
+      <LoginPage
+        navigate={(path) => navigate(path)}
+        onLoginSuccess={() => console.log("Login successful!")}
+      />
+    </FullscreenLayout>
+  );
+};
+
+// --- Auth Wrappers ---
+const RequireAuth = ({ children }: { children: React.ReactElement }) => {
+  const isAuthenticated = !!localStorage.getItem("auth_token");
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+};
+
+const RedirectIfAuth = ({ children }: { children: React.ReactElement }) => {
+  const isAuthenticated = !!localStorage.getItem("auth_token");
+  return isAuthenticated ? <Navigate to="/reception" replace /> : children;
+};
+
+// --- Main App ---
 const App: React.FC = () => (
   <>
     <FontLink />
     <Router>
-      <Routes>
-        {/* Public Home */}
-        <Route
-          path="/"
-          element={
-            <GradientLayout>
-              <HomePage />
-            </GradientLayout>
-          }
-        />
-
-        {/* Login Routes (fullscreen, no gradient) */}
-        <Route
-          path="/login"
-          element={
-            <FullscreenLayout>
-              <LoginPage />
-            </FullscreenLayout>
-          }
-        />
-        <Route
-          path="/professional-login"
-          element={
-            <FullscreenLayout>
-              <ProfessionalLoginPage />
-            </FullscreenLayout>
-          }
-        />
-        <Route
-          path="/admin-login"
-          element={
-            <FullscreenLayout>
-              <AdminLoginPage />
-            </FullscreenLayout>
-          }
-        />
-
-        {/* Receptionist Routes */}
-        <Route
-          path="/reception"
-          element={
-            <GradientLayout>
-              <WelcomePage />
-            </GradientLayout>
-          }
-        />
-        <Route
-          path="/reception/find"
-          element={
-            <GradientLayout>
-              <PhoneNumberCheckPage />
-            </GradientLayout>
-          }
-        />
-        <Route
-          path="/reception/customers"
-          element={
-            <GradientLayout>
-              <CustomerListPage />
-            </GradientLayout>
-          }
-        />
-        <Route
-          path="/reception/register"
-          element={
-            <GradientLayout>
-              <RegistrationPage />
-            </GradientLayout>
-          }
-        />
-        <Route
-          path="/reception/profile/:customerId"
-          element={
-            <GradientLayout>
-              <UserProfilePage />
-            </GradientLayout>
-          }
-        />
-        <Route
-          path="/reception/reminders"
-          element={
-            <GradientLayout>
-              <RemindersPage />
-            </GradientLayout>
-          }
-        />
-
-        <Route
-          path="/reception/xyz"
-          element={
-            <GradientLayout>
-              <LandingPage />
-            </GradientLayout>
-          }
-        />
-
-        {/* Professional Routes */}
-        <Route
-          path="/professional/:professionalId"
-          element={
-            <GradientLayout>
-              <ProfessionalDashboardPage />
-            </GradientLayout>
-          }
-        />
-        <Route
-          path="/professional/session/:customerId"
-          element={
-            <GradientLayout>
-              <ProfessionalSessionPage />
-            </GradientLayout>
-          }
-        />
-
-        {/* Admin Routes */}
-        <Route
-          path="/admin/dashboard"
-          element={
-            <GradientLayout>
-              <AdminDashboardPage />
-            </GradientLayout>
-          }
-        />
-        <Route
-          path="/admin/products"
-          element={
-            <GradientLayout>
-              <ProductManagementPage />
-            </GradientLayout>
-          }
-        />
-      </Routes>
+      <AppRoutes />
     </Router>
 
-    {/* Local styles */}
     <style>{`
       .font-display { font-family: 'Playfair Display', serif; }
       .font-sans { font-family: 'Lato', sans-serif; }

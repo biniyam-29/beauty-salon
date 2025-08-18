@@ -1,23 +1,17 @@
-import {
-  useState,
-  useRef,
-  type FormEvent,
-  type SyntheticEvent,
-} from "react";
+import React, { useState, useRef, type SyntheticEvent, type FormEvent } from "react";
 
-// The main App component.
-const LoginPage = () => {
-  // State to handle and display any errors during the login process.
+// Define the props for the LoginPage component for type safety.
+interface LoginPageProps {
+  navigate: (path: string) => void;
+  onLoginSuccess: () => void;
+}
+
+// The LoginPage component handles the authentication logic.
+const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
   const [error, setError] = useState<string | null>(null);
-  // State to show a loading indicator while the API request is in progress.
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  // State to hold and display the token, which is now sourced from localStorage.
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem("auth_token")
-  );
 
-  // Using useRef to get direct access to the input DOM elements.
-  // This avoids re-renders on every keystroke, improving performance.
+  // Type the refs to specify they will hold HTMLInputElement objects.
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
@@ -27,21 +21,19 @@ const LoginPage = () => {
    */
   const handleImageError = (e: SyntheticEvent<HTMLImageElement, Event>) => {
     const target = e.target as HTMLImageElement;
-    target.onerror = null; // Prevents an infinite loop if the placeholder image also fails.
+    target.onerror = null; // Prevent infinite loops
     target.src =
-      "https://placehold.co/1920x1080/e2e8f0/4a5568?text=Image+Not+Found";
+      "https://placehold.co/1920x1080/e2e8f0/4a5568?text=Salon+Interior";
   };
 
   /**
-   * Handles the form submission event.
-   * Prevents the default form behavior and makes the API call.
-   * @param {FormEvent<HTMLFormElement>} e - The form event.
+   * Handles the form submission and API call.
+   * @param {FormEvent<HTMLFormElement>} e - The form submission event.
    */
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-    setToken(null); // Clear previous token
 
     const email = emailRef.current?.value;
     const password = passwordRef.current?.value;
@@ -53,50 +45,42 @@ const LoginPage = () => {
     }
 
     try {
-      // Perform the POST request to the login endpoint.
       const response = await fetch(
         "http://beauty-api.biniyammarkos.com/auth/login",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         }
       );
 
-      console.log(response);
-
-      // Check if the request was successful.
       if (!response.ok) {
-        // If the server responded with an error, throw an error with the status text.
-        // In a real app, you would parse the error message from the response body.
-        throw new Error(`Login failed with status: ${response.status}`);
+        const errorData = await response.json();
+        // Ensure errorData.message is a string, provide a fallback.
+        const message =
+          typeof errorData.message === "string"
+            ? errorData.message
+            : `Login failed with status: ${response.status}`;
+        throw new Error(message);
       }
 
-      // Parse the JSON response.
       const data = await response.json();
 
-      // Store the token in localStorage. This is a persistent storage solution.
-      if (data && data.token) {
+      if (data && typeof data.token === "string") {
         localStorage.setItem("auth_token", data.token);
-        setToken(data.token); // Also update the state to trigger a re-render.
+        onLoginSuccess(); // Notify parent (App.tsx) of success
+        navigate("/reception"); // Redirect to the protected page
       } else {
-        // Handle cases where the response is missing the token.
         throw new Error("Token not found in response.");
       }
     } catch (err) {
-      // Catch and display any errors that occurred during the fetch operation.
-      console.error("Login Error:", err);
-      // Ensure the error is a string before setting state
+      // Type guard to ensure 'err' is an instance of Error.
       if (err instanceof Error) {
         setError(err.message);
       } else {
         setError("An unexpected error occurred.");
       }
     } finally {
-      // This block always runs, whether the try block succeeds or fails,
-      // ensuring the loading state is reset.
       setIsLoading(false);
     }
   };
@@ -106,7 +90,7 @@ const LoginPage = () => {
       <div className="relative w-full h-full">
         {/* Background Image */}
         <img
-          src="src/assets/login-page-bg.png" // Using a placeholder for now as the original `bgImg` import is a local path.
+          src="https://images.pexels.com/photos/3993303/pexels-photo-3993303.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
           alt="A modern and clean beauty salon interior."
           className="absolute inset-0 w-full h-full object-cover"
           onError={handleImageError}
@@ -122,6 +106,7 @@ const LoginPage = () => {
               Ready to create magic?
             </p>
             <form onSubmit={handleLogin}>
+              {/* Email Input */}
               <div className="relative mb-6">
                 <input
                   id="email"
@@ -129,6 +114,7 @@ const LoginPage = () => {
                   ref={emailRef}
                   className="peer w-full px-4 py-3 rounded-md bg-white/80 text-gray-800 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all"
                   placeholder="Email Address"
+                  required
                 />
                 <label
                   htmlFor="email"
@@ -137,6 +123,7 @@ const LoginPage = () => {
                   Email Address
                 </label>
               </div>
+              {/* Password Input */}
               <div className="relative mb-8">
                 <input
                   id="password"
@@ -144,6 +131,7 @@ const LoginPage = () => {
                   ref={passwordRef}
                   className="peer w-full px-4 py-3 rounded-md bg-white/80 text-gray-800 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all"
                   placeholder="Password"
+                  required
                 />
                 <label
                   htmlFor="password"
@@ -152,6 +140,7 @@ const LoginPage = () => {
                   Password
                 </label>
               </div>
+              {/* Submit Button */}
               <button
                 type="submit"
                 className="w-full bg-pink-700 text-white font-sans font-semibold py-3 px-8 rounded-lg hover:bg-pink-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
@@ -160,18 +149,10 @@ const LoginPage = () => {
                 {isLoading ? "Logging in..." : "Log In"}
               </button>
             </form>
-
-            {/* Display status messages */}
-            {isLoading && (
-              <p className="mt-4 text-white text-center">Loading...</p>
-            )}
+            {/* Error Message Display */}
             {error && (
-              <p className="mt-4 text-red-500 text-center font-bold">{error}</p>
-            )}
-            {token && (
-              <div className="mt-4 p-4 bg-green-200 text-green-800 rounded-lg break-words">
-                <p className="font-bold">Login Successful!</p>
-                <code className="text-xs">{token}</code>
+              <div className="mt-4 p-3 bg-red-200 text-red-800 rounded-lg text-center font-bold">
+                {error}
               </div>
             )}
           </div>
