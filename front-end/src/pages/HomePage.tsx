@@ -24,7 +24,7 @@ const HomePage: React.FC = () => {
   ) => {
     const target = e.target as HTMLImageElement;
     target.onerror = null; // Prevents an infinite loop if the placeholder image also fails to load.
-    target.src = "src/assets/hero-image.png";
+    target.src = "https://images.fresha.com/locations/location-profile-images/759914/923355/4ed81c4e-3877-4286-8df3-93256dd468f0.jpg?class=venue-gallery-large";
   };
 
   return (
@@ -32,7 +32,7 @@ const HomePage: React.FC = () => {
     <div className="fixed inset-0 font-serif">
       {/* Background Image - now covers the full screen */}
       <img
-        src="http://googleusercontent.com/file_content/0"
+        src="https://cdn1.treatwell.net/images/view/v2.i5059481.w1080.h720.xF2EAA46A/"
         alt="A woman applying serum to her face, illustrating radiant skin care."
         className="absolute inset-0 w-full h-full object-cover"
         onError={handleImageError}
@@ -72,8 +72,6 @@ const HomePage: React.FC = () => {
           </button>
         </div>
       </div>
-
-
     </div>
   );
 };

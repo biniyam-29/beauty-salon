@@ -90,7 +90,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
       <div className="relative w-full h-full">
         {/* Background Image */}
         <img
-          src="src/assets/login-page-bg.png"
+          src="https://images.fresha.com/locations/location-profile-images/759914/923355/4ed81c4e-3877-4286-8df3-93256dd468f0.jpg?class=venue-gallery-large"
           alt="A modern and clean beauty salon interior."
           className="absolute inset-0 w-full h-full object-cover"
           onError={handleImageError}
