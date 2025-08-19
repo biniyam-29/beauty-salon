@@ -24,36 +24,44 @@ class UserController implements ControllerInterface {
             return json_encode(['message' => 'Unauthorized']);
         }
         
-        // Only a super-admin can manage users
+        $idOrAction = $paths[1] ?? null;
+        $roleName = $paths[2] ?? null;
+
+        // --- CORRECTED LOGIC ---
+        // 1. Check for the special permission case FIRST.
+        if ($method === 'GET' && $idOrAction === 'role' && $roleName === 'doctor') {
+            if (RoleGuard::roleGuard('reception') || RoleGuard::roleGuard('super-admin')) {
+                $page = $_GET['page'] ?? 1;
+                return $this->userService->getUserByRole($roleName, $page);
+            } else {
+                http_response_code(403);
+                return json_encode(['message' => 'Forbidden: You do not have permission to access this resource.']);
+            }
+        }
+
+        // 2. For ALL OTHER requests to this controller, enforce the default super-admin permission.
         if (!RoleGuard::roleGuard('super-admin')) {
              http_response_code(403);
              return json_encode(['message' => 'Forbidden: You do not have permission to manage users.']);
         }
 
-        $idOrAction = $paths[1] ?? null;
-        $roleName = $paths[2] ?? null;
-
+        // 3. Handle the rest of the admin-only routes.
         switch ($method) {
             case 'POST':
-                // POST /users
                 return $this->userService->createUser($body);
 
             case 'GET':
-                // GET /users/role/{roleName}
                 if ($idOrAction === 'role' && $roleName) {
                     $page = $_GET['page'] ?? 1;
                     return $this->userService->getUserByRole($roleName, $page);
                 }
-                // GET /users/{id}
                 if (is_numeric($idOrAction)) {
                     return $this->userService->getUserById($idOrAction);
                 }
-                // GET /users
                 $page = $_GET['page'] ?? 1;
                 return $this->userService->getAllUsers($page);
 
             case 'PUT':
-                // PUT /users/{id}
                 if (!$idOrAction || !is_numeric($idOrAction)) {
                     http_response_code(400);
                     return json_encode(['error' => 'Bad Request: User ID is required for update.']);
@@ -61,7 +69,6 @@ class UserController implements ControllerInterface {
                 return $this->userService->updateUser($idOrAction, $body);
 
             case 'DELETE':
-                // DELETE /users/{id}
                 if (!$idOrAction || !is_numeric($idOrAction)) {
                     http_response_code(400);
                     return json_encode(['error' => 'Bad Request: User ID is required for delete.']);
