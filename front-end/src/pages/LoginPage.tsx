@@ -1,76 +1,165 @@
-import React from "react";
-import { useNavigate, Link } from "react-router-dom";
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Input,
-  Label,
-} from "../components/ui";
+import React, { useState, useRef, type SyntheticEvent, type FormEvent } from "react";
 
-// =================================================================================
-// FILE: src/pages/LoginPage.tsx
-// =================================================================================
+// Define the props for the LoginPage component for type safety.
+interface LoginPageProps {
+  navigate: (path: string) => void;
+  onLoginSuccess: () => void;
+}
 
-export const LoginPage: React.FC = () => {
-  const navigate = useNavigate();
+// The LoginPage component handles the authentication logic.
+const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Type the refs to specify they will hold HTMLInputElement objects.
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  /**
+   * Handles the error event for the background image.
+   * @param {SyntheticEvent<HTMLImageElement, Event>} e - The synthetic event from React.
+   */
+  const handleImageError = (e: SyntheticEvent<HTMLImageElement, Event>) => {
+    const target = e.target as HTMLImageElement;
+    target.onerror = null; // Prevent infinite loops
+    target.src =
+      "https://placehold.co/1920x1080/e2e8f0/4a5568?text=Salon+Interior";
+  };
+
+  /**
+   * Handles the form submission and API call.
+   * @param {FormEvent<HTMLFormElement>} e - The form submission event.
+   */
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // In a real app, you would have authentication logic here.
-    // For this demo, we'll just navigate to the reception page.
-    navigate("/reception");
+    setIsLoading(true);
+    setError(null);
+
+    const email = emailRef.current?.value;
+    const password = passwordRef.current?.value;
+
+    if (!email || !password) {
+      setError("Please enter both email and password.");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        "http://beauty-api.biniyammarkos.com/auth/login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        // Ensure errorData.message is a string, provide a fallback.
+        const message =
+          typeof errorData.message === "string"
+            ? errorData.message
+            : `Login failed with status: ${response.status}`;
+        throw new Error(message);
+      }
+
+      const data = await response.json();
+
+      if (data && typeof data.token === "string") {
+        localStorage.setItem("auth_token", data.token);
+        onLoginSuccess(); // Notify parent (App.tsx) of success
+        navigate("/reception"); // Redirect to the protected page
+      } else {
+        throw new Error("Token not found in response.");
+      }
+    } catch (err) {
+      // Type guard to ensure 'err' is an instance of Error.
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unexpected error occurred.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="w-full max-w-sm mx-auto animate-fade-in space-y-6">
-      <div className="text-center">
-        <h1 className="text-5xl font-bold font-display text-pink-900">
-          SkinCare Clinic
-        </h1>
-        <p className="text-xl text-gray-600 mt-2">Management Portal</p>
-      </div>
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-pink-800">Receptionist Login</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input id="username" type="text" defaultValue="receptionist" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" defaultValue="password" />
-            </div>
-            <Button type="submit" className="w-full">
-              Login
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-      <div className="text-center space-y-2">
-        <Link
-          to="/professional-login"
-          className="text-sm text-pink-700 hover:underline"
-        >
-          Are you a Professional? Login here
-        </Link>
-        <span className="mx-2 text-gray-400">|</span>
-        <Link
-          to="/admin-login"
-          className="text-sm text-pink-700 hover:underline"
-        >
-          Super Admin Login
-        </Link>
+    <div className="w-screen h-screen font-serif overflow-hidden">
+      <div className="relative w-full h-full">
+        {/* Background Image */}
+        <img
+          src="front-end/src/assets/login-page-bg.png"
+          alt="A modern and clean beauty salon interior."
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={handleImageError}
+        />
+
+        {/* Login Form Container */}
+        <div className="absolute top-0 right-0 h-full w-full md:w-1/2 lg:w-2/5 bg-rose-300/60 flex flex-col justify-center p-8 md:p-12 lg:p-16 backdrop-blur-sm">
+          <div className="w-full max-w-md mx-auto">
+            <h1 className="text-4xl text-white font-bold mb-2 text-center md:text-left drop-shadow-lg">
+              Welcome Back!
+            </h1>
+            <p className="text-white/80 text-lg mb-8 text-center md:text-left drop-shadow-lg">
+              Ready to create magic?
+            </p>
+            <form onSubmit={handleLogin}>
+              {/* Email Input */}
+              <div className="relative mb-6">
+                <input
+                  id="email"
+                  type="email"
+                  ref={emailRef}
+                  className="peer w-full px-4 py-3 rounded-md bg-white/80 text-gray-800 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all"
+                  placeholder="Email Address"
+                  required
+                />
+                <label
+                  htmlFor="email"
+                  className="absolute left-4 -top-6 text-white text-sm transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-6 peer-focus:text-white peer-focus:text-sm"
+                >
+                  Email Address
+                </label>
+              </div>
+              {/* Password Input */}
+              <div className="relative mb-8">
+                <input
+                  id="password"
+                  type="password"
+                  ref={passwordRef}
+                  className="peer w-full px-4 py-3 rounded-md bg-white/80 text-gray-800 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all"
+                  placeholder="Password"
+                  required
+                />
+                <label
+                  htmlFor="password"
+                  className="absolute left-4 -top-6 text-white text-sm transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-6 peer-focus:text-white peer-focus:text-sm"
+                >
+                  Password
+                </label>
+              </div>
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="w-full bg-pink-700 text-white font-sans font-semibold py-3 px-8 rounded-lg hover:bg-pink-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                disabled={isLoading}
+              >
+                {isLoading ? "Logging in..." : "Log In"}
+              </button>
+            </form>
+            {/* Error Message Display */}
+            {error && (
+              <div className="mt-4 p-3 bg-red-200 text-red-800 rounded-lg text-center font-bold">
+                {error}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-// =================================================================================
-// END FILE: src/pages/LoginPage.tsx
-// =================================================================================
+export default LoginPage;

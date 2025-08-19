@@ -1,8 +1,6 @@
 <?php
 namespace src\modules\auth;
 
-// --- DEPENDENCIES ---
-// It's best practice to include all dependencies at the top.
 require_once __DIR__ . '/../../modules/controller-interface.php';
 require_once __DIR__ . '/auth-service.php';
 require_once __DIR__ . '/guards/auth-guard.php';
@@ -54,21 +52,6 @@ class AuthController implements ControllerInterface {
             case 'login':
                 return $this->authService->logIn($body);
 
-            case 'add-user':
-                if (AuthGuard::authenticate() && (RoleGuard::roleGuard('super-admin'))) {
-                    return $this->authService->addUser($body);
-                }
-                http_response_code(403);
-                return json_encode(['message' => 'Forbidden: You do not have permission to add users.']);
-
-            case 'sign-up':
-                // Assuming the path is /auth/sign-up/{userId}
-                if (AuthGuard::authenticate("newUser")) {
-                    return $this->authService->addDetails($body, $userId);
-                }
-                 http_response_code(401);
-                 return json_encode(["message" => "Unauthorized!"]);
-
             case 'forgot-password':
                 return $this->authService->forgotPassword($body);
 
@@ -93,7 +76,7 @@ class AuthController implements ControllerInterface {
         switch ($action) {
             case 'logout':
                 if (AuthGuard::authenticate()) {
-                    return $this->authService->logOut($userId);
+                    return $this->authService->logOut();
                 }
                  http_response_code(401);
                  return json_encode(["message" => "Unauthorized!"]);
