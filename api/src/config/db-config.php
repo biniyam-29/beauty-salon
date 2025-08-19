@@ -8,13 +8,13 @@ define('DB_DRIVER', 'mysql');
 // --- DATABASE CREDENTIALS ---
 
 // SQLite Configuration
-define('DB_PATH', __DIR__ . '/../../db/skin_clinic.sqlite');
+define('DB_PATH', __DIR__ . '/../../db/schema.sql');
 
 // MySQL Configuration (for future use)
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'beauty_db');
-define('DB_USER', 'root');
-define('DB_PASS', ''); // Your MySQL password
+define('DB_USER', 'beauty');
+define('DB_PASS', 'passxsaqwer4321'); 
 
 // --- ESTABLISH CONNECTION ---
 

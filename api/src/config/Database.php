@@ -12,8 +12,8 @@ class Database {
     // --- Database Credentials ---
     private static string $host = 'localhost';
     private static string $db_name = 'beauty_db';
-    private static string $username = 'root'; // UPDATED: Using the new, more secure user
-    private static string $password = ''; 
+    private static string $username = 'beauty'; // UPDATED: Using the new, more secure user
+    private static string $password = 'passxsaqwer4321'; 
 
     // Holds the single instance of the database connection
     private static ?PDO $conn = null;
