@@ -1,35 +1,289 @@
 import React, { useState, useEffect, useMemo } from "react";
-import type { PatientData, ProfessionalData } from "../types";
-// import { dbUrl } from '../config'; // Removed to define locally and ensure correctness
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardTitle,
-  Button,
-  Input,
-  Label,
-  Textarea,
-  RadioGroup,
-  RadioGroupItem,
-  Checkbox,
-  Switch,
-  Progress,
-  cn,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  CheckIcon,
-} from "./ui";
 
-// =================================================================================
-// FILE: src/components/PatientRegistrationWizard.tsx
-// =================================================================================
+// --- Placeholder Types (replace with your actual type definitions) ---
+// The original code imported these from a "../types" file. Defining them here
+// makes the component self-contained and resolves potential TypeScript errors.
+type PatientData = {
+  name: string;
+  address: string;
+  phone: string;
+  city: string;
+  dateOfBirth: string;
+  email: string;
+  emergencyContact: string;
+  emergencyPhone: string;
+  heardFrom: string;
+  skinType: string;
+  skinFeel: string[];
+  sunExposure: string;
+  foundationType: string;
+  skinHeal: string;
+  bruiseEasily: boolean;
+  usedProducts: string[];
+  otherProducts: string;
+  skinConcerns: string[];
+  firstFacial: boolean;
+  previousTreatmentLikes: string;
+  treatmentGoal: string;
+  usedRetinoids: boolean;
+  hadFillers: boolean;
+  acneMedication: boolean;
+  acneMedicationDetails: string;
+  healthConditions: string[];
+  otherConditions: string;
+  knownAllergies: boolean;
+  supplements: boolean;
+  alcoholOrSmoke: boolean;
+  signature: string;
+  signatureDate: string;
+  prescriptionMeds: boolean;
+  // Changed to match the expected prop type from the parent component.
+  assignedProfessionalId?: string | null;
+  conclusionNote?: string;
+  id?: string;
+};
 
-// --- Local Configuration ---
-// This ensures the correct base URL is used for all API calls within this component.
-const dbUrl = "http://localhost:3001";
+type ProfessionalData = {
+  id: number;
+  name: string;
+  skills: string[];
+};
 
-// --- Registration Step Components (Internal to the Wizard) ---
+// --- UI Component Placeholders ---
+// The original code imported these from a "./ui" file which is not available here.
+// These are simple replacements using standard HTML and Tailwind CSS to make the component runnable.
+
+const cn = (...classes: (string | boolean | undefined)[]) =>
+  classes.filter(Boolean).join(" ");
+
+const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({
+  children,
+  className,
+}) => (
+  <div
+    className={cn(
+      "bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20",
+      className
+    )}
+  >
+    {children}
+  </div>
+);
+const CardHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="p-6 border-b border-pink-100">{children}</div>
+);
+const CardContent: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="p-6">{children}</div>
+);
+const CardTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <h2 className="text-2xl font-bold text-pink-800 font-display">{children}</h2>
+);
+
+const Button: React.FC<
+  React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "outline" }
+> = ({ children, variant, ...props }) => (
+  <button
+    className={cn(
+      "inline-flex items-center justify-center rounded-md text-sm font-semibold px-6 py-3 transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5",
+      variant === "outline"
+        ? "bg-transparent border border-pink-600 text-pink-700 hover:bg-pink-50"
+        : "bg-pink-600 text-white hover:bg-pink-700"
+    )}
+    {...props}
+  >
+    {children}
+  </button>
+);
+
+const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (
+  props
+) => (
+  <input
+    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm p-3 bg-white/70"
+    {...props}
+  />
+);
+const Label: React.FC<React.LabelHTMLAttributes<HTMLLabelElement>> = (
+  props
+) => (
+  <label className="block text-sm font-bold text-gray-700 mb-1" {...props} />
+);
+const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement>> = (
+  props
+) => (
+  <textarea
+    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm p-3 bg-white/70"
+    {...props}
+  />
+);
+
+const RadioGroup: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+}> = ({ children, className }) => <div className={className}>{children}</div>;
+const RadioGroupItem: React.FC<
+  React.InputHTMLAttributes<HTMLInputElement> & { children: React.ReactNode }
+> = ({ children, id, ...props }) => (
+  <div className="flex items-center">
+    <input
+      type="radio"
+      id={id}
+      className="h-4 w-4 text-pink-600 border-gray-300 focus:ring-pink-500"
+      {...props}
+    />
+    <label
+      htmlFor={id}
+      className="ml-3 block text-sm font-medium text-gray-700"
+    >
+      {children}
+    </label>
+  </div>
+);
+
+const Checkbox: React.FC<{
+  children: React.ReactNode;
+  id: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}> = ({ children, id, checked, onCheckedChange }) => (
+  <div className="flex items-center">
+    <input
+      id={id}
+      type="checkbox"
+      checked={checked}
+      onChange={(e) => onCheckedChange(e.target.checked)}
+      className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
+    />
+    <label htmlFor={id} className="ml-2 block text-sm text-gray-900">
+      {children}
+    </label>
+  </div>
+);
+
+const Switch: React.FC<{
+  id: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}> = ({ checked, onCheckedChange }) => (
+  <button
+    type="button"
+    onClick={() => onCheckedChange(!checked)}
+    className={cn(
+      "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2",
+      checked ? "bg-pink-600" : "bg-gray-200"
+    )}
+    role="switch"
+    aria-checked={checked}
+  >
+    <span
+      className={cn(
+        "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+        checked ? "translate-x-5" : "translate-x-0"
+      )}
+    />
+  </button>
+);
+
+const Progress: React.FC<{ value: number }> = ({ value }) => (
+  <div className="w-full bg-pink-100 rounded-full h-2.5">
+    <div
+      className="bg-pink-600 h-2.5 rounded-full"
+      style={{ width: `${value}%`, transition: "width 0.5s ease-in-out" }}
+    ></div>
+  </div>
+);
+
+const ChevronLeftIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={cn("h-5 w-5 mr-2", className)}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M15 19l-7-7 7-7"
+    />
+  </svg>
+);
+const ChevronRightIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={cn("h-5 w-5 ml-2", className)}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M9 5l7 7-7 7"
+    />
+  </svg>
+);
+const CheckIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M5 13l4 4L19 7"
+    />
+  </svg>
+);
+
+// --- API Configuration ---
+const API_BASE_URL = "http://beauty-api.biniyammarkos.com";
+
+// --- Data Mappings for API ---
+const skinConcernsMap: { [key: string]: number } = {
+  Wrinkles: 1,
+  Aging: 2,
+  "Dark circle": 3,
+  Acne: 4,
+  "Acne scarring": 5,
+  "Oily skin": 6,
+  Dryness: 7,
+  Hyperpigmentation: 8,
+  "Sun damage": 9,
+  "Flaky skin": 10,
+  Psoriasis: 11,
+  Sensitivity: 12,
+  Rosacea: 13,
+  Melasma: 14,
+  Milia: 15,
+  Redness: 16,
+};
+const healthConditionsMap: { [key: string]: number } = {
+  Cancer: 1,
+  Epilepsy: 2,
+  Diabetes: 3,
+  "Heart Problem": 4,
+  Pregnant: 5,
+  Arthritis: 6,
+  "High Blood Pressure": 7,
+  Hepatitis: 8,
+  Migraines: 9,
+  Eczema: 10,
+  "Thyroid condition": 11,
+  Asthma: 12,
+  "Low blood pressure": 13,
+  "Auto-immune disorders": 14,
+  Insomnia: 15,
+  Warts: 16,
+};
+
+// --- Registration Step Components ---
 type StepProps = {
   formData: PatientData;
   updateFormData: (updates: Partial<PatientData>) => void;
@@ -38,86 +292,84 @@ type StepProps = {
 const PersonalInfoStep: React.FC<StepProps> = ({
   formData,
   updateFormData,
-}) => {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
-      <div className="space-y-2">
-        <Label htmlFor="name">Name *</Label>
-        <Input
-          id="name"
-          value={formData.name}
-          onChange={(e) => updateFormData({ name: e.target.value })}
-          placeholder="Enter full name"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="phone">Phone Number *</Label>
-        <Input
-          id="phone"
-          value={formData.phone}
-          onChange={(e) => updateFormData({ phone: e.target.value })}
-          placeholder="Enter phone number"
-          disabled
-        />
-      </div>
-      <div className="space-y-2 md:col-span-2">
-        <Label htmlFor="address">Address</Label>
-        <Input
-          id="address"
-          value={formData.address}
-          onChange={(e) => updateFormData({ address: e.target.value })}
-          placeholder="Enter street address"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="city">City</Label>
-        <Input
-          id="city"
-          value={formData.city}
-          onChange={(e) => updateFormData({ city: e.target.value })}
-          placeholder="Enter city"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-        <Input
-          id="dateOfBirth"
-          type="date"
-          value={formData.dateOfBirth}
-          onChange={(e) => updateFormData({ dateOfBirth: e.target.value })}
-        />
-      </div>
-      <div className="space-y-2 md:col-span-2">
-        <Label htmlFor="email">Email Address</Label>
-        <Input
-          id="email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => updateFormData({ email: e.target.value })}
-          placeholder="Enter email address"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="emergencyContact">Emergency Contact</Label>
-        <Input
-          id="emergencyContact"
-          value={formData.emergencyContact}
-          onChange={(e) => updateFormData({ emergencyContact: e.target.value })}
-          placeholder="Emergency contact name"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="emergencyPhone">Emergency Phone</Label>
-        <Input
-          id="emergencyPhone"
-          value={formData.emergencyPhone}
-          onChange={(e) => updateFormData({ emergencyPhone: e.target.value })}
-          placeholder="Emergency contact phone"
-        />
-      </div>
+}) => (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
+    <div className="space-y-2">
+      <Label htmlFor="name">Name *</Label>
+      <Input
+        id="name"
+        value={formData.name}
+        onChange={(e) => updateFormData({ name: e.target.value })}
+        placeholder="Enter full name"
+      />
     </div>
-  );
-};
+    <div className="space-y-2">
+      <Label htmlFor="phone">Phone Number *</Label>
+      <Input
+        id="phone"
+        value={formData.phone}
+        onChange={(e) => updateFormData({ phone: e.target.value })}
+        placeholder="Enter phone number"
+        disabled
+      />
+    </div>
+    <div className="space-y-2 md:col-span-2">
+      <Label htmlFor="address">Address</Label>
+      <Input
+        id="address"
+        value={formData.address}
+        onChange={(e) => updateFormData({ address: e.target.value })}
+        placeholder="Enter street address"
+      />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="city">City</Label>
+      <Input
+        id="city"
+        value={formData.city}
+        onChange={(e) => updateFormData({ city: e.target.value })}
+        placeholder="Enter city"
+      />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+      <Input
+        id="dateOfBirth"
+        type="date"
+        value={formData.dateOfBirth}
+        onChange={(e) => updateFormData({ dateOfBirth: e.target.value })}
+      />
+    </div>
+    <div className="space-y-2 md:col-span-2">
+      <Label htmlFor="email">Email Address</Label>
+      <Input
+        id="email"
+        type="email"
+        value={formData.email}
+        onChange={(e) => updateFormData({ email: e.target.value })}
+        placeholder="Enter email address"
+      />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="emergencyContact">Emergency Contact</Label>
+      <Input
+        id="emergencyContact"
+        value={formData.emergencyContact}
+        onChange={(e) => updateFormData({ emergencyContact: e.target.value })}
+        placeholder="Emergency contact name"
+      />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="emergencyPhone">Emergency Phone</Label>
+      <Input
+        id="emergencyPhone"
+        value={formData.emergencyPhone}
+        onChange={(e) => updateFormData({ emergencyPhone: e.target.value })}
+        placeholder="Emergency contact phone"
+      />
+    </div>
+  </div>
+);
 
 const SkinHealthStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
   const handleCheckboxChange = (value: string, checked: boolean) => {
@@ -158,7 +410,9 @@ const SkinHealthStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
               key={feel}
               id={`feel-${feel}`}
               checked={formData.skinFeel.includes(feel)}
-              onCheckedChange={(checked) => handleCheckboxChange(feel, checked)}
+              onCheckedChange={(checked) =>
+                handleCheckboxChange(feel, !!checked)
+              }
             >
               {feel}
             </Checkbox>
@@ -208,24 +462,7 @@ const SkinCareStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
     "Body lotion",
     "Face oil",
   ];
-  const concernOptions = [
-    "Wrinkles",
-    "Dryness",
-    "Rosacea",
-    "Aging",
-    "Hyperpigmentation",
-    "Melasma",
-    "Dark circle",
-    "Sun damage",
-    "Acne",
-    "Flaky skin",
-    "Milia",
-    "Redness",
-    "Acne scarring",
-    "Psoriasis",
-    "Oily skin",
-    "Sensitivity",
-  ];
+  const concernOptions = Object.keys(skinConcernsMap);
 
   const handleProductChange = (value: string, checked: boolean) => {
     const currentArray = formData.usedProducts;
@@ -256,7 +493,7 @@ const SkinCareStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
               id={`prod-${product}`}
               checked={formData.usedProducts.includes(product)}
               onCheckedChange={(checked) =>
-                handleProductChange(product, checked)
+                handleProductChange(product, !!checked)
               }
             >
               {product}
@@ -275,7 +512,7 @@ const SkinCareStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
               id={`concern-${concern}`}
               checked={formData.skinConcerns.includes(concern)}
               onCheckedChange={(checked) =>
-                handleConcernChange(concern, checked)
+                handleConcernChange(concern, !!checked)
               }
             >
               {concern}
@@ -291,24 +528,7 @@ const HealthHistoryStep: React.FC<StepProps> = ({
   formData,
   updateFormData,
 }) => {
-  const healthOptions = [
-    "Cancer",
-    "Arthritis",
-    "Thyroid condition",
-    "Epilepsy",
-    "High Blood Pressure",
-    "Asthma",
-    "Auto-immune disorders",
-    "Warts",
-    "Diabetes",
-    "Hepatitis",
-    "Low blood pressure",
-    "Insomnia",
-    "Heart Problem",
-    "Migraines",
-    "Pregnant",
-    "Eczema",
-  ];
+  const healthOptions = Object.keys(healthConditionsMap);
 
   const handleHealthChange = (value: string, checked: boolean) => {
     const currentArray = formData.healthConditions;
@@ -331,7 +551,7 @@ const HealthHistoryStep: React.FC<StepProps> = ({
               id={`health-${condition}`}
               checked={formData.healthConditions.includes(condition)}
               onCheckedChange={(checked) =>
-                handleHealthChange(condition, checked)
+                handleHealthChange(condition, !!checked)
               }
             >
               {condition}
@@ -371,7 +591,7 @@ const HealthHistoryStep: React.FC<StepProps> = ({
           {formData.acneMedication && (
             <Textarea
               value={formData.acneMedicationDetails}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+              onChange={(e) =>
                 updateFormData({ acneMedicationDetails: e.target.value })
               }
               placeholder="Please share when and which drugs were used"
@@ -398,47 +618,45 @@ const HealthHistoryStep: React.FC<StepProps> = ({
 const CompleteRegistrationStep: React.FC<StepProps> = ({
   formData,
   updateFormData,
-}) => {
-  return (
-    <div className="space-y-6 text-center">
-      <div className="bg-pink-50/50 rounded-lg p-6">
-        <h3 className="font-display text-xl font-bold text-pink-800 mb-2">
-          Registration Summary
-        </h3>
-        <div className="text-sm text-gray-700 space-y-2">
-          <p>
-            <strong>Patient:</strong> {formData.name || "..."}
-          </p>
-          <p>
-            <strong>Phone:</strong> {formData.phone || "..."}
-          </p>
-          <p>
-            <strong>Skin Type:</strong> {formData.skinType || "..."}
-          </p>
-          <p>
-            <strong>Primary Concerns:</strong>{" "}
-            {formData.skinConcerns.join(", ") || "None specified"}
-          </p>
-        </div>
+}) => (
+  <div className="space-y-6 text-center">
+    <div className="bg-pink-50/50 rounded-lg p-6">
+      <h3 className="font-display text-xl font-bold text-pink-800 mb-2">
+        Registration Summary
+      </h3>
+      <div className="text-sm text-gray-700 space-y-2">
+        <p>
+          <strong>Patient:</strong> {formData.name || "..."}
+        </p>
+        <p>
+          <strong>Phone:</strong> {formData.phone || "..."}
+        </p>
+        <p>
+          <strong>Skin Type:</strong> {formData.skinType || "..."}
+        </p>
+        <p>
+          <strong>Primary Concerns:</strong>{" "}
+          {formData.skinConcerns.join(", ") || "None specified"}
+        </p>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="signature">Client Signature *</Label>
-        <Input
-          id="signature"
-          value={formData.signature}
-          onChange={(e) => updateFormData({ signature: e.target.value })}
-          placeholder="Type your full name to sign"
-          className="text-center font-display text-xl"
-        />
-      </div>
-      <p className="text-xs text-gray-500 max-w-md mx-auto">
-        By signing, you agree that you have completed this form to the best of
-        your knowledge and waive all liabilities for any misrepresentation of
-        your health history.
-      </p>
     </div>
-  );
-};
+    <div className="space-y-2">
+      <Label htmlFor="signature">Client Signature *</Label>
+      <Input
+        id="signature"
+        value={formData.signature}
+        onChange={(e) => updateFormData({ signature: e.target.value })}
+        placeholder="Type your full name to sign"
+        className="text-center font-display text-xl"
+      />
+    </div>
+    <p className="text-xs text-gray-500 max-w-md mx-auto">
+      By signing, you agree that you have completed this form to the best of
+      your knowledge and waive all liabilities for any misrepresentation of your
+      health history.
+    </p>
+  </div>
+);
 
 const AssignmentStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
   const [professionals, setProfessionals] = useState<ProfessionalData[]>([]);
@@ -449,10 +667,9 @@ const AssignmentStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
     const fetchProfessionals = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${dbUrl}/professionals`);
-        if (!response.ok) {
+        const response = await fetch(`${API_BASE_URL}/professionals`);
+        if (!response.ok)
           throw new Error(`HTTP error! status: ${response.status}`);
-        }
         const data = await response.json();
         setProfessionals(data);
       } catch (error) {
@@ -465,9 +682,7 @@ const AssignmentStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
   }, []);
 
   const filteredProfessionals = useMemo(() => {
-    if (!searchTerm) {
-      return professionals;
-    }
+    if (!searchTerm) return professionals;
     return professionals.filter((prof) =>
       prof.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -505,12 +720,14 @@ const AssignmentStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
             {filteredProfessionals.map((prof) => (
               <RadioGroupItem
                 key={prof.id}
-                value={prof.id}
+                value={String(prof.id)}
                 name="professional"
                 id={`prof-${prof.id}`}
-                checked={formData.assignedProfessionalId === prof.id}
+                // Compare string to string to fix type mismatch
+                checked={formData.assignedProfessionalId === String(prof.id)}
+                // Store the ID as a string to match the updated PatientData type
                 onChange={() =>
-                  updateFormData({ assignedProfessionalId: prof.id })
+                  updateFormData({ assignedProfessionalId: String(prof.id) })
                 }
               >
                 <div>
@@ -567,12 +784,15 @@ const initialData: PatientData = {
   signature: "",
   signatureDate: "",
   prescriptionMeds: false,
+  assignedProfessionalId: undefined,
+  conclusionNote: "",
 };
 
 type PatientRegistrationWizardProps = {
   phone: string;
   onRegistrationComplete: (newUser: PatientData) => void;
 };
+
 export const PatientRegistrationWizard: React.FC<
   PatientRegistrationWizardProps
 > = ({ phone, onRegistrationComplete }) => {
@@ -630,23 +850,71 @@ export const PatientRegistrationWizard: React.FC<
   const prevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
 
   const handleSubmit = async () => {
-    const newUser = {
-      ...formData,
-      signatureDate: new Date().toISOString().split("T")[0],
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      alert("Authentication error: No token found. Please log in again.");
+      return;
+    }
+
+    // --- DATA TRANSFORMATION LOGIC ---
+    const apiPayload = {
+      full_name: formData.name,
+      phone: formData.phone,
+      email: formData.email,
+      address: formData.address,
+      city: formData.city,
+      birth_date: formData.dateOfBirth,
+      // Convert string ID back to number for the API
+      assigned_doctor_id: formData.assignedProfessionalId
+        ? parseInt(formData.assignedProfessionalId, 10)
+        : undefined,
+      emergency_contact_name: formData.emergencyContact,
+      emergency_contact_phone: formData.emergencyPhone,
+      how_heard: formData.heardFrom,
+      profile: {
+        skin_type: formData.skinType,
+        skin_feel: formData.skinFeel.join(", "),
+        sun_exposure: formData.sunExposure,
+        foundation_type: formData.foundationType,
+        healing_profile: formData.skinHeal,
+        bruises_easily: formData.bruiseEasily ? 1 : 0,
+        used_products: formData.usedProducts,
+        uses_retinoids_acids: formData.usedRetinoids ? 1 : 0,
+        recent_dermal_fillers: formData.hadFillers ? 1 : 0,
+        previous_acne_medication: formData.acneMedicationDetails,
+        known_allergies_details: formData.otherConditions,
+        dietary_supplements: formData.supplements ? "Yes" : "No",
+        other_medication: formData.prescriptionMeds ? "Yes" : "No",
+        drinks_smokes: formData.alcoholOrSmoke ? 1 : 0,
+      },
+      skin_concerns: formData.skinConcerns
+        .map((concern) => skinConcernsMap[concern])
+        .filter((id) => id),
+      health_conditions: formData.healthConditions
+        .map((condition) => healthConditionsMap[condition])
+        .filter((id) => id),
     };
+
     try {
-      const response = await fetch(`${dbUrl}/customers`, {
+      const response = await fetch(`${API_BASE_URL}/customers`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newUser),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(apiPayload),
       });
-      if (!response.ok) throw new Error("Network response was not ok");
+      if (!response.ok) {
+        const errorBody = await response.json();
+        console.error("API Error:", errorBody);
+        throw new Error(`Network response was not ok: ${response.statusText}`);
+      }
       const savedUser = await response.json();
       onRegistrationComplete(savedUser);
     } catch (error) {
       console.error("Failed to save user:", error);
       alert(
-        `Failed to save user: ${error}. Please ensure the server is running.`
+        `Failed to save user: ${error}. Please check the console for details.`
       );
     }
   };
@@ -728,6 +996,6 @@ export const PatientRegistrationWizard: React.FC<
     </div>
   );
 };
-// =================================================================================
-// END FILE: src/components/PatientRegistrationWizard.tsx
-// =================================================================================
+
+// Added a default export to be the main component of the file.
+export default PatientRegistrationWizard;

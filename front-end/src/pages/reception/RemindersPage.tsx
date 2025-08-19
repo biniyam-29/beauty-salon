@@ -143,7 +143,6 @@ export const RemindersPage: React.FC = () => {
                 size="sm"
                 className="absolute top-3 right-3 !p-2 h-auto rounded-full z-10"
                 onClick={() => handleDismiss(customer.latestSession.id)}
-                title="Dismiss Reminder"
               >
                 <CheckIcon className="w-4 h-4" />
               </Button>
