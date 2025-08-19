@@ -1,32 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-// SVG Icon for the 'ai' logo in the corner
-// Defined as a React Functional Component for TypeScript compatibility.
-const AiIcon: React.FC = () => (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 24"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className="bg-black rounded-full p-1"
-  >
-    <text
-      x="50%"
-      y="50%"
-      dy=".3em"
-      textAnchor="middle"
-      fill="white"
-      fontSize="10"
-      fontFamily="Arial, sans-serif"
-      fontWeight="bold"
-    >
-      ai
-    </text>
-  </svg>
-);
-
 // The main App component, also defined as a React.FC for type safety.
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -99,10 +73,7 @@ const HomePage: React.FC = () => {
         </div>
       </div>
 
-      {/* AI icon in the bottom right corner */}
-      <div className="absolute bottom-4 right-4 z-10">
-        <AiIcon />
-      </div>
+
     </div>
   );
 };
