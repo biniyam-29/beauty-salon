@@ -19,9 +19,7 @@ import { ProfessionalLoginPage } from "./pages/professionals/ProfessionalLoginPa
 import { ProfessionalDashboardPage } from "./pages/professionals/ProfessionalDashboardPage";
 import { ProfessionalSessionPage } from "./pages/professionals/ProfessionalSessionPage";
 import { RemindersPage } from "./pages/reception/RemindersPage";
-import { ProductManagementPage } from "./pages/admin/ProductManagementPage";
-import { AdminLoginPage } from "./pages/admin/AdminLoginPage";
-import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
+import AdminDashboardPage  from "./pages/admin/AdminDashboardPage";
 import HomePage from "./pages/HomePage";
 
 // --- Font Import Component ---
@@ -103,14 +101,6 @@ const AppRoutes: React.FC = () => {
         element={
           <FullscreenLayout>
             <ProfessionalLoginPage />
-          </FullscreenLayout>
-        }
-      />
-      <Route
-        path="/admin-login"
-        element={
-          <FullscreenLayout>
-            <AdminLoginPage />
           </FullscreenLayout>
         }
       />
@@ -206,14 +196,6 @@ const AppRoutes: React.FC = () => {
         element={
           <GradientLayout>
             <AdminDashboardPage />
-          </GradientLayout>
-        }
-      />
-      <Route
-        path="/admin/products"
-        element={
-          <GradientLayout>
-            <ProductManagementPage />
           </GradientLayout>
         }
       />

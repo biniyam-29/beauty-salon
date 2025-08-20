@@ -1,50 +1,87 @@
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Card, CardContent, Button } from "../../components/ui";
+import React, { useState } from "react";
+import { initialUsers, adminUser } from "../../data";
+import type { User } from "../../types";
+import { Sidebar } from "../../components/sidebar";
+import { UserProfileOverview } from "../../components/UserProfileOverview";
+import { UserManagementView } from "../../components/UserManagement";
+import { ProductManagementView } from "../../components/ProductManagement";
+import { UserModal } from "../../components/Modals";
 
-// =================================================================================
-// FILE: src/pages/AdminDashboardPage.tsx
-// =================================================================================
+const AdminDashboard: React.FC = () => {
+  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [activeUser, setActiveUser] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isAdminProfileOpen, setIsAdminProfileOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("User Management");
 
-export const AdminDashboardPage: React.FC = () => {
-  const navigate = useNavigate();
+  const handleSaveUser = (updatedUser: User) => {
+    setUsers(users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+    setEditingUser(null);
+    setActiveUser(updatedUser);
+  };
+
+  const handleSaveAdmin = (updatedAdmin: User) => {
+    console.log("Saving admin:", updatedAdmin);
+    setIsAdminProfileOpen(false);
+  };
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case "User Management":
+        return (
+          <UserManagementView
+            users={users}
+            setUsers={setUsers}
+            activeUser={activeUser}
+            setActiveUser={setActiveUser}
+          />
+        );
+      case "Product Management":
+        return <ProductManagementView />;
+      default:
+        return (
+          <UserManagementView
+            users={users}
+            setUsers={setUsers}
+            activeUser={activeUser}
+            setActiveUser={setActiveUser}
+          />
+        );
+    }
+  };
 
   return (
-    <div className="w-full animate-fade-in">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-4xl font-display text-pink-900">
-            Admin Dashboard
-          </h1>
-          <p className="text-xl text-gray-600">
-            Manage clinic-wide settings and data.
-          </p>
-        </div>
-        <Button onClick={() => navigate("/")} variant="outline">
-          Logout
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* FIX: Corrected the link to point to the correct admin route. */}
-        <Link to="/admin/products" className="no-underline">
-          <Card className="transition-all duration-300 hover:scale-105 hover:shadow-pink-300/50 h-full">
-            <CardContent className="pt-6 text-center">
-              <h2 className="text-2xl font-display text-pink-800 mb-4">
-                Product Management
-              </h2>
-              <p className="text-gray-600">
-                Add, edit, and manage the clinic's product inventory.
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
-        {/* You can add more admin-specific cards here in the future */}
-      </div>
+    <div className="bg-gray-50 min-h-screen flex font-sans">
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onAdminProfileClick={() => setIsAdminProfileOpen(true)}
+      />
+      <main className="flex-1 p-8">{renderContent()}</main>
+      {activeTab !== "Product Management" && (
+        <UserProfileOverview
+          activeUser={activeUser}
+          onEditClick={setEditingUser}
+        />
+      )}
+      {editingUser && (
+        <UserModal
+          title="Edit User"
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+          onSave={handleSaveUser}
+        />
+      )}
+      {isAdminProfileOpen && (
+        <UserModal
+          title="Admin Profile"
+          user={adminUser}
+          onClose={() => setIsAdminProfileOpen(false)}
+          onSave={handleSaveAdmin}
+        />
+      )}
     </div>
   );
 };
 
-// =================================================================================
-// END FILE: src/pages/AdminDashboardPage.tsx
-// =================================================================================
+export default AdminDashboard;

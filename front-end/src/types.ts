@@ -1,7 +1,3 @@
-// =================================================================================
-// FILE: src/types.ts
-// =================================================================================
-
 // Defines the main data structure for a patient/customer.
 export interface PatientData {
   id?: string;
@@ -82,6 +78,25 @@ export interface SuperAdminData {
   email: string;
 }
 
-// =================================================================================
-// END FILE: src/types.ts
-// =================================================================================
+// FILE: src/types.ts
+// This file defines the shared data structures for the application.
+
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  role: 'super-admin' | 'doctor' | 'reception' | 'inventory-manager';
+  is_active: boolean;
+  avatar: string;
+}
+
+export interface Product {
+  id: number;
+  name: string;
+  brand: string;
+  description: string;
+  price: number;
+  stock_quantity: number;
+  image: string;
+}
