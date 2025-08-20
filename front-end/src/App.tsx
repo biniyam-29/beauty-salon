@@ -163,14 +163,6 @@ const AppRoutes: React.FC = () => {
         }
       />
 
-      <Route
-        path="/reception/xyz"
-        element={
-          <GradientLayout>
-            <WelcomePage />
-          </GradientLayout>
-        }
-      />
 
       {/* Professional Routes */}
       <Route
@@ -194,9 +186,11 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/admin/dashboard"
         element={
-          <GradientLayout>
+          <RequireAuth>
+            <GradientLayout>
             <AdminDashboardPage />
           </GradientLayout>
+          </RequireAuth>
         }
       />
     </Routes>
