@@ -77,6 +77,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
           case "super-admin":
             navigate("/admin/dashboard");
             break;
+          case "doctor":
+            navigate("/professional");
+            break;
 
           default:
             break;

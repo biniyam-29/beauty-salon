@@ -11,11 +11,9 @@ import type { PatientData } from "./types";
 import { CustomerListPage } from "./pages/reception/CustomerListPage";
 import LandingPage from "./pages/reception/LandingPage";
 import { PhoneNumberCheckPage } from "./pages/reception/PhoneNumberCheckPage";
-import { UserProfilePage } from "./pages/reception/UserProfilePage";
 import { PatientRegistrationWizard } from "./components/PatientRegistrationWizard";
 import LoginPage from "./pages/LoginPage";
-import { ProfessionalLoginPage } from "./pages/professionals/ProfessionalLoginPage";
-import { ProfessionalDashboardPage } from "./pages/professionals/ProfessionalDashboardPage";
+import  ProfessionalDashboardPage  from "./pages/professionals/ProfessionalDashboardPage";
 import { ProfessionalSessionPage } from "./pages/professionals/ProfessionalSessionPage";
 import { RemindersPage } from "./pages/reception/RemindersPage";
 import AdminDashboardPage  from "./pages/admin/AdminDashboardPage";
@@ -96,14 +94,6 @@ const AppRoutes: React.FC = () => {
           </RedirectIfAuth>
         }
       />
-      <Route
-        path="/professional-login"
-        element={
-          <FullscreenLayout>
-            <ProfessionalLoginPage />
-          </FullscreenLayout>
-        }
-      />
 
       {/* Receptionist Routes */}
       <Route
@@ -154,22 +144,15 @@ const AppRoutes: React.FC = () => {
         }
       />
 
-      <Route
-        path="/reception/profile/:customerId"
-        element={
-          <GradientLayout>
-            <UserProfilePage />
-          </GradientLayout>
-        }
-      />
-
       {/* Professional Routes */}
       <Route
-        path="/professional/:professionalId"
+        path="/professional"
         element={
-          <GradientLayout>
-            <ProfessionalDashboardPage />
-          </GradientLayout>
+          <RequireAuth role="doctor">
+            <GradientLayout>
+              <ProfessionalDashboardPage />
+            </GradientLayout>
+          </RequireAuth>
         }
       />
       <Route
@@ -235,7 +218,9 @@ const RedirectIfAuth = ({ children }: { children: React.ReactElement }) => {
       return <Navigate to="/reception" replace />;
     case "super-admin":
       return <Navigate to="/admin/dashboard" replace />;
-    
+    case "doctor":
+      return <Navigate to="/professional" replace />;
+
     default:
       return children;
       break;
