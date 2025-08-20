@@ -68,8 +68,20 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
 
       if (data && typeof data.token === "string") {
         localStorage.setItem("auth_token", data.token);
+        localStorage.setItem("role", data.payload.role);
         onLoginSuccess(); // Notify parent (App.tsx) of success
-        navigate("/reception"); // Redirect to the protected page
+        switch (data.payload.role) {
+          case "reception":
+            navigate("/reception");
+            break;
+          case "super-admin":
+            navigate("/admin/dashboard");
+            break;
+
+          default:
+            break;
+        }
+         // Redirect to the protected page
       } else {
         throw new Error("Token not found in response.");
       }

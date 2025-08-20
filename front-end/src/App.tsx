@@ -8,7 +8,6 @@ import {
   Navigate,
 } from "react-router-dom";
 import type { PatientData } from "./types";
-import { WelcomePage } from "./pages/reception/WelcomePage";
 import { CustomerListPage } from "./pages/reception/CustomerListPage";
 import LandingPage from "./pages/reception/LandingPage";
 import { PhoneNumberCheckPage } from "./pages/reception/PhoneNumberCheckPage";
@@ -71,6 +70,7 @@ const AppRoutes: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("auth_token");
+    localStorage.removeItem("role");
     navigate("/login", { replace: true });
     console.log("User logged out");
   };
@@ -109,7 +109,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/reception"
         element={
-          <RequireAuth>
+          <RequireAuth role="reception">
             <LandingPage onLogout={handleLogout} />
           </RequireAuth>
         }
@@ -125,7 +125,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/reception/customers"
         element={
-          <RequireAuth>
+          <RequireAuth role="reception">
             <GradientLayout>
               <CustomerListPage />
             </GradientLayout>
@@ -135,7 +135,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/reception/register"
         element={
-          <RequireAuth>
+          <RequireAuth role="reception">
             <GradientLayout>
               <RegistrationPage />
             </GradientLayout>
@@ -146,7 +146,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/reception/reminders"
         element={
-          <RequireAuth>
+          <RequireAuth role="reception">
             <GradientLayout>
               <RemindersPage />
             </GradientLayout>
@@ -162,7 +162,6 @@ const AppRoutes: React.FC = () => {
           </GradientLayout>
         }
       />
-
 
       {/* Professional Routes */}
       <Route
@@ -186,10 +185,10 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/admin/dashboard"
         element={
-          <RequireAuth>
+          <RequireAuth role="super-admin">
             <GradientLayout>
-            <AdminDashboardPage />
-          </GradientLayout>
+              <AdminDashboardPage />
+            </GradientLayout>
           </RequireAuth>
         }
       />
@@ -212,14 +211,35 @@ const LoginRouteWrapper: React.FC = () => {
 };
 
 // --- Auth Wrappers ---
-const RequireAuth = ({ children }: { children: React.ReactElement }) => {
+const RequireAuth = ({
+  children,
+  role,
+}: {
+  children: React.ReactElement;
+  role: string;
+}) => {
   const isAuthenticated = !!localStorage.getItem("auth_token");
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  const roleValue = localStorage.getItem("role");
+
+  return isAuthenticated && roleValue === role ? (
+    children
+  ) : (
+    <Navigate to="/login" replace />
+  );
 };
 
+
 const RedirectIfAuth = ({ children }: { children: React.ReactElement }) => {
-  const isAuthenticated = !!localStorage.getItem("auth_token");
-  return isAuthenticated ? <Navigate to="/reception" replace /> : children;
+  switch (localStorage.getItem("role")) {
+    case "reception":
+      return <Navigate to="/reception" replace />;
+    case "super-admin":
+      return <Navigate to="/admin/dashboard" replace />;
+    
+    default:
+      return children;
+      break;
+  }
 };
 
 // --- Main App ---

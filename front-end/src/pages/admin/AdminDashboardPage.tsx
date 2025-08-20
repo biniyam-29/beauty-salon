@@ -6,6 +6,7 @@ import { UserProfileOverview } from "../../components/UserProfileOverview";
 import { UserManagementView } from "../../components/UserManagement";
 import { ProductManagementView } from "../../components/ProductManagement";
 import { UserModal } from "../../components/Modals";
+import { useNavigate } from "react-router-dom";
 
 const AdminDashboard: React.FC = () => {
   const [users, setUsers] = useState<User[]>(initialUsers);
@@ -13,6 +14,7 @@ const AdminDashboard: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isAdminProfileOpen, setIsAdminProfileOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("User Management");
+  const navigate = useNavigate();
 
   const handleSaveUser = (updatedUser: User) => {
     setUsers(users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
@@ -23,6 +25,13 @@ const AdminDashboard: React.FC = () => {
   const handleSaveAdmin = (updatedAdmin: User) => {
     console.log("Saving admin:", updatedAdmin);
     setIsAdminProfileOpen(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("role");
+    navigate("/login", { replace: true });
+    console.log("User logged out");
   };
 
   const renderContent = () => {
@@ -56,6 +65,7 @@ const AdminDashboard: React.FC = () => {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onAdminProfileClick={() => setIsAdminProfileOpen(true)}
+        onLogout={handleLogout}
       />
       <main className="flex-1 p-8">{renderContent()}</main>
       {activeTab !== "Product Management" && (
