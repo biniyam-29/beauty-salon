@@ -16,7 +16,7 @@ import LoginPage from "./pages/LoginPage";
 import  ProfessionalDashboardPage  from "./pages/professionals/ProfessionalDashboardPage";
 import { ProfessionalSessionPage } from "./pages/professionals/ProfessionalSessionPage";
 import { RemindersPage } from "./pages/reception/RemindersPage";
-import AdminDashboardPage  from "./pages/admin/AdminDashboardPage";
+import AssignedPatientsPage from "./pages/admin/AdminDashboardPage";
 import HomePage from "./pages/HomePage";
 
 // --- Font Import Component ---
@@ -170,7 +170,7 @@ const AppRoutes: React.FC = () => {
         element={
           <RequireAuth role="super-admin">
             <GradientLayout>
-              <AdminDashboardPage />
+              <AssignedPatientsPage />
             </GradientLayout>
           </RequireAuth>
         }
