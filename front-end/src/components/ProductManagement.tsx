@@ -6,8 +6,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
-// --- SVG Icon Components ---
-// Defined locally to resolve import issue.
+// TrashIcon component
 const TrashIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -25,6 +24,8 @@ const TrashIcon = () => (
   </svg>
 );
 
+const BASE_URL = "https://beauty-api.biniyammarkos.com";
+
 export const ProductManagementView: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [stockFilter, setStockFilter] = useState("all");
@@ -38,7 +39,7 @@ export const ProductManagementView: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // --- Fetch Products from API ---
+  // --- Fetch Products ---
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
@@ -53,17 +54,14 @@ export const ProductManagementView: React.FC = () => {
 
       try {
         const response = await fetch(
-          `https://beauty-api.biniyammarkos.com/products?page=${currentPage}`,
+          `${BASE_URL}/products?page=${currentPage}`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
 
-        if (!response.ok) {
+        if (!response.ok)
           throw new Error(`Failed to fetch products: ${response.statusText}`);
-        }
 
         const data = await response.json();
         setProducts(data.products || []);
@@ -80,6 +78,7 @@ export const ProductManagementView: React.FC = () => {
     fetchProducts();
   }, [currentPage]);
 
+  // --- Filters ---
   const filteredProducts = useMemo(() => {
     return products
       .filter(
@@ -92,32 +91,38 @@ export const ProductManagementView: React.FC = () => {
         const term = searchTerm.toLowerCase();
         return (
           p.name.toLowerCase().includes(term) ||
-          p.brand.toLowerCase().includes(term) ||
-          p.description.toLowerCase().includes(term)
+          (p.brand && p.brand.toLowerCase().includes(term)) ||
+          (p.description && p.description.toLowerCase().includes(term))
         );
       });
   }, [products, stockFilter, searchTerm]);
 
-  // --- API Handlers ---
+  // --- Add Product ---
   const handleAddProduct = async (
     newProductData: Omit<Product, "id" | "image">
   ) => {
     const token = localStorage.getItem("auth_token");
     try {
-      const response = await fetch(
-        "https://beauty-api.biniyammarkos.com/products",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(newProductData),
-        }
-      );
+      const response = await fetch(`${BASE_URL}/products`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newProductData),
+      });
+
       if (!response.ok) throw new Error("Failed to create product.");
-      const savedProduct = await response.json();
-      setProducts((prev) => [savedProduct, ...prev]);
+      const result = await response.json();
+
+      // Add the new product manually since API returns only productId
+      const newProduct: Product = {
+        ...newProductData,
+        id: Number(result.productId),
+        image: null,
+      };
+
+      setProducts((prev) => [newProduct, ...prev]);
       setIsAddModalOpen(false);
     } catch (err) {
       alert(
@@ -128,6 +133,7 @@ export const ProductManagementView: React.FC = () => {
     }
   };
 
+  // --- Update Product ---
   const handleSaveProduct = async (updatedProduct: Product) => {
     const token = localStorage.getItem("auth_token");
     const payload = {
@@ -137,9 +143,10 @@ export const ProductManagementView: React.FC = () => {
       brand: updatedProduct.brand,
       description: updatedProduct.description,
     };
+
     try {
       const response = await fetch(
-        `https://beauty-api.biniyammarkos.com/products/${updatedProduct.id}`,
+        `${BASE_URL}/products/${updatedProduct.id}`,
         {
           method: "PUT",
           headers: {
@@ -149,9 +156,12 @@ export const ProductManagementView: React.FC = () => {
           body: JSON.stringify(payload),
         }
       );
+
       if (!response.ok) throw new Error("Failed to update product.");
-      setProducts(
-        products.map((p) => (p.id === updatedProduct.id ? updatedProduct : p))
+      await response.json(); // only message returned
+
+      setProducts((prev) =>
+        prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p))
       );
       setEditingProduct(null);
     } catch (err) {
@@ -163,22 +173,22 @@ export const ProductManagementView: React.FC = () => {
     }
   };
 
+  // --- Delete Product ---
   const handleDeleteProduct = async (productId: number) => {
     if (!window.confirm("Are you sure you want to delete this product?"))
       return;
     const token = localStorage.getItem("auth_token");
+
     try {
-      const response = await fetch(
-        `https://beauty-api.biniyammarkos.com/products/${productId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`${BASE_URL}/products/${productId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
       if (!response.ok) throw new Error("Failed to delete product.");
-      setProducts(products.filter((p) => p.id !== productId));
+      await response.json(); // just message
+
+      setProducts((prev) => prev.filter((p) => p.id !== productId));
     } catch (err) {
       alert(
         `Error: ${
@@ -190,6 +200,7 @@ export const ProductManagementView: React.FC = () => {
 
   return (
     <section className="p-6">
+      {/* header */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Product Management</h2>
         <button
@@ -200,6 +211,7 @@ export const ProductManagementView: React.FC = () => {
         </button>
       </div>
 
+      {/* search & filters */}
       <div className="bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-col sm:flex-row items-center gap-4">
         <div className="relative flex-grow w-full sm:w-auto">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -215,39 +227,27 @@ export const ProductManagementView: React.FC = () => {
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-sm font-semibold text-gray-600">Stock:</span>
-          <button
-            onClick={() => setStockFilter("all")}
-            className={`px-3 py-1 text-sm rounded-full ${
-              stockFilter === "all"
-                ? "bg-red-500 text-white"
-                : "bg-gray-200 text-gray-700"
-            }`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => setStockFilter("inStock")}
-            className={`px-3 py-1 text-sm rounded-full ${
-              stockFilter === "inStock"
-                ? "bg-red-500 text-white"
-                : "bg-gray-200 text-gray-700"
-            }`}
-          >
-            In Stock
-          </button>
-          <button
-            onClick={() => setStockFilter("outOfStock")}
-            className={`px-3 py-1 text-sm rounded-full ${
-              stockFilter === "outOfStock"
-                ? "bg-red-500 text-white"
-                : "bg-gray-200 text-gray-700"
-            }`}
-          >
-            Out of Stock
-          </button>
+          {["all", "inStock", "outOfStock"].map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setStockFilter(filter)}
+              className={`px-3 py-1 text-sm rounded-full ${
+                stockFilter === filter
+                  ? "bg-red-500 text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
+            >
+              {filter === "all"
+                ? "All"
+                : filter === "inStock"
+                ? "In Stock"
+                : "Out of Stock"}
+            </button>
+          ))}
         </div>
       </div>
 
+      {/* products */}
       {loading && (
         <p className="text-center text-gray-500">Loading products...</p>
       )}
@@ -290,11 +290,11 @@ export const ProductManagementView: React.FC = () => {
                     </span>
                   </div>
                   <p className="text-sm text-gray-500 mt-2 flex-grow">
-                    {product.description}
+                    {product.description || "No description provided."}
                   </p>
                   <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
                     <p className="text-lg font-bold text-gray-900">
-                      ${product.price.toFixed(2)}
+                      ${Number(product.price).toFixed(2)}
                     </p>
                     <div className="flex space-x-2">
                       <button
@@ -315,6 +315,7 @@ export const ProductManagementView: React.FC = () => {
               </div>
             ))}
           </div>
+
           {filteredProducts.length === 0 && (
             <div className="text-center py-10 bg-white rounded-lg shadow-sm">
               <p className="text-gray-500">
@@ -325,6 +326,7 @@ export const ProductManagementView: React.FC = () => {
         </>
       )}
 
+      {/* pagination */}
       <div className="flex items-center justify-center space-x-2 mt-6">
         <Button
           variant="outline"
@@ -347,6 +349,7 @@ export const ProductManagementView: React.FC = () => {
         </Button>
       </div>
 
+      {/* modals */}
       {editingProduct && (
         <ProductModal
           title="Edit Product"

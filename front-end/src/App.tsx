@@ -169,9 +169,7 @@ const AppRoutes: React.FC = () => {
         path="/admin/dashboard"
         element={
           <RequireAuth role="super-admin">
-            <GradientLayout>
               <AssignedPatientsPage />
-            </GradientLayout>
           </RequireAuth>
         }
       />

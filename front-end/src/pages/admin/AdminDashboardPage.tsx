@@ -8,17 +8,13 @@ import { UserModal } from "../../components/Modals";
 import { useNavigate } from "react-router-dom";
 
 const AdminDashboard: React.FC = () => {
-  // State for the currently selected/active user is managed here
   const [activeUser, setActiveUser] = useState<User | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isAdminProfileOpen, setIsAdminProfileOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("User Management");
   const navigate = useNavigate();
 
-  // This function is now passed to the UserModal for editing
   const handleSaveUser = (updatedUser: User) => {
-    // In a real app, you would likely refetch the user list here
-    // For now, we optimistically update the active user
     if (activeUser && activeUser.id === updatedUser.id) {
       setActiveUser(updatedUser);
     }
@@ -40,29 +36,29 @@ const AdminDashboard: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "User Management":
-        return (
-          <UserManagementView
-          />
-        );
+        return <UserManagementView />;
       case "Product Management":
         return <ProductManagementView />;
       default:
-        return (
-          <UserManagementView
-          />
-        );
+        return <UserManagementView />;
     }
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen flex font-sans">
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onAdminProfileClick={() => setIsAdminProfileOpen(true)}
-        onLogout={handleLogout}
-      />
-      <main className="flex-1">{renderContent()}</main>
+    <div className="h-screen w-screen flex font-sans overflow-hidden overflow-x-hidden bg-gray-50">
+      {/* Sidebar always flush left */}
+      <div className="shrink-0">
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onAdminProfileClick={() => setIsAdminProfileOpen(true)}
+          onLogout={handleLogout}
+        />
+      </div>
+
+      {/* Main content fills the rest */}
+      <main className="flex-1 overflow-y-auto">{renderContent()}</main>
+
       {editingUser && (
         <UserModal
           title="Edit User"
@@ -71,6 +67,7 @@ const AdminDashboard: React.FC = () => {
           onSave={handleSaveUser}
         />
       )}
+
       {isAdminProfileOpen && (
         <UserModal
           title="Admin Profile"

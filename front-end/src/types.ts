@@ -98,5 +98,5 @@ export interface Product {
   description: string;
   price: number;
   stock_quantity: number;
-  image: string;
+  image: any;
 }
