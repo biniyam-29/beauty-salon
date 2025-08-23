@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `email` VARCHAR(255) NOT NULL UNIQUE,
   `password_hash` VARCHAR(255) NOT NULL,
   `phone` VARCHAR(20) NULL,
-  `role` ENUM('super-admin', 'doctor', 'reception', 'inventory-manager') NOT NULL,
+  `role` ENUM('super-admin', 'admin','doctor', 'reception', 'inventory-manager') NOT NULL,
   `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
