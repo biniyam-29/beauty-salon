@@ -18,7 +18,6 @@ class UserController implements ControllerInterface {
     }
 
     public function handleRequest(array $paths, string $method, ?string $body) {
-        // All user management routes require authentication
         if (!AuthGuard::authenticate()) {
             http_response_code(401);
             return json_encode(['message' => 'Unauthorized']);
@@ -28,8 +27,6 @@ class UserController implements ControllerInterface {
         $roleName = $paths[2] ?? null;
         $param = $paths[2] ?? null;
 
-        // --- CORRECTED LOGIC ---
-        // 1. Check for the special permission case FIRST.
         if ($method === 'GET' && $idOrAction === 'role' && $roleName === 'doctor') {
             if (RoleGuard::roleGuard('reception') || RoleGuard::roleGuard('super-admin')) {
                 $page = $_GET['page'] ?? 1;
@@ -40,13 +37,11 @@ class UserController implements ControllerInterface {
             }
         }
 
-        // 2. For ALL OTHER requests to this controller, enforce the default super-admin permission.
         if (!RoleGuard::roleGuard('super-admin')) {
              http_response_code(403);
              return json_encode(['message' => 'Forbidden: You do not have permission to manage users.']);
         }
 
-        // 3. Handle the rest of the admin-only routes.
         switch ($method) {
             case 'POST':
                 return $this->userService->createUser($body);
