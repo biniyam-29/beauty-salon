@@ -152,10 +152,14 @@ CREATE TABLE IF NOT EXISTS `prescriptions` (
   `product_id` INT UNSIGNED NOT NULL,
   `quantity` INT UNSIGNED NOT NULL DEFAULT 1,
   `instructions` TEXT NULL,
+  `status` ENUM('prescribed', 'sold', 'cancelled') NOT NULL DEFAULT 'prescribed', -- ADD THIS
+  `checkout_by_user_id` INT UNSIGNED NULL, -- ADD THIS
+  `checkout_at` TIMESTAMP NULL, -- ADD THIS
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_pre_consultation` FOREIGN KEY (`consultation_id`) REFERENCES `consultations`(`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_pre_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE RESTRICT
+  CONSTRAINT `fk_pre_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_pre_checkout_user` FOREIGN KEY (`checkout_by_user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL -- ADD THIS
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------

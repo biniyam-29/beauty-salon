@@ -28,6 +28,7 @@ require_once __DIR__ . '/src/modules/products/product-controller.php';
 require_once __DIR__ . '/src/modules/prescriptions/prescription-controller.php';
 require_once __DIR__ . '/src/modules/images/image-controller.php';
 require_once __DIR__ . '/src/modules/reminders/reminder-controller.php';
+require_once __DIR__ . '/src/modules/checkout/checkout-controller.php';
 // Add other controllers as you create them...
 
 use src\modules\auth\AuthController;
@@ -39,6 +40,7 @@ use src\modules\products\ProductController;
 use src\modules\prescriptions\PrescriptionController;
 use src\modules\images\ImageController;
 use src\modules\reminders\ReminderController;
+use src\modules\checkout\CheckoutController;
 
 
 // --- Basic Routing ---
@@ -78,6 +80,9 @@ switch ($module) {
         break;
     case 'reminders':
         $controller = new ReminderController();
+        break;
+    case 'checkout':
+        $controller = new CheckoutController();
         break;
     default:
         http_response_code(404);
