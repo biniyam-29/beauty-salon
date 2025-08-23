@@ -25,7 +25,8 @@ class CustomerController implements ControllerInterface {
 
     public function handleRequest(array $paths, string $method, ?string $body) {
         // All customer routes should be protected
-        if (!AuthGuard::authenticate()) {
+        $user = AuthGuard::authenticate('guard');
+        if (!$user) {
             http_response_code(401);
             return json_encode(['message' => 'Unauthorized']);
         }
@@ -63,6 +64,16 @@ class CustomerController implements ControllerInterface {
                 // GET /customers/{id}/consultations
                 if ($id && $subResource === 'consultations') {
                     return $this->consultationService->getConsultationsForCustomer($id);
+                }
+
+                if ($id === 'assigned') {
+                    if (RoleGuard::roleGuard('doctor')) {
+                        $page = $_GET['page'] ?? 1;
+                        return $this->customerService->getAllAssignedCustomers($user->id, $page);
+                    } else {
+                        http_response_code(403);
+                        return json_encode(['message' => 'Forbidden: This endpoint is for doctors only.']);
+                    }
                 }
                 
                 // GET /customers/{id}

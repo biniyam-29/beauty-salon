@@ -142,6 +142,49 @@ class CustomerService {
         }
     }
 
+/**
+     * Gets all customers assigned to the currently logged-in doctor.
+     *
+     * @param int $doctorId The ID of the logged-in doctor.
+     * @param int $page The current page for pagination.
+     * @return string JSON encoded list of customers.
+     */
+    public function getAllAssignedCustomers(int $doctorId, $page = 1): string {
+        $limit = 10;
+        $offset = max(0, ($page - 1)) * $limit;
+
+        try {
+            // Get the paginated list of customers assigned to this doctor
+            $stmt = $this->conn->prepare(
+                "SELECT id, full_name, phone, email 
+                 FROM customers 
+                 WHERE assigned_doctor_id = :doctorId 
+                 ORDER BY created_at DESC 
+                 LIMIT :limit OFFSET :offset"
+            );
+            $stmt->bindValue(':doctorId', $doctorId, PDO::PARAM_INT);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->execute();
+            $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Get the total count of customers assigned to this doctor for pagination
+            $totalStmt = $this->conn->prepare("SELECT COUNT(*) FROM customers WHERE assigned_doctor_id = :doctorId");
+            $totalStmt->bindValue(':doctorId', $doctorId, PDO::PARAM_INT);
+            $totalStmt->execute();
+            $totalCustomers = $totalStmt->fetchColumn();
+
+            return json_encode([
+                'customers' => $customers,
+                'totalPages' => ceil($totalCustomers / $limit),
+                'currentPage' => (int)$page
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+        }
+    }
+
     /**
      * Fetches a single customer's complete profile by their ID.
      */
