@@ -38,12 +38,7 @@ const AdminDashboard: React.FC = () => {
     switch (activeTab) {
       case "User Management":
         return (
-          <UserManagementView
-            users={users}
-            setUsers={setUsers}
-            activeUser={activeUser}
-            setActiveUser={setActiveUser}
-          />
+          <UserManagementView/>
         );
       case "Product Management":
         return <ProductManagementView />;
