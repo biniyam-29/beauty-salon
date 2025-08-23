@@ -28,7 +28,7 @@ class ProductController implements ControllerInterface {
         }
         
         // Only super-admins and inventory managers can create, update, or delete products
-        if ($method !== 'GET' && !RoleGuard::roleGuard('super-admin') && !RoleGuard::roleGuard('inventory-manager')) {
+        if ($method !== 'GET' && !RoleGuard::roleGuard('super-admin') && !RoleGuard::roleGuard('admin')) {
              http_response_code(403);
              return json_encode(['message' => 'Forbidden: You do not have permission to manage products.']);
         }
