@@ -21,6 +21,50 @@ class UserService {
         $this->mailer = Mailer::getInstance();
     }
 
+
+        /**
+     * Searches for users by name, email, or phone with pagination.
+     */
+    public function searchUsers(string $searchTerm, $page = 1): string {
+        $limit = 10;
+        $offset = max(0, ($page - 1)) * $limit;
+        $searchPattern = '%' . $searchTerm . '%';
+
+        try {
+            // Query to find matching users
+            $stmt = $this->conn->prepare(
+                "SELECT id, name, email, role, phone FROM users 
+                 WHERE (name LIKE :searchTerm OR email LIKE :searchTerm OR phone LIKE :searchTerm) AND is_active = 1 
+                 LIMIT :limit OFFSET :offset"
+            );
+            $stmt->bindValue(':searchTerm', $searchPattern, PDO::PARAM_STR);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->execute();
+            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Query to get the total count of matching users for pagination
+            $totalStmt = $this->conn->prepare(
+                "SELECT COUNT(*) FROM users 
+                 WHERE (name LIKE :searchTerm OR email LIKE :searchTerm OR phone LIKE :searchTerm) AND is_active = 1"
+            );
+            $totalStmt->bindValue(':searchTerm', $searchPattern, PDO::PARAM_STR);
+            $totalStmt->execute();
+            $totalUsers = $totalStmt->fetchColumn();
+
+            return json_encode([
+                'users' => $users,
+                'totalPages' => ceil($totalUsers / $limit),
+                'currentPage' => (int)$page,
+                'totalUsers' => (int)$totalUsers
+            ]);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+        }
+    }
+
     /**
      * Creates a new user (staff member).
      */

@@ -26,6 +26,7 @@ class UserController implements ControllerInterface {
         
         $idOrAction = $paths[1] ?? null;
         $roleName = $paths[2] ?? null;
+        $param = $paths[2] ?? null;
 
         // --- CORRECTED LOGIC ---
         // 1. Check for the special permission case FIRST.
@@ -51,6 +52,11 @@ class UserController implements ControllerInterface {
                 return $this->userService->createUser($body);
 
             case 'GET':
+                if ($idOrAction === 'search' && $param) {
+                    $page = $_GET['page'] ?? 1;
+                    return $this->userService->searchUsers($param, $page);
+                }
+
                 if ($idOrAction === 'role' && $roleName) {
                     $page = $_GET['page'] ?? 1;
                     return $this->userService->getUserByRole($roleName, $page);
