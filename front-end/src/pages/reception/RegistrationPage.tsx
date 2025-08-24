@@ -3,10 +3,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import type { PatientData } from "../../types";
 import { PatientRegistrationWizard } from "../../components/PatientRegistrationWizard";
 
-// =================================================================================
-// FILE: src/pages/RegistrationPage.tsx
-// =================================================================================
-
 // This component acts as a wrapper to pass props from the router to the wizard
 const RegistrationPage: React.FC = () => {
   const location = useLocation();
@@ -34,7 +30,3 @@ const RegistrationPage: React.FC = () => {
 };
 
 export default RegistrationPage;
-
-// =================================================================================
-// END FILE: src/pages/RegistrationPage.tsx
-// =================================================================================
