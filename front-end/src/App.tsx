@@ -10,13 +10,12 @@ import {
 import type { PatientData } from "./types";
 import { CustomerListPage } from "./pages/reception/CustomerListPage";
 import LandingPage from "./pages/reception/LandingPage";
-import { PhoneNumberCheckPage } from "./pages/reception/PhoneNumberCheckPage";
 import { PatientRegistrationWizard } from "./components/PatientRegistrationWizard";
 import LoginPage from "./pages/LoginPage";
 import  ProfessionalDashboardPage  from "./pages/professionals/ProfessionalDashboardPage";
 import { ProfessionalSessionPage } from "./pages/professionals/ProfessionalSessionPage";
 import { RemindersPage } from "./pages/reception/RemindersPage";
-import AdminDashboardPage  from "./pages/admin/AdminDashboardPage";
+import AssignedPatientsPage from "./pages/admin/AdminDashboardPage";
 import HomePage from "./pages/HomePage";
 
 // --- Font Import Component ---
@@ -105,14 +104,6 @@ const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/reception/find"
-        element={
-          <GradientLayout>
-            <PhoneNumberCheckPage />
-          </GradientLayout>
-        }
-      />
-      <Route
         path="/reception/customers"
         element={
           <RequireAuth role="reception">
@@ -169,9 +160,7 @@ const AppRoutes: React.FC = () => {
         path="/admin/dashboard"
         element={
           <RequireAuth role="super-admin">
-            <GradientLayout>
-              <AdminDashboardPage />
-            </GradientLayout>
+              <AssignedPatientsPage />
           </RequireAuth>
         }
       />

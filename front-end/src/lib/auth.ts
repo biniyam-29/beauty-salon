@@ -1,6 +1,7 @@
 export type UserRole =
   | "reception"
   | "professional"
+  | "doctor"
   | "inventory-manager"
   | "super-admin";
 

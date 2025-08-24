@@ -1,15 +1,13 @@
 import React, { useState } from "react";
-import { initialUsers, adminUser } from "../../data";
+import { adminUser } from "../../data";
 import type { User } from "../../types";
 import { Sidebar } from "../../components/sidebar";
-import { UserProfileOverview } from "../../components/UserProfileOverview";
 import { UserManagementView } from "../../components/UserManagement";
 import { ProductManagementView } from "../../components/ProductManagement";
 import { UserModal } from "../../components/Modals";
 import { useNavigate } from "react-router-dom";
 
 const AdminDashboard: React.FC = () => {
-  const [users, setUsers] = useState<User[]>(initialUsers);
   const [activeUser, setActiveUser] = useState<User | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isAdminProfileOpen, setIsAdminProfileOpen] = useState(false);
@@ -17,9 +15,10 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   const handleSaveUser = (updatedUser: User) => {
-    setUsers(users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+    if (activeUser && activeUser.id === updatedUser.id) {
+      setActiveUser(updatedUser);
+    }
     setEditingUser(null);
-    setActiveUser(updatedUser);
   };
 
   const handleSaveAdmin = (updatedAdmin: User) => {
@@ -37,43 +36,29 @@ const AdminDashboard: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "User Management":
-        return (
-          <UserManagementView
-            users={users}
-            setUsers={setUsers}
-            activeUser={activeUser}
-            setActiveUser={setActiveUser}
-          />
-        );
+        return <UserManagementView />;
       case "Product Management":
         return <ProductManagementView />;
       default:
-        return (
-          <UserManagementView
-            users={users}
-            setUsers={setUsers}
-            activeUser={activeUser}
-            setActiveUser={setActiveUser}
-          />
-        );
+        return <UserManagementView />;
     }
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen flex font-sans">
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onAdminProfileClick={() => setIsAdminProfileOpen(true)}
-        onLogout={handleLogout}
-      />
-      <main className="flex-1 p-8">{renderContent()}</main>
-      {activeTab !== "Product Management" && (
-        <UserProfileOverview
-          activeUser={activeUser}
-          onEditClick={setEditingUser}
+    <div className="h-screen w-screen flex font-sans overflow-hidden overflow-x-hidden bg-gray-50">
+      {/* Sidebar always flush left */}
+      <div className="shrink-0">
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onAdminProfileClick={() => setIsAdminProfileOpen(true)}
+          onLogout={handleLogout}
         />
-      )}
+      </div>
+
+      {/* Main content fills the rest */}
+      <main className="flex-1 overflow-y-auto">{renderContent()}</main>
+
       {editingUser && (
         <UserModal
           title="Edit User"
@@ -82,6 +67,7 @@ const AdminDashboard: React.FC = () => {
           onSave={handleSaveUser}
         />
       )}
+
       {isAdminProfileOpen && (
         <UserModal
           title="Admin Profile"

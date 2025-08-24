@@ -69,6 +69,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
       if (data && typeof data.token === "string") {
         localStorage.setItem("auth_token", data.token);
         localStorage.setItem("role", data.payload.role);
+        localStorage.setItem("user", JSON.stringify(data.payload));
         onLoginSuccess(); // Notify parent (App.tsx) of success
         switch (data.payload.role) {
           case "reception":

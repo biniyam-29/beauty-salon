@@ -1,6 +1,6 @@
+// FILE: src/components/Modals.tsx
 import React, { useState } from "react";
 import type { User, Product } from "../types";
-import { Switch } from "./Switch";
 
 interface ProductModalProps {
   product?: Product | null;
@@ -31,7 +31,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value as any }));
   };
 
   const handleSave = (e: React.FormEvent) => {
@@ -150,14 +150,16 @@ export const UserModal: React.FC<UserModalProps> = ({
   onSave,
   title,
 }) => {
+  // Ensure all user fields are initialized, including is_active for new users
   const [formData, setFormData] = useState(
     user || {
+      id: 0,
       name: "",
       email: "",
-      password: "",
       phone: "",
       role: "reception",
-      is_active: true,
+      is_active: true, // Assume new users are active by default
+      avatar: "",
     }
   );
 
@@ -165,12 +167,64 @@ export const UserModal: React.FC<UserModalProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value as any }));
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData as User);
+
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      alert(
+        "Authentication Error: You must be logged in to perform this action."
+      );
+      return;
+    }
+
+    // Prepare the data payload for the API
+    const apiPayload = {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      role: formData.role,
+    };
+
+    try {
+      const response = await fetch(
+        "https://beauty-api.biniyammarkos.com/users",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(apiPayload),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to save the user.");
+      }
+
+      const responseData = await response.json();
+
+      // FIX: Construct the user object from the form data, which is guaranteed
+      // to have a 'name' property, and merge it with the ID from the API response.
+      const finalUserObject = {
+        ...formData,
+        id: responseData.id || responseData.user_id || Date.now(),
+      };
+
+      onSave(finalUserObject as User); // Pass the complete object back
+    } catch (error) {
+      console.error("Error saving user:", error);
+      alert(
+        `Error: ${
+          error instanceof Error ? error.message : "An unknown error occurred."
+        }`
+      );
+    }
   };
 
   return (
@@ -207,19 +261,6 @@ export const UserModal: React.FC<UserModalProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <input
-                type="password"
-                name="password"
-                placeholder={user ? "Leave blank to keep unchanged" : ""}
-                onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500"
-                required={!user}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
                 Phone
               </label>
               <input
@@ -241,19 +282,11 @@ export const UserModal: React.FC<UserModalProps> = ({
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500"
               >
                 <option value="super-admin">Super Admin</option>
-                <option value="doctor">Doctor</option>
+                <option value="doctor">Professional</option>
                 <option value="reception">Reception</option>
                 <option value="inventory-manager">Inventory Manager</option>
               </select>
             </div>
-            <Switch
-              id="is_active"
-              checked={formData.is_active}
-              onChange={(checked) =>
-                setFormData((prev) => ({ ...prev, is_active: checked }))
-              }
-              label="Is Active"
-            />
           </div>
           <div className="mt-6 flex justify-end space-x-3">
             <button

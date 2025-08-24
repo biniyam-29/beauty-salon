@@ -106,6 +106,7 @@ export function UserForm({ initialData, onSubmit, onCancel }: UserFormProps) {
       professional: "Full patient records access, consultations, and treatment planning",
       "inventory-manager": "Manage product inventory, stock levels, and suppliers",
       "super-admin": "Full system access including user management and system settings",
+      doctor: "this is the professional responsible to make treatment on the patient"
     }
     return descriptions[role]
   }
