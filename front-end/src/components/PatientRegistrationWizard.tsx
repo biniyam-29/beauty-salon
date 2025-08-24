@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
+// react-router-dom is a dependency. In a real app, you would
+// import this from the actual library.
+import { useNavigate } from "react-router-dom";
 
 // --- Placeholder Types (replace with your actual type definitions) ---
-// The original code imported these from a "../types" file. Defining them here
-// makes the component self-contained and resolves potential TypeScript errors.
 type PatientData = {
   name: string;
   address: string;
@@ -37,7 +38,6 @@ type PatientData = {
   signature: string;
   signatureDate: string;
   prescriptionMeds: boolean;
-  // Changed to match the expected prop type from the parent component.
   assignedProfessionalId?: string | null;
   conclusionNote?: string;
   id?: string;
@@ -49,8 +49,12 @@ type ProfessionalData = {
   skills: string[];
 };
 
+type LookupItem = {
+  id: number;
+  name: string;
+};
+
 // --- UI Component Placeholders ---
-// The original code imported these from a "./ui" file which is not available here.
 // These are simple replacements using standard HTML and Tailwind CSS to make the component runnable.
 
 const cn = (...classes: (string | boolean | undefined)[]) =>
@@ -62,7 +66,7 @@ const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({
 }) => (
   <div
     className={cn(
-      "bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20",
+      "bg-white rounded-2xl shadow-lg border border-gray-200",
       className
     )}
   >
@@ -242,51 +246,95 @@ const CheckIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
+// --- NEW COMPONENT: Status Modal ---
+type StatusModalProps = {
+  type: "success" | "error";
+  message: string;
+  onClose: () => void;
+};
+
+const StatusModal: React.FC<StatusModalProps> = ({
+  type,
+  message,
+  onClose,
+}) => (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div
+      className={`bg-white rounded-lg shadow-xl p-8 max-w-sm w-full text-center border-t-4 ${
+        type === "success" ? "border-green-500" : "border-red-500"
+      }`}
+    >
+      {type === "success" ? (
+        <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+          <svg
+            className="h-6 w-6 text-green-600"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        </div>
+      ) : (
+        <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+          <svg
+            className="h-6 w-6 text-red-600"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+        </div>
+      )}
+      <h3
+        className={`text-lg leading-6 font-medium ${
+          type === "success" ? "text-green-900" : "text-red-900"
+        } mt-4`}
+      >
+        {type === "success" ? "Success" : "Error"}
+      </h3>
+      <div className="mt-2 px-7 py-3">
+        <p className="text-sm text-gray-500">{message}</p>
+      </div>
+      <div className="mt-4">
+        <Button
+          onClick={onClose}
+          className={
+            type === "success"
+              ? "bg-green-600 hover:bg-green-700"
+              : "bg-red-600 hover:bg-red-700"
+          }
+        >
+          Close
+        </Button>
+      </div>
+    </div>
+  </div>
+);
+
 // --- API Configuration ---
 const API_BASE_URL = "http://beauty-api.biniyammarkos.com";
-
-// --- Data Mappings for API ---
-const skinConcernsMap: { [key: string]: number } = {
-  Wrinkles: 1,
-  Aging: 2,
-  "Dark circle": 3,
-  Acne: 4,
-  "Acne scarring": 5,
-  "Oily skin": 6,
-  Dryness: 7,
-  Hyperpigmentation: 8,
-  "Sun damage": 9,
-  "Flaky skin": 10,
-  Psoriasis: 11,
-  Sensitivity: 12,
-  Rosacea: 13,
-  Melasma: 14,
-  Milia: 15,
-  Redness: 16,
-};
-const healthConditionsMap: { [key: string]: number } = {
-  Cancer: 1,
-  Epilepsy: 2,
-  Diabetes: 3,
-  "Heart Problem": 4,
-  Pregnant: 5,
-  Arthritis: 6,
-  "High Blood Pressure": 7,
-  Hepatitis: 8,
-  Migraines: 9,
-  Eczema: 10,
-  "Thyroid condition": 11,
-  Asthma: 12,
-  "Low blood pressure": 13,
-  "Auto-immune disorders": 14,
-  Insomnia: 15,
-  Warts: 16,
-};
 
 // --- Registration Step Components ---
 type StepProps = {
   formData: PatientData;
-  updateFormData: (updates: Partial<PatientData>) => void;
+  updateFormData: (updates: Partial<PatientData>) => void; // Add lookup data to props for steps that need it
+  skinConcernsOptions?: LookupItem[];
+  healthConditionsOptions?: LookupItem[];
+  isLoadingLookups?: boolean;
 };
 
 const PersonalInfoStep: React.FC<StepProps> = ({
@@ -301,6 +349,7 @@ const PersonalInfoStep: React.FC<StepProps> = ({
         value={formData.name}
         onChange={(e) => updateFormData({ name: e.target.value })}
         placeholder="Enter full name"
+        required
       />
     </div>
     <div className="space-y-2">
@@ -310,7 +359,6 @@ const PersonalInfoStep: React.FC<StepProps> = ({
         value={formData.phone}
         onChange={(e) => updateFormData({ phone: e.target.value })}
         placeholder="Enter phone number"
-        disabled
       />
     </div>
     <div className="space-y-2 md:col-span-2">
@@ -338,6 +386,7 @@ const PersonalInfoStep: React.FC<StepProps> = ({
         type="date"
         value={formData.dateOfBirth}
         onChange={(e) => updateFormData({ dateOfBirth: e.target.value })}
+        required
       />
     </div>
     <div className="space-y-2 md:col-span-2">
@@ -442,7 +491,12 @@ const SkinHealthStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
   );
 };
 
-const SkinCareStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
+const SkinCareStep: React.FC<StepProps> = ({
+  formData,
+  updateFormData,
+  skinConcernsOptions = [],
+  isLoadingLookups,
+}) => {
   const productOptions = [
     "Facial cleanser",
     "Sunscreen",
@@ -462,7 +516,6 @@ const SkinCareStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
     "Body lotion",
     "Face oil",
   ];
-  const concernOptions = Object.keys(skinConcernsMap);
 
   const handleProductChange = (value: string, checked: boolean) => {
     const currentArray = formData.usedProducts;
@@ -505,20 +558,24 @@ const SkinCareStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
         <Label className="text-base font-bold text-gray-700">
           Tell us your skin concerns
         </Label>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {concernOptions.map((concern) => (
-            <Checkbox
-              key={concern}
-              id={`concern-${concern}`}
-              checked={formData.skinConcerns.includes(concern)}
-              onCheckedChange={(checked) =>
-                handleConcernChange(concern, !!checked)
-              }
-            >
-              {concern}
-            </Checkbox>
-          ))}
-        </div>
+        {isLoadingLookups ? (
+          <p className="text-sm text-gray-500">Loading skin concerns...</p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {skinConcernsOptions.map((concern) => (
+              <Checkbox
+                key={concern.id}
+                id={`concern-${concern.name}`}
+                checked={formData.skinConcerns.includes(concern.name)}
+                onCheckedChange={(checked) =>
+                  handleConcernChange(concern.name, !!checked)
+                }
+              >
+                {concern.name}
+              </Checkbox>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -527,9 +584,9 @@ const SkinCareStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
 const HealthHistoryStep: React.FC<StepProps> = ({
   formData,
   updateFormData,
+  healthConditionsOptions = [],
+  isLoadingLookups,
 }) => {
-  const healthOptions = Object.keys(healthConditionsMap);
-
   const handleHealthChange = (value: string, checked: boolean) => {
     const currentArray = formData.healthConditions;
     const updatedArray = checked
@@ -544,20 +601,24 @@ const HealthHistoryStep: React.FC<StepProps> = ({
         <Label className="text-base font-bold text-gray-700">
           Have you experienced any of these health conditions?
         </Label>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {healthOptions.map((condition) => (
-            <Checkbox
-              key={condition}
-              id={`health-${condition}`}
-              checked={formData.healthConditions.includes(condition)}
-              onCheckedChange={(checked) =>
-                handleHealthChange(condition, !!checked)
-              }
-            >
-              {condition}
-            </Checkbox>
-          ))}
-        </div>
+        {isLoadingLookups ? (
+          <p className="text-sm text-gray-500">Loading health conditions...</p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {healthConditionsOptions.map((condition) => (
+              <Checkbox
+                key={condition.id}
+                id={`health-${condition.name}`}
+                checked={formData.healthConditions.includes(condition.name)}
+                onCheckedChange={(checked) =>
+                  handleHealthChange(condition.name, !!checked)
+                }
+              >
+                {condition.name}
+              </Checkbox>
+            ))}
+          </div>
+        )}
       </div>
       <div className="space-y-6">
         <Label className="text-base font-bold text-gray-700">
@@ -635,7 +696,7 @@ const CompleteRegistrationStep: React.FC<StepProps> = ({
           <strong>Skin Type:</strong> {formData.skinType || "..."}
         </p>
         <p>
-          <strong>Primary Concerns:</strong>{" "}
+          <strong>Primary Concerns:</strong>
           {formData.skinConcerns.join(", ") || "None specified"}
         </p>
       </div>
@@ -648,6 +709,7 @@ const CompleteRegistrationStep: React.FC<StepProps> = ({
         onChange={(e) => updateFormData({ signature: e.target.value })}
         placeholder="Type your full name to sign"
         className="text-center font-display text-xl"
+        required
       />
     </div>
     <p className="text-xs text-gray-500 max-w-md mx-auto">
@@ -659,21 +721,44 @@ const CompleteRegistrationStep: React.FC<StepProps> = ({
 );
 
 const AssignmentStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
+  const navigate = useNavigate();
   const [professionals, setProfessionals] = useState<ProfessionalData[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+
+    if (!token) {
+      console.error("Authentication error: No token found.");
+      navigate("/login", { replace: true });
+      return;
+    }
+
     const fetchProfessionals = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${API_BASE_URL}/professionals`);
+        const response = await fetch(`${API_BASE_URL}/users/role/doctor`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         if (!response.ok)
           throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
-        setProfessionals(data);
+        if (data && Array.isArray(data.users)) {
+          setProfessionals(data.users);
+        } else {
+          console.warn(
+            "API response for professionals is not in the expected format:",
+            data
+          );
+          setProfessionals([]);
+        }
       } catch (error) {
         console.error("Could not fetch professionals", error);
+        setProfessionals([]);
       } finally {
         setIsLoading(false);
       }
@@ -723,9 +808,7 @@ const AssignmentStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
                 value={String(prof.id)}
                 name="professional"
                 id={`prof-${prof.id}`}
-                // Compare string to string to fix type mismatch
                 checked={formData.assignedProfessionalId === String(prof.id)}
-                // Store the ID as a string to match the updated PatientData type
                 onChange={() =>
                   updateFormData({ assignedProfessionalId: String(prof.id) })
                 }
@@ -733,7 +816,7 @@ const AssignmentStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
                 <div>
                   <p className="font-bold">{prof.name}</p>
                   <p className="text-xs text-gray-500">
-                    {prof.skills.join(", ")}
+                    {prof.skills?.join(", ") || "No skills listed"}
                   </p>
                 </div>
               </RadioGroupItem>
@@ -801,7 +884,75 @@ export const PatientRegistrationWizard: React.FC<
     ...initialData,
     phone,
   });
+  const [skinConcernsOptions, setSkinConcernsOptions] = useState<LookupItem[]>(
+    []
+  );
+  const [healthConditionsOptions, setHealthConditionsOptions] = useState<
+    LookupItem[]
+  >([]);
+  const [isLoadingLookups, setIsLoadingLookups] = useState(true);
+  const navigate = useNavigate();
 
+  const [statusMessage, setStatusMessage] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const fetchLookups = async () => {
+      const token = localStorage.getItem("auth_token");
+      if (!token) {
+        console.error("Authentication error: No token found.");
+        setIsLoadingLookups(false);
+        return;
+      }
+
+      setIsLoadingLookups(true);
+      try {
+        const headers = { Authorization: `Bearer ${token}` };
+        const [concernsRes, conditionsRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/lookups/skin-concerns`, { headers }),
+          fetch(`${API_BASE_URL}/lookups/health-conditions`, { headers }),
+        ]);
+
+        if (!concernsRes.ok || !conditionsRes.ok) {
+          console.error("Failed to fetch lookup data", {
+            concernsStatus: concernsRes.status,
+            conditionsStatus: conditionsRes.status,
+          });
+          throw new Error("Network response was not ok for lookup data");
+        }
+
+        const concernsData = await concernsRes.json();
+        const conditionsData = await conditionsRes.json();
+
+        setSkinConcernsOptions(concernsData);
+        setHealthConditionsOptions(conditionsData);
+      } catch (error) {
+        console.error("Could not fetch lookup data:", error);
+      } finally {
+        setIsLoadingLookups(false);
+      }
+    };
+
+    fetchLookups();
+  }, []);
+
+  const skinConcernsMap = useMemo(() => {
+    return skinConcernsOptions.reduce((acc, concern) => {
+      acc[concern.name] = concern.id;
+      return acc;
+    }, {} as { [key: string]: number });
+  }, [skinConcernsOptions]);
+
+  const healthConditionsMap = useMemo(() => {
+    return healthConditionsOptions.reduce((acc, condition) => {
+      acc[condition.name] = condition.id;
+      return acc;
+    }, {} as { [key: string]: number });
+  }, [healthConditionsOptions]);
+
+  // --- FIX: Reordered steps to assign professional before final submission ---
   const steps = [
     {
       id: 1,
@@ -829,15 +980,15 @@ export const PatientRegistrationWizard: React.FC<
     },
     {
       id: 5,
-      name: "Consent",
-      title: "Consent & Completion",
-      component: CompleteRegistrationStep,
-    },
-    {
-      id: 6,
       name: "Assignment",
       title: "Assign Professional",
       component: AssignmentStep,
+    },
+    {
+      id: 6,
+      name: "Consent",
+      title: "Consent & Completion",
+      component: CompleteRegistrationStep,
     },
   ];
 
@@ -849,14 +1000,17 @@ export const PatientRegistrationWizard: React.FC<
     currentStep < steps.length && setCurrentStep(currentStep + 1);
   const prevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     const token = localStorage.getItem("auth_token");
     if (!token) {
-      alert("Authentication error: No token found. Please log in again.");
+      setStatusMessage({
+        type: "error",
+        message: "Authentication error: No token found. Please log in again.",
+      });
       return;
     }
 
-    // --- DATA TRANSFORMATION LOGIC ---
     const apiPayload = {
       full_name: formData.name,
       phone: formData.phone,
@@ -864,7 +1018,6 @@ export const PatientRegistrationWizard: React.FC<
       address: formData.address,
       city: formData.city,
       birth_date: formData.dateOfBirth,
-      // Convert string ID back to number for the API
       assigned_doctor_id: formData.assignedProfessionalId
         ? parseInt(formData.assignedProfessionalId, 10)
         : undefined,
@@ -907,15 +1060,24 @@ export const PatientRegistrationWizard: React.FC<
       if (!response.ok) {
         const errorBody = await response.json();
         console.error("API Error:", errorBody);
-        throw new Error(`Network response was not ok: ${response.statusText}`);
+        throw new Error(`API Error: ${response.statusText}`);
       }
       const savedUser = await response.json();
       onRegistrationComplete(savedUser);
+      setStatusMessage({
+        type: "success",
+        message: "Registration successful! Redirecting...",
+      });
+      setTimeout(() => {
+        setStatusMessage(null);
+        navigate("/reception");
+      }, 2500);
     } catch (error) {
       console.error("Failed to save user:", error);
-      alert(
-        `Failed to save user: ${error}. Please check the console for details.`
-      );
+      setStatusMessage({
+        type: "error",
+        message: `Failed to save user: ${error}. Please check your details and try again.`,
+      });
     }
   };
 
@@ -924,8 +1086,15 @@ export const PatientRegistrationWizard: React.FC<
 
   return (
     <div className="w-full flex flex-col lg:flex-row gap-12">
+      {statusMessage && (
+        <StatusModal
+          type={statusMessage.type}
+          message={statusMessage.message}
+          onClose={() => setStatusMessage(null)}
+        />
+      )}
       <aside className="lg:w-72 lg:flex-shrink-0">
-        <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-2xl shadow-pink-200/20 p-6 border border-white/20 sticky top-8">
+        <div className="bg-white rounded-2xl shadow-2xl shadow-pink-200/20 p-6 border border-gray-200 sticky top-8">
           <div className="mb-8 text-2xl font-bold text-pink-700 text-center font-display">
             Registration
           </div>
@@ -965,37 +1134,43 @@ export const PatientRegistrationWizard: React.FC<
         </div>
       </aside>
       <main className="flex-1 min-w-0">
-        <Card>
-          <CardHeader>
-            <CardTitle>{steps[currentStep - 1]?.title}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CurrentStepComponent
-              formData={formData}
-              updateFormData={updateFormData}
-            />
-          </CardContent>
-        </Card>
-        <div className="flex justify-between gap-4 mt-8">
-          <Button
-            variant="outline"
-            onClick={prevStep}
-            disabled={currentStep === 1}
-          >
-            <ChevronLeftIcon /> Previous
-          </Button>
-          {currentStep < steps.length ? (
-            <Button onClick={nextStep}>
-              Next <ChevronRightIcon />
+        <form onSubmit={handleSubmit}>
+          <Card>
+            <CardHeader>
+              <CardTitle>{steps[currentStep - 1]?.title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CurrentStepComponent
+                formData={formData}
+                updateFormData={updateFormData}
+                skinConcernsOptions={skinConcernsOptions}
+                healthConditionsOptions={healthConditionsOptions}
+                isLoadingLookups={isLoadingLookups}
+              />
+            </CardContent>
+          </Card>
+          <div className="flex justify-between gap-4 mt-8">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={prevStep}
+              disabled={currentStep === 1}
+            >
+              <ChevronLeftIcon /> Previous
             </Button>
-          ) : (
-            <Button onClick={handleSubmit}>Complete Registration</Button>
-          )}
-        </div>
+            {currentStep < steps.length ? (
+              <Button type="button" onClick={nextStep}>
+                Next <ChevronRightIcon />
+              </Button>
+            ) : (
+              <Button type="submit">Complete Registration</Button>
+            )}
+          </div>
+        </form>
       </main>
     </div>
   );
 };
 
-// Added a default export to be the main component of the file.
+// --- Add a default export for better compatibility with some environments ---
 export default PatientRegistrationWizard;

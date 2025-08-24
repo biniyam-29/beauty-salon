@@ -74,7 +74,7 @@ export const CustomerListPage: FC = () => {
 
   useEffect(() => {
     const token =
-      localStorage.getItem("auth_token") || "dummy_token_for_testing";
+      localStorage.getItem("auth_token");
 
     if (!token) {
       console.error("Authentication error: No token found.");
