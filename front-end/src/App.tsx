@@ -10,7 +10,6 @@ import {
 import type { PatientData } from "./types";
 import { CustomerListPage } from "./pages/reception/CustomerListPage";
 import LandingPage from "./pages/reception/LandingPage";
-import { PhoneNumberCheckPage } from "./pages/reception/PhoneNumberCheckPage";
 import { PatientRegistrationWizard } from "./components/PatientRegistrationWizard";
 import LoginPage from "./pages/LoginPage";
 import  ProfessionalDashboardPage  from "./pages/professionals/ProfessionalDashboardPage";
@@ -102,14 +101,6 @@ const AppRoutes: React.FC = () => {
           <RequireAuth role="reception">
             <LandingPage onLogout={handleLogout} />
           </RequireAuth>
-        }
-      />
-      <Route
-        path="/reception/find"
-        element={
-          <GradientLayout>
-            <PhoneNumberCheckPage />
-          </GradientLayout>
         }
       />
       <Route
