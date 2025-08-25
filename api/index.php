@@ -30,6 +30,7 @@ require_once __DIR__ . '/src/modules/images/image-controller.php';
 require_once __DIR__ . '/src/modules/reminders/reminder-controller.php';
 require_once __DIR__ . '/src/modules/checkout/checkout-controller.php';
 require_once __DIR__ . '/src/modules/visit_notes/visitnote-controller.php';
+require_once __DIR__ . '/src/modules/profile/profile-controller.php'; 
 // Add other controllers as you create them...
 
 use src\modules\auth\AuthController;
@@ -43,6 +44,7 @@ use src\modules\images\ImageController;
 use src\modules\reminders\ReminderController;
 use src\modules\checkout\CheckoutController;
 use src\modules\notes\VisitNoteController;
+use src\modules\profile\ProfileController;
 
 
 // --- Basic Routing ---
@@ -93,6 +95,9 @@ switch ($module) {
         break;
     case 'notes':
         $controller = new VisitNoteController();
+        break;
+    case 'profile':
+        $controller = new ProfileController();
         break;
     default:
         http_response_code(404);
