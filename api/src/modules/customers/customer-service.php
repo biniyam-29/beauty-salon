@@ -234,6 +234,19 @@ class CustomerService {
             $stmt->execute([':id' => $id]);
             $customer['consents'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+            //Get visit notes
+            $stmt = $this->conn->prepare(
+                "SELECT cn.id, cn.note_text, cn.status, cn.created_at, u.name as author_name 
+                 FROM visit_notes cn
+                 JOIN users u ON cn.reception_id = u.id
+                 WHERE cn.customer_id = :id 
+                 ORDER BY 
+                    CASE WHEN cn.status = 'pending' THEN 0 ELSE 1 END, 
+                    cn.created_at DESC"
+            );
+            $stmt->execute([':id' => $id]);
+            $customer['notes'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
             $this->conn->commit();
             return json_encode($customer);
 
