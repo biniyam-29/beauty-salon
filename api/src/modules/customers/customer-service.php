@@ -18,7 +18,7 @@ class CustomerService {
     /**
      * Creates a new customer and their associated profile data in a single transaction.
      */
-    public function createCustomer(string $body): string {
+    public function createCustomer(string $body, int $receptionistId): string {
         $data = json_decode($body, true);
 
         // Basic validation
@@ -102,6 +102,18 @@ class CustomerService {
                 foreach ($data['health_conditions'] as $conditionId) {
                     $stmt->execute([':customer_id' => $customerId, ':condition_id' => $conditionId]);
                 }
+            }
+
+            // 5. Insert the visit notes
+            if (!empty($data['initial_note'])) {
+                $noteStmt = $this->conn->prepare(
+                    "INSERT INTO visit_notes (customer_id, reception_id, note_text) VALUES (:customer_id, :reception_id, :note_text)"
+                );
+                $noteStmt->execute([
+                    ':customer_id' => $customerId,
+                    ':reception_id' => $receptionistId,
+                    ':note_text' => $data['initial_note']
+                ]);
             }
 
             $this->conn->commit();

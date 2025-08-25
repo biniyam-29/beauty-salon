@@ -144,6 +144,20 @@ CREATE TABLE IF NOT EXISTS `consultations` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
+-- Table `visit_notes` (UPDATED)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `visit_notes` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `customer_id` INT UNSIGNED NOT NULL,
+  `reception_id` INT UNSIGNED NOT NULL,
+  `note_text` TEXT NOT NULL,
+  `status` ENUM('pending', 'handled') NOT NULL DEFAULT 'pending',
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_vn_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_vn_receptionist` FOREIGN KEY (`reception_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- -----------------------------------------------------
 -- Table `prescriptions`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `prescriptions` (

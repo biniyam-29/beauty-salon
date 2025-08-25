@@ -40,6 +40,7 @@ class CustomerController implements ControllerInterface {
         $id = $paths[1] ?? null;
         $subResource = $paths[2] ?? null; 
         $subResourceId = $paths[3] ?? null;
+        $receptionistId = $user->id;
 
         switch ($method) {
             case 'POST':
@@ -58,7 +59,7 @@ class CustomerController implements ControllerInterface {
                 }
 
                 // POST /customers
-                return $this->customerService->createCustomer($body);
+                return $this->customerService->createCustomer($body, $receptionistId);
 
             case 'GET':
                 // GET /customers/{id}/consultations
