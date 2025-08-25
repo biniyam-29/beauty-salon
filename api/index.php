@@ -29,6 +29,7 @@ require_once __DIR__ . '/src/modules/prescriptions/prescription-controller.php';
 require_once __DIR__ . '/src/modules/images/image-controller.php';
 require_once __DIR__ . '/src/modules/reminders/reminder-controller.php';
 require_once __DIR__ . '/src/modules/checkout/checkout-controller.php';
+require_once __DIR__ . '/src/modules/visit_notes/visitnote-controller.php';
 // Add other controllers as you create them...
 
 use src\modules\auth\AuthController;
@@ -41,6 +42,7 @@ use src\modules\prescriptions\PrescriptionController;
 use src\modules\images\ImageController;
 use src\modules\reminders\ReminderController;
 use src\modules\checkout\CheckoutController;
+use src\modules\notes\VisitNoteController;
 
 
 // --- Basic Routing ---
@@ -64,7 +66,12 @@ switch ($module) {
         $controller = new LookupController();
         break;
     case 'customers':
-        $controller = new CustomerController();
+        $subResource = $paths[2] ?? null;
+        if ($subResource === 'notes') {
+            $controller = new VisitNoteController();
+        } else {
+            $controller = new CustomerController();
+        }
         break;
     case 'consultations':
         $controller = new ConsultationController();
@@ -83,6 +90,9 @@ switch ($module) {
         break;
     case 'checkout':
         $controller = new CheckoutController();
+        break;
+    case 'notes':
+        $controller = new VisitNoteController();
         break;
     default:
         http_response_code(404);
