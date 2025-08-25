@@ -467,5 +467,18 @@ class CustomerService {
             return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
         }
     }
+
+    public function isCustomerAssignedToDoctor(int $customerId, int $doctorId): bool {
+        $stmt = $this->conn->prepare("
+            SELECT COUNT(*) FROM customers
+            WHERE id = :customer_id AND assigned_doctor_id = :doctor_id
+        ");
+        $stmt->execute([
+            ':customer_id' => $customerId,
+            ':doctor_id' => $doctorId
+        ]);
+        return $stmt->fetchColumn() > 0;
+    }
+    
 }
 ?>
