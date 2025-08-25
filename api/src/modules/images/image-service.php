@@ -19,6 +19,12 @@ class ImageService {
      * Handles the file upload and saves image data to the database.
      */
     public function uploadImage(int $consultationId, array $file, ?string $description): string {
+
+        if (empty($file) || !isset($file['tmp_name'])) {
+            http_response_code(400);
+            return json_encode(['error' => 'Invalid file data.']);
+        }
+        
         // Basic validation for the uploaded file
         if ($file['error'] !== UPLOAD_ERR_OK) {
             http_response_code(400);

@@ -48,10 +48,21 @@ class ConsultationController implements ControllerInterface {
 
                 // POST /consultations/{id}/images
                 if ($id && $subResource === 'images') {
-                    // File uploads are handled via $_FILES, not $body
-                    $file = $_FILES['image'] ?? null;
+                    // Validate file upload
+                    if (!isset($_FILES['file'])) {
+                        http_response_code(400);
+                        return json_encode(['error' => 'No file uploaded. Field name should be "file".']);
+                    }
+    
+                    $file = $_FILES['file'];
                     $description = $_POST['description'] ?? null;
-                    return $this->imageService->uploadImage($id, $file, $description);
+    
+                    if ($file['error'] !== UPLOAD_ERR_OK) {
+                        http_response_code(400);
+                        return json_encode(['error' => 'File upload error.']);
+                    }
+    
+                    return $this->imageService->uploadImage((int)$id, $file, $description);
                 }
 
                 // POST /consultations
