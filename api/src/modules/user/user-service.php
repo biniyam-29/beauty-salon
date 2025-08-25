@@ -65,7 +65,7 @@ class UserService {
         }
     }
 
-    /**
+   /**
      * Creates a new user (staff member).
      */
     public function createUser(string $body): string {
@@ -88,6 +88,8 @@ class UserService {
             $password = FakerFactory::create()->password;
             $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
 
+            $this->conn->beginTransaction();
+
             $stmt = $this->conn->prepare("INSERT INTO users (name, email, password_hash, phone, role) VALUES (:name, :email, :password_hash, :phone, :role)");
             $stmt->execute([
                 ':name' => $data->name,
@@ -97,13 +99,33 @@ class UserService {
                 ':role' => $data->role
             ]);
             
+            $userId = $this->conn->lastInsertId();
+            
+            $this->conn->commit();
+
             // Send welcome email with temporary password
             $emailBody = 'Hello ' . $data->name . ', your account has been created. Your temporary password is: ' . $password;
             $subject = "Welcome to the Clinic";
             $this->mailer->send($data->email, $subject, $emailBody);
             
-            return json_encode(["message" => "User created successfully. Temporary password sent to their email."]);
+            // Fetch the newly created user object to return
+            $newUserStmt = $this->conn->prepare("SELECT id, name, email, phone, role, is_active, created_at FROM users WHERE id = :id");
+            $newUserStmt->execute([':id' => $userId]);
+            $newUser = $newUserStmt->fetch(PDO::FETCH_ASSOC);
+
+            // Add the plain-text password to the response object
+            $newUser['temporary_password'] = $password;
+            
+            return json_encode([
+                "message" => "User created successfully. Temporary password sent to their email.",
+                "user" => $newUser
+            ]);
+            
+
         } catch (Exception $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
             http_response_code(500);
             return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
         }
