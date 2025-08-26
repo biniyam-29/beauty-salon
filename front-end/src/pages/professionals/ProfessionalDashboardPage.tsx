@@ -6,7 +6,16 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { LogOut, User, Users, ClipboardPlus, Loader2, X } from "lucide-react";
+import {
+  LogOut,
+  User,
+  Users,
+  ClipboardPlus,
+  Loader2,
+  X,
+  Droplet,
+  Heart,
+} from "lucide-react";
 
 // --- Type Definitions ---
 interface Professional {
@@ -15,13 +24,26 @@ interface Professional {
   email: string;
   avatar: string | null;
 }
+interface PatientProfile {
+  skin_type: string;
+  skin_feel: string;
+  sun_exposure: string;
+  used_products: string;
+  bruises_easily: 0 | 1;
+  uses_retinoids_acids: 0 | 1;
+}
 interface Patient {
   id: number;
   full_name: string;
   phone: string;
   email: string;
+  address?: string;
+  city?: string;
+  birth_date?: string;
   profile_picture: string | null;
-  skin_concerns: { name: string }[];
+  profile: PatientProfile;
+  skin_concerns: { id: number; name: string }[];
+  health_conditions: { id: number; name: string }[];
 }
 interface Consultation {
   id: number;
@@ -67,12 +89,14 @@ const fetchPatientConsultations = async (
   );
   if (!response.ok) throw new Error("Failed to fetch consultations.");
   const data = await response.json();
-  return data.consultations || [];
+  return data || [];
 };
 
 const addConsultation = async (payload: {
   patientId: number;
   notes: string;
+  feedback: string[];
+  goals: string[];
   followUpDate?: string;
 }): Promise<void> => {
   const token = getAuthToken();
@@ -83,6 +107,8 @@ const addConsultation = async (payload: {
   const body = {
     customer_id: payload.patientId,
     doctor_id: doctorId,
+    previous_treatment_feedback: payload.feedback,
+    treatment_goals_today: payload.goals,
     doctor_notes: payload.notes,
     follow_up_date: payload.followUpDate || null,
   };
@@ -126,6 +152,8 @@ const AddConsultationModal: React.FC<{
   onClose: () => void;
 }> = ({ patient, onClose }) => {
   const [notes, setNotes] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [goals, setGoals] = useState("");
   const [followUpDate, setFollowUpDate] = useState("");
   const queryClient = useQueryClient();
 
@@ -142,12 +170,22 @@ const AddConsultationModal: React.FC<{
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    mutation.mutate({ patientId: patient.id, notes, followUpDate });
+    const feedbackArray = feedback
+      .split("\n")
+      .filter((line) => line.trim() !== "");
+    const goalsArray = goals.split("\n").filter((line) => line.trim() !== "");
+    mutation.mutate({
+      patientId: patient.id,
+      notes,
+      feedback: feedbackArray,
+      goals: goalsArray,
+      followUpDate,
+    });
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-800">
             New Consultation for {patient.full_name}
@@ -162,13 +200,37 @@ const AddConsultationModal: React.FC<{
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">
-              Doctor's Notes
+              Previous Treatment Feedback
+            </label>
+            <textarea
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              rows={3}
+              className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-rose-300 focus:outline-none"
+              placeholder="One feedback item per line..."
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">
+              Treatment Goals Today
+            </label>
+            <textarea
+              value={goals}
+              onChange={(e) => setGoals(e.target.value)}
+              rows={3}
+              className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-rose-300 focus:outline-none"
+              placeholder="One goal per line..."
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">
+              Doctor's Notes *
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               required
-              rows={6}
+              rows={5}
               className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-rose-300 focus:outline-none"
             />
           </div>
@@ -204,10 +266,58 @@ const AddConsultationModal: React.FC<{
   );
 };
 
+const DetailSection: React.FC<{
+  title: string;
+  icon: React.ReactElement;
+  children: React.ReactNode;
+}> = ({ title, icon, children }) => (
+  <div className="mb-8">
+    <div className="flex items-center gap-3 mb-4">
+      <div className="text-rose-500">{icon}</div>
+      <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+    </div>
+    <div className="bg-white p-6 rounded-xl border border-rose-100/60">
+      {children}
+    </div>
+  </div>
+);
+
+const InfoPill: React.FC<{ label: string; value?: string | null }> = ({
+  label,
+  value,
+}) => (
+  <div>
+    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+      {label}
+    </p>
+    <p className="text-gray-700 font-semibold">{value || "N/A"}</p>
+  </div>
+);
+
+const Tag: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <span className="bg-rose-100/60 text-rose-800 text-sm font-medium px-3 py-1.5 rounded-full">
+    {children}
+  </span>
+);
+
+const safeJsonParse = (jsonString: string | null | undefined): any[] => {
+  if (!jsonString) return [];
+  try {
+    let parsed = JSON.parse(jsonString);
+    if (typeof parsed === "string") parsed = JSON.parse(parsed);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.error("Failed to parse JSON string:", jsonString, e);
+    return [];
+  }
+};
+
 const PatientDetailView: React.FC<{
   patientId: number;
   onAddConsultation: () => void;
 }> = ({ patientId, onAddConsultation }) => {
+  const [activeTab, setActiveTab] = useState("consultations");
+
   const results = useQueries({
     queries: [
       {
@@ -236,50 +346,155 @@ const PatientDetailView: React.FC<{
       </p>
     );
 
+  const usedProducts = safeJsonParse(patient.profile?.used_products);
+  const skinFeel = safeJsonParse(patient.profile?.skin_feel);
+
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-start">
-        <div>
-          <h2 className="text-3xl font-bold text-gray-800">
-            {patient.full_name}
-          </h2>
-          <p className="text-gray-500">
-            {patient.phone} • {patient.email}
-          </p>
-        </div>
-        <Button onClick={onAddConsultation}>
-          <ClipboardPlus size={16} className="mr-2" /> Add Consultation
-        </Button>
-      </div>
-      <div className="mt-8">
-        <h3 className="text-xl font-semibold text-gray-700 mb-4">
-          Consultation History
-        </h3>
-        <div className="space-y-6">
-          {consultations && consultations.length > 0 ? (
-            consultations.map((c) => (
-              <div key={c.id} className="relative pl-8">
-                <div className="absolute left-0 top-1 h-full border-l-2 border-rose-200"></div>
-                <div className="absolute left-[-6px] top-1 w-3 h-3 bg-rose-500 rounded-full border-2 border-white"></div>
-                <p className="font-bold text-rose-800">
-                  {new Date(c.consultation_date).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </p>
-                <p className="text-sm text-gray-500 mb-2">
-                  with {c.doctor_name}
-                </p>
-                <p className="text-gray-700">{c.doctor_notes}</p>
-              </div>
-            ))
-          ) : (
+    <div className="h-full flex flex-col">
+      <div className="p-6 border-b border-rose-100/80">
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-800">
+              {patient.full_name}
+            </h2>
             <p className="text-gray-500">
-              No consultation history for this patient.
+              {patient.phone} • {patient.email}
             </p>
-          )}
+          </div>
+          <Button onClick={onAddConsultation}>
+            <ClipboardPlus size={16} className="mr-2" /> Add Consultation
+          </Button>
         </div>
+        <div className="mt-6 flex border-b border-rose-200/60">
+          <button
+            onClick={() => setActiveTab("consultations")}
+            className={`px-4 py-2 text-sm font-semibold transition-colors ${
+              activeTab === "consultations"
+                ? "border-b-2 border-rose-500 text-rose-600"
+                : "text-gray-500 hover:text-rose-500"
+            }`}
+          >
+            Consultation History
+          </button>
+          <button
+            onClick={() => setActiveTab("profile")}
+            className={`px-4 py-2 text-sm font-semibold transition-colors ${
+              activeTab === "profile"
+                ? "border-b-2 border-rose-500 text-rose-600"
+                : "text-gray-500 hover:text-rose-500"
+            }`}
+          >
+            Full Profile
+          </button>
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto p-6">
+        {activeTab === "consultations" && (
+          <div className="space-y-6">
+            {consultations && consultations.length > 0 ? (
+              consultations.map((c) => (
+                <div key={c.id} className="relative pl-8">
+                  <div className="absolute left-0 top-1 h-full border-l-2 border-rose-200"></div>
+                  <div className="absolute left-[-6px] top-1 w-3 h-3 bg-rose-500 rounded-full border-2 border-white"></div>
+                  <p className="font-bold text-rose-800">
+                    {new Date(c.consultation_date).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </p>
+                  <p className="text-sm text-gray-500 mb-2">
+                    with {c.doctor_name}
+                  </p>
+                  <p className="text-gray-700">{c.doctor_notes}</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500">
+                No consultation history for this patient.
+              </p>
+            )}
+          </div>
+        )}
+        {activeTab === "profile" && (
+          <>
+            <DetailSection
+              title="Personal Information"
+              icon={<User size={20} />}
+            >
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <InfoPill label="Address" value={patient.address} />
+                <InfoPill label="City" value={patient.city} />
+                <InfoPill label="Date of Birth" value={patient.birth_date} />
+              </div>
+            </DetailSection>
+            <DetailSection title="Skin Profile" icon={<Droplet size={20} />}>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <InfoPill
+                  label="Skin Type"
+                  value={patient.profile?.skin_type}
+                />
+                <InfoPill label="Skin Feel" value={skinFeel.join(", ")} />
+                <InfoPill
+                  label="Sun Exposure"
+                  value={patient.profile?.sun_exposure}
+                />
+                <InfoPill
+                  label="Bruises Easily"
+                  value={patient.profile?.bruises_easily ? "Yes" : "No"}
+                />
+                <InfoPill
+                  label="Uses Retinoids/Acids"
+                  value={patient.profile?.uses_retinoids_acids ? "Yes" : "No"}
+                />
+              </div>
+              {usedProducts.length > 0 && (
+                <div className="mt-6">
+                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-2">
+                    Used Products
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {usedProducts.map((p: string, i: number) => (
+                      <Tag key={i}>{p}</Tag>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </DetailSection>
+            <DetailSection title="Health & Concerns" icon={<Heart size={20} />}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <h3 className="font-semibold text-gray-700 mb-3">
+                    Skin Concerns
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {(patient.skin_concerns?.length ?? 0) > 0 ? (
+                      patient.skin_concerns?.map((c) => (
+                        <Tag key={c.id}>{c.name}</Tag>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">None listed.</p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-700 mb-3">
+                    Health Conditions
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {(patient.health_conditions?.length ?? 0) > 0 ? (
+                      patient.health_conditions?.map((c) => (
+                        <Tag key={c.id}>{c.name}</Tag>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">None listed.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </DetailSection>
+          </>
+        )}
       </div>
     </div>
   );
@@ -334,7 +549,6 @@ const ProfessionalDashboard: React.FC = () => {
         />
       )}
 
-      {/* Sidebar */}
       <aside className="w-72 bg-white/90 p-6 hidden lg:flex flex-col justify-between border-r border-rose-100/60 flex-shrink-0 h-screen sticky top-0">
         <div>
           <div className="flex items-center gap-3 mb-10">
@@ -379,9 +593,7 @@ const ProfessionalDashboard: React.FC = () => {
         )}
       </aside>
 
-      {/* Main Content */}
       <main className="flex flex-1 overflow-hidden">
-        {/* Patient List */}
         <div className="w-full md:w-2/5 lg:w-1/3 border-r border-rose-100/60 flex flex-col">
           <div className="p-4 border-b border-rose-100/60">
             <h2 className="font-bold text-gray-800">
@@ -415,7 +627,6 @@ const ProfessionalDashboard: React.FC = () => {
                     <h3 className="font-bold text-gray-800">
                       {patient.full_name}
                     </h3>
-                    {/* ** FIXED: Safely access the skin_concerns array ** */}
                     <p className="text-sm text-gray-500">
                       {patient.skin_concerns?.[0]?.name || "No concerns listed"}
                     </p>
@@ -426,8 +637,7 @@ const ProfessionalDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Patient Detail View */}
-        <div className="flex-1 overflow-y-auto hidden md:block">
+        <div className="flex-1 hidden md:flex flex-col">
           {selectedPatientId ? (
             <PatientDetailView
               patientId={selectedPatientId}

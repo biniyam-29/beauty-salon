@@ -75,6 +75,7 @@ const fetchCustomerDetails = async (
   return response.json();
 };
 
+// ** FIXED: Correctly handle the direct array response from the API **
 const fetchCustomerConsultations = async (
   customerId: number | string
 ): Promise<Consultation[]> => {
@@ -87,10 +88,10 @@ const fetchCustomerConsultations = async (
   );
   if (!response.ok) throw new Error("Failed to fetch consultations.");
   const data = await response.json();
-  return data.consultations || [];
+  // The API returns a direct array, not an object with a 'consultations' key.
+  return data || [];
 };
 
-// --- Modern UI Components ---
 
 const CustomerListItem: FC<{
   customer: Customer;
@@ -188,12 +189,10 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
     );
   if (!customer) return null;
 
-  // ** FIXED: Robustly parse stringified JSON data from the API **
   const safeJsonParse = (jsonString: string | null | undefined): any[] => {
     if (!jsonString) return [];
     try {
       let parsed = JSON.parse(jsonString);
-      // Handle double-stringified JSON (e.g., "\"[]\"")
       if (typeof parsed === "string") {
         parsed = JSON.parse(parsed);
       }
@@ -209,7 +208,6 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
 
   return (
     <div className="flex-1 overflow-y-auto">
-      {/* Header */}
       <div className="p-8 sticky top-0 bg-[#FDF8F5]/80 backdrop-blur-sm z-10 border-b border-rose-100/80">
         <div className="flex items-center gap-6">
           <img
@@ -227,7 +225,6 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
             <p className="text-gray-500">{customer.phone}</p>
           </div>
         </div>
-        {/* Tabs */}
         <div className="mt-6 flex border-b border-rose-200/60">
           <button
             onClick={() => setActiveTab("profile")}
@@ -434,7 +431,6 @@ export const CustomerListPage: FC = () => {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Column: Customer List */}
         <aside className="w-full md:w-1/3 lg:w-1/4 border-r border-rose-200/60 flex flex-col">
           <div className="p-4 border-b border-rose-200/60">
             <div className="relative">
@@ -471,7 +467,6 @@ export const CustomerListPage: FC = () => {
           </div>
         </aside>
 
-        {/* Right Column: Customer Details */}
         <main className="flex-1 bg-[#FDF8F5] hidden md:block">
           {selectedCustomerId ? (
             <CustomerDetailView customerId={selectedCustomerId} />
@@ -485,7 +480,6 @@ export const CustomerListPage: FC = () => {
         </main>
       </div>
 
-      {/* Full-screen modal for mobile view */}
       {selectedCustomerId && (
         <div className="md:hidden fixed inset-0 bg-[#FDF8F5] z-50">
           <button
