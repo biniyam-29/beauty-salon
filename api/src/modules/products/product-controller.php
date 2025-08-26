@@ -27,55 +27,54 @@ class ProductController implements ControllerInterface {
             return json_encode(['message' => 'Unauthorized']);
         }
         
-        // Only super-admins and inventory managers can create, update, or delete products
-        if ($method !== 'GET' && !RoleGuard::roleGuard('super-admin') && !RoleGuard::roleGuard('admin')) {
-             http_response_code(403);
-             return json_encode(['message' => 'Forbidden: You do not have permission to manage products.']);
-        }
-
         $id = $paths[1] ?? null;
         $subResource = $paths[2] ?? null;
         $subResourceId = $paths[3] ?? null;
 
-        if ($method === 'POST' && $id && $subResource === 'picture') {
-            if (!RoleGuard::roleGuard('super-admin') && !RoleGuard::roleGuard('inventory-manager')) {
-                 http_response_code(403);
-                 return json_encode(['message' => 'Forbidden: You do not have permission to manage products.']);
-            }
-            $file = $_FILES['product_picture'] ?? null;
-            return $this->productService->updateProductPicture($id, $file);
-        }
-
-        if ($id && $subResource === 'contraindications') {
-            if (!RoleGuard::roleGuard('super-admin')) {
-                 http_response_code(403);
-                 return json_encode(['message' => 'Forbidden: Only a super-admin can manage contraindication rules.']);
-            }
-            if ($method === 'POST') {
-                return $this->contraindicationService->addRule($id, $body);
-            }
-
-            if ($method === 'GET') {
-                return $this->contraindicationService->getRulesForProduct($id);
-            }
-            
-            if ($method === 'DELETE' && $subResourceId) {
-                return $this->contraindicationService->deleteRule($id, $subResourceId);
-            }
-        }
-
         switch ($method) {
-            case 'POST':
-                return $this->productService->createProduct($body);
-
             case 'GET':
+                if (!RoleGuard::roleGuard('reception') && !RoleGuard::roleGuard('doctor') && !RoleGuard::roleGuard('admin') && !RoleGuard::roleGuard('super-admin')) {
+                    http_response_code(403);
+                    return json_encode(['message' => 'Forbidden: You do not have permission to view products.']);
+                }
+                if ($id && $subResource === 'contraindications') {
+                    return $this->contraindicationService->getRulesForProduct($id);
+                }
                 if ($id) {
                     return $this->productService->getProductById($id);
                 }
                 $page = $_GET['page'] ?? 1;
                 return $this->productService->getAllProducts($page);
 
+            case 'POST':
+                // Handle sub-resources first
+                if ($id && $subResource === 'picture') {
+                    if (!RoleGuard::roleGuard('inventory-manager') && !RoleGuard::roleGuard('admin') && !RoleGuard::roleGuard('super-admin')) {
+                        http_response_code(403);
+                        return json_encode(['message' => 'Forbidden: You do not have permission to manage products.']);
+                    }
+                    $file = $_FILES['product_picture'] ?? null;
+                    return $this->productService->updateProductPicture($id, $file);
+                }
+                if ($id && $subResource === 'contraindications') {
+                    if (!RoleGuard::roleGuard('super-admin')) {
+                        http_response_code(403);
+                        return json_encode(['message' => 'Forbidden: Only a super-admin can manage contraindication rules.']);
+                    }
+                    return $this->contraindicationService->addRule($id, $body);
+                }
+                // Handle main resource creation
+                if (!RoleGuard::roleGuard('inventory-manager') && !RoleGuard::roleGuard('admin') && !RoleGuard::roleGuard('super-admin')) {
+                    http_response_code(403);
+                    return json_encode(['message' => 'Forbidden: You do not have permission to manage products.']);
+                }
+                return $this->productService->createProduct($body);
+
             case 'PUT':
+                if (!RoleGuard::roleGuard('inventory-manager') && !RoleGuard::roleGuard('admin') && !RoleGuard::roleGuard('super-admin')) {
+                    http_response_code(403);
+                    return json_encode(['message' => 'Forbidden: You do not have permission to manage products.']);
+                }
                 if (!$id) {
                     http_response_code(400);
                     return json_encode(['error' => 'Bad Request: Product ID is required for update.']);
@@ -83,6 +82,17 @@ class ProductController implements ControllerInterface {
                 return $this->productService->updateProduct($id, $body);
 
             case 'DELETE':
+                if ($id && $subResource === 'contraindications' && $subResourceId) {
+                     if (!RoleGuard::roleGuard('super-admin')) {
+                        http_response_code(403);
+                        return json_encode(['message' => 'Forbidden: Only a super-admin can manage contraindication rules.']);
+                    }
+                    return $this->contraindicationService->deleteRule($id, $subResourceId);
+                }
+                if (!RoleGuard::roleGuard('inventory-manager') && !RoleGuard::roleGuard('admin') && !RoleGuard::roleGuard('super-admin')) {
+                    http_response_code(403);
+                    return json_encode(['message' => 'Forbidden: You do not have permission to manage products.']);
+                }
                 if (!$id) {
                     http_response_code(400);
                     return json_encode(['error' => 'Bad Request: Product ID is required for delete.']);
