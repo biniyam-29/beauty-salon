@@ -4,17 +4,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronLeft,
   CheckCircle,
-  User,
-  Package,
   Loader2,
   Sparkles,
 } from "lucide-react";
 
-// --- Type Definitions ---
+// --- Type Definitions (Updated to match API response) ---
 interface Prescription {
   prescription_id: number;
+  quantity: number;
+  instructions: string;
+  product_id: number;
   product_name: string;
-  product_picture: string | null; // Can be a URL or Base64 string
+  product_image: string | null; // Changed from product_picture
   customer_name: string;
   customer_phone: string;
 }
@@ -28,41 +29,25 @@ const getAuthToken = () => {
   return token;
 };
 
-// MOCK API: In a real app, this would fetch only pending prescriptions.
+// ** UPDATED: Fetches live data from the API **
 const fetchPendingPrescriptions = async (): Promise<Prescription[]> => {
-  // Simulating an API call with mock data
-  console.log("Fetching pending prescriptions...");
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-  return [
+  const token = getAuthToken();
+  const response = await fetch(
+    `${API_BASE_URL}/prescriptions?status=prescribed`,
     {
-      prescription_id: 101,
-      product_name: "Hydrating Serum",
-      product_picture:
-        "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=1887&auto=format&fit=crop",
-      customer_name: "Eleanor Vance",
-      customer_phone: "091-234-5678",
-    },
-    {
-      prescription_id: 102,
-      product_name: "Vitamin C Brightening Cream",
-      product_picture:
-        "https://images.unsplash.com/photo-1590393524524-73d74291f887?q=80&w=1887&auto=format&fit=crop",
-      customer_name: "Marcus Thorne",
-      customer_phone: "092-345-6789",
-    },
-    {
-      prescription_id: 103,
-      product_name: "Retinol Night Repair",
-      product_picture: null, // Example with no image
-      customer_name: "Seraphina Croft",
-      customer_phone: "093-456-7890",
-    },
-  ];
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Failed to fetch pending prescriptions.");
+  }
+  const data = await response.json();
+  return data || []; // API returns a direct array
 };
 
 const fulfillPrescription = async (prescriptionId: number): Promise<void> => {
   console.log(`Fulfilling prescription ID: ${prescriptionId}`);
-  // In a real app, you would have a fetch call here:
+  // This would be the real API call to deduct the product
   // const token = getAuthToken();
   // const response = await fetch(`${API_BASE_URL}/prescriptions/fulfill`, {
   //   method: 'POST',
@@ -106,7 +91,7 @@ const PrescriptionCard: React.FC<{
     <div className="flex items-center gap-4 w-full sm:w-1/2">
       <img
         src={
-          prescription.product_picture ||
+          prescription.product_image ||
           "https://placehold.co/100x100/fecdd3/4c0519?text=Product"
         }
         alt={prescription.product_name}
@@ -114,9 +99,12 @@ const PrescriptionCard: React.FC<{
       />
       <div>
         <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
-          Product
+          Product (Qty: {prescription.quantity})
         </p>
         <h3 className="font-bold text-gray-800">{prescription.product_name}</h3>
+        <p className="text-xs text-gray-500 mt-1 italic">
+          "{prescription.instructions}"
+        </p>
       </div>
     </div>
 
@@ -194,7 +182,6 @@ export const PrescriptionFulfillmentPage: React.FC = () => {
   const fulfillMutation = useMutation({
     mutationFn: fulfillPrescription,
     onMutate: async (prescriptionId: number) => {
-      // Optimistically remove the item from the list
       await queryClient.cancelQueries({ queryKey: ["prescriptions"] });
       const previousPrescriptions = queryClient.getQueryData<Prescription[]>([
         "prescriptions",
@@ -204,19 +191,16 @@ export const PrescriptionFulfillmentPage: React.FC = () => {
       );
       return { previousPrescriptions };
     },
-    onError: (err, prescriptionId, context) => {
-      // If the mutation fails, roll back to the previous state
+    onError: (err, _prescriptionId, context) => {
       if (context?.previousPrescriptions) {
         queryClient.setQueryData(
           ["prescriptions"],
           context.previousPrescriptions
         );
       }
-      // Here you might want to show a toast notification with the error
       console.error("Failed to fulfill prescription:", err);
     },
     onSettled: () => {
-      // Ensure the server state is up-to-date
       queryClient.invalidateQueries({ queryKey: ["prescriptions"] });
     },
   });
