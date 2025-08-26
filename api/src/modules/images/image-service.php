@@ -18,69 +18,83 @@ class ImageService {
     /**
      * Handles the file upload and saves image data to the database.
      */
-    public function uploadImage(int $consultationId, array $file, ?string $description): string {
-
-        if (empty($file) || !isset($file['tmp_name'])) {
-            http_response_code(400);
-            return json_encode(['error' => 'Invalid file data.']);
-        }
-        
-        // Basic validation for the uploaded file
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            http_response_code(400);
-            return json_encode(['error' => 'File upload error.']);
-        }
-        if ($file['size'] > 5000000) { // 5MB limit
-            http_response_code(400);
-            return json_encode(['error' => 'File is too large. Max size is 5MB.']);
-        }
-
-        // Read the binary data from the uploaded file
-        $imageData = file_get_contents($file['tmp_name']);
-
-        try {
-            $stmt = $this->conn->prepare(
-                "INSERT INTO consultation_images (consultation_id, image_data, description)
-                 VALUES (:consultation_id, :image_data, :description)"
-            );
-            $stmt->bindParam(':consultation_id', $consultationId, PDO::PARAM_INT);
-            $stmt->bindParam(':image_data', $imageData, PDO::PARAM_LOB);
-            $stmt->bindParam(':description', $description, PDO::PARAM_STR);
-            $stmt->execute();
-            
-            $imageId = $this->conn->lastInsertId();
-
-            return json_encode(['message' => 'Image uploaded successfully.', 'imageId' => $imageId]);
-        } catch (Exception $e) {
-            http_response_code(500);
-            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
-        }
+    public function uploadImage(int $consultationId, array $file, ?string $description): string
+    {
+    // Basic validation for the uploaded file
+    if (empty($file) || $file['error'] !== UPLOAD_ERR_OK) {
+        http_response_code(400);
+        return json_encode(['error' => 'File upload error or no file provided.']);
     }
+
+    if ($file['size'] > 5000000) { // 5MB limit
+        http_response_code(400);
+        return json_encode(['error' => 'File is too large. Max size is 5MB.']);
+    }
+
+    // Read the binary data from the uploaded file
+    $imageData = file_get_contents($file['tmp_name']);
+    $imageMimeType = $file['type']; // Same way as updateProfilePicture
+
+    try {
+        // Save the image and its MIME type
+        $stmt = $this->conn->prepare(
+            "INSERT INTO consultation_images 
+                (consultation_id, image_data, image_data_mimetype, description)
+             VALUES 
+                (:consultation_id, :image_data, :mimetype, :description)"
+        );
+
+        $stmt->bindParam(':consultation_id', $consultationId, PDO::PARAM_INT);
+        $stmt->bindParam(':image_data', $imageData, PDO::PARAM_LOB);
+        $stmt->bindParam(':mimetype', $imageMimeType, PDO::PARAM_STR);
+        $stmt->bindParam(':description', $description, PDO::PARAM_STR);
+
+        $stmt->execute();
+
+        $imageId = $this->conn->lastInsertId();
+
+        return json_encode([
+            'message' => 'Image uploaded successfully.',
+            'imageId' => $imageId,
+            'mimeType' => $imageMimeType
+        ]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    }
+    }
+
+    
 
     /**
      * Retrieves all images for a specific consultation.
      */
-    public function getImagesForConsultation(int $consultationId): string {
+    public function getImagesForConsultation(int $consultationId): string
+    {
         try {
             $stmt = $this->conn->prepare(
-                "SELECT id, description, uploaded_at, TO_BASE64(image_data) as image_data 
+                "SELECT id, description, uploaded_at, 
+                        TO_BASE64(image_data) AS image_data,
+                        image_data_mimetype
                  FROM consultation_images 
                  WHERE consultation_id = :consultation_id"
             );
             $stmt->execute([':consultation_id' => $consultationId]);
             $images = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // Prepend the data URI scheme for easy rendering on the front-end
+    
+            // Prepend the correct data URI scheme for easy rendering on the front-end
             foreach ($images as &$image) {
-                $image['image_data'] = 'data:image/jpeg;base64,' . $image['image_data'];
+                $mime = $image['image_data_mimetype'] ?? 'image/jpeg'; // fallback
+                $image['image_data'] = 'data:' . $mime . ';base64,' . $image['image_data'];
             }
-
+    
             return json_encode($images);
         } catch (Exception $e) {
             http_response_code(500);
             return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
         }
     }
+    
 
     /**
      * Deletes a specific image.

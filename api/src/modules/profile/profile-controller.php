@@ -23,6 +23,8 @@ class ProfileController implements ControllerInterface {
             return json_encode(['message' => 'Unauthorized']);
         }
 
+        $action = $paths[1] ?? null;
+
         switch ($method) {
             case 'GET':
                 // GET /profile
@@ -31,6 +33,15 @@ class ProfileController implements ControllerInterface {
             case 'PUT':
                 // PUT /profile
                 return $this->profileService->updateMyProfile($user->id, $body);
+
+            case 'POST':
+                // POST /profile/picture
+                if ($action === 'picture') {
+                    $file = $_FILES['profile_picture'] ?? null;
+                    return $this->profileService->updateProfilePicture($user->id, $file);
+                }
+                http_response_code(404);
+                return json_encode(['message' => 'Endpoint not found.']);
 
             default:
                 http_response_code(405);

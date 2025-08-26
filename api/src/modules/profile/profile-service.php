@@ -19,7 +19,11 @@ class ProfileService {
      */
     public function getMyProfile(int $userId): string {
         try {
-            $stmt = $this->conn->prepare("SELECT id, name, email, phone, role FROM users WHERE id = :id");
+            // UPDATED: Select the mimetype as well
+            $stmt = $this->conn->prepare(
+                "SELECT id, name, email, phone, role, TO_BASE64(profile_picture) as profile_picture, profile_picture_mimetype 
+                 FROM users WHERE id = :id"
+            );
             $stmt->execute([':id' => $userId]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -27,6 +31,12 @@ class ProfileService {
                 http_response_code(404);
                 return json_encode(['error' => 'User not found.']);
             }
+
+            // UPDATED: Dynamically build the data URI
+            if ($user['profile_picture'] && $user['profile_picture_mimetype']) {
+                $user['profile_picture'] = 'data:' . $user['profile_picture_mimetype'] . ';base64,' . $user['profile_picture'];
+            }
+            unset($user['profile_picture_mimetype']); // Clean up the response
 
             return json_encode($user);
         } catch (Exception $e) {
@@ -118,6 +128,44 @@ class ProfileService {
             }
 
             return json_encode(['message' => 'Profile updated successfully.']);
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+        }
+    }
+
+        /**
+     * Updates the profile picture for the currently logged-in user.
+     */
+    public function updateProfilePicture(int $userId, array $file): string {
+        // Basic validation for the uploaded file
+        if (empty($file) || $file['error'] !== UPLOAD_ERR_OK) {
+            http_response_code(400);
+            return json_encode(['error' => 'File upload error or no file provided.']);
+        }
+        if ($file['size'] > 2000000) { // 2MB limit
+            http_response_code(400);
+            return json_encode(['error' => 'File is too large. Max size is 2MB.']);
+        }
+
+        // Read the binary data from the uploaded file
+        $imageData = file_get_contents($file['tmp_name']);
+        $imageMimeType = $file['type']; // Get the MIME type from the upload
+
+        try {
+            // UPDATED: Save the mimetype along with the image data
+            $stmt = $this->conn->prepare("UPDATE users SET profile_picture = :image_data, profile_picture_mimetype = :mimetype WHERE id = :id");
+            $stmt->bindParam(':image_data', $imageData, PDO::PARAM_LOB);
+            $stmt->bindParam(':mimetype', $imageMimeType, PDO::PARAM_STR);
+            $stmt->bindParam(':id', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+
+            if ($stmt->rowCount() === 0) {
+                 http_response_code(404);
+                 return json_encode(['error' => 'User not found.']);
+            }
+
+            return json_encode(['message' => 'Profile picture updated successfully.']);
         } catch (Exception $e) {
             http_response_code(500);
             return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
