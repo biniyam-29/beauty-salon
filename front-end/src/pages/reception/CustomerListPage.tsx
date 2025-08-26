@@ -1,24 +1,31 @@
-import React, { useState, useEffect, type FC } from "react";
+import React, { useState, useMemo, type FC } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useQueries } from "@tanstack/react-query";
+import {
+  User,
+  Heart,
+  Droplet,
+  FileText,
+  Search,
+  ChevronLeft,
+  X,
+} from "lucide-react";
 
-// --- Type Definitions ---
+// --- Type Definitions (Unchanged) ---
 interface CustomerProfile {
   skin_type: string;
   skin_feel: string;
   sun_exposure: string;
   used_products: string;
 }
-
 interface SkinConcern {
   id: number;
   name: string;
 }
-
 interface HealthCondition {
   id: number;
   name: string;
 }
-
 interface Customer {
   id: number | string;
   name: string;
@@ -32,7 +39,6 @@ interface Customer {
   skin_concerns?: SkinConcern[];
   health_conditions?: HealthCondition[];
 }
-
 interface Consultation {
   id: number;
   consultation_date: string;
@@ -40,436 +46,458 @@ interface Consultation {
   doctor_name: string;
 }
 
-// --- SVG Icons ---
-const SearchIcon: FC = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-5 w-5"
-    viewBox="0 0 20 20"
-    fill="currentColor"
-  >
-    <path
-      fillRule="evenodd"
-      d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-      clipRule="evenodd"
-    />
-  </svg>
-);
+// --- API Fetching Functions ---
+const BASE_URL = "https://beauty-api.biniyammarkos.com";
+const getAuthToken = () => {
+  const token = localStorage.getItem("auth_token");
+  if (!token) throw new Error("Authentication token not found.");
+  return token;
+};
 
-const CloseIcon: FC<{ className?: string }> = ({ className }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M6 18L18 6M6 6l12 12"
-    />
-  </svg>
-);
+const fetchCustomers = async (): Promise<Customer[]> => {
+  const token = getAuthToken();
+  const response = await fetch(`${BASE_URL}/customers`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error("Failed to fetch customers.");
+  const data = await response.json();
+  return data.customers || [];
+};
 
-// --- Customer Detail Modal Component ---
-const CustomerDetailModal: FC<{
-  customerId: number | string;
-  onClose: () => void;
-}> = ({ customerId, onClose }) => {
-  const navigate = useNavigate();
-  const [customer, setCustomer] = useState<Customer | null>(null);
-  const [consultations, setConsultations] = useState<Consultation[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+const fetchCustomerDetails = async (
+  customerId: number | string
+): Promise<Customer> => {
+  const token = getAuthToken();
+  const response = await fetch(`${BASE_URL}/customers/${customerId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error("Failed to fetch customer details.");
+  return response.json();
+};
 
-  useEffect(() => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      navigate("/login", { replace: true });
-      return;
+const fetchCustomerConsultations = async (
+  customerId: number | string
+): Promise<Consultation[]> => {
+  const token = getAuthToken();
+  const response = await fetch(
+    `${BASE_URL}/customers/${customerId}/consultations`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
     }
+  );
+  if (!response.ok) throw new Error("Failed to fetch consultations.");
+  const data = await response.json();
+  return data.consultations || [];
+};
 
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const baseUrl = "https://beauty-api.biniyammarkos.com";
-        const headers = { Authorization: `Bearer ${token}` };
+// --- Modern UI Components ---
 
-        const [customerRes, consultationsRes] = await Promise.all([
-          fetch(`${baseUrl}/customers/${customerId}`, { headers }),
-          fetch(`${baseUrl}/customers/${customerId}/consultations`, {
-            headers,
-          }),
-        ]);
+const CustomerListItem: FC<{
+  customer: Customer;
+  isSelected: boolean;
+  onClick: () => void;
+}> = ({ customer, isSelected, onClick }) => (
+  <div
+    onClick={onClick}
+    className={`flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-colors duration-200 ${
+      isSelected ? "bg-rose-100/60" : "hover:bg-rose-100/40"
+    }`}
+  >
+    <img
+      src={customer.avatar || `https://i.pravatar.cc/150?u=${customer.id}`}
+      alt={customer.name}
+      className="w-12 h-12 rounded-full object-cover bg-rose-200 flex-shrink-0"
+    />
+    <div className="overflow-hidden">
+      <h3 className="font-bold text-gray-800 truncate">{customer.name}</h3>
+      <p className="text-sm text-gray-500 truncate">{customer.phone}</p>
+    </div>
+  </div>
+);
 
-        if (!customerRes.ok)
-          throw new Error("Failed to fetch customer details.");
-        const customerData = await customerRes.json();
-        setCustomer(customerData);
+const DetailSection: FC<{
+  title: string;
+  icon: React.ReactElement;
+  children: React.ReactNode;
+}> = ({ title, icon, children }) => (
+  <div className="mb-8">
+    <div className="flex items-center gap-3 mb-4">
+      <div className="text-rose-500">{icon}</div>
+      <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+    </div>
+    <div className="bg-white p-6 rounded-xl border border-rose-100/60">
+      {children}
+    </div>
+  </div>
+);
 
-        if (!consultationsRes.ok)
-          throw new Error("Failed to fetch consultations.");
-        const consultationsData = await consultationsRes.json();
-        setConsultations(consultationsData.consultations || []);
-      } catch (err: any) {
-        setError(err.message);
-        console.error(err);
-      } finally {
-        setIsLoading(false);
+const InfoPill: FC<{ label: string; value?: string | null }> = ({
+  label,
+  value,
+}) => (
+  <div>
+    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+      {label}
+    </p>
+    <p className="text-gray-700 font-semibold">{value || "N/A"}</p>
+  </div>
+);
+
+const Tag: FC<{ children: React.ReactNode }> = ({ children }) => (
+  <span className="bg-rose-100/60 text-rose-800 text-sm font-medium px-3 py-1.5 rounded-full">
+    {children}
+  </span>
+);
+
+const CustomerDetailView: FC<{ customerId: number | string }> = ({
+  customerId,
+}) => {
+  const [activeTab, setActiveTab] = useState("profile");
+
+  const results = useQueries({
+    queries: [
+      {
+        queryKey: ["customer", customerId],
+        queryFn: () => fetchCustomerDetails(customerId),
+      },
+      {
+        queryKey: ["consultations", customerId],
+        queryFn: () => fetchCustomerConsultations(customerId),
+      },
+    ],
+  });
+
+  const [customerQuery, consultationsQuery] = results;
+  const {
+    data: customer,
+    isLoading: isCustomerLoading,
+    isError: isCustomerError,
+  } = customerQuery;
+  const {
+    data: consultations,
+    isLoading: areConsultationsLoading,
+    isError: isConsultationsError,
+  } = consultationsQuery;
+
+  if (isCustomerLoading || areConsultationsLoading) return <DetailSkeleton />;
+  if (isCustomerError || isConsultationsError)
+    return (
+      <div className="p-10 text-center text-red-500">
+        Error loading profile.
+      </div>
+    );
+  if (!customer) return null;
+
+  // ** FIXED: Robustly parse stringified JSON data from the API **
+  const safeJsonParse = (jsonString: string | null | undefined): any[] => {
+    if (!jsonString) return [];
+    try {
+      let parsed = JSON.parse(jsonString);
+      // Handle double-stringified JSON (e.g., "\"[]\"")
+      if (typeof parsed === "string") {
+        parsed = JSON.parse(parsed);
       }
-    };
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.error("Failed to parse JSON string:", jsonString, e);
+      return [];
+    }
+  };
 
-    fetchData();
-  }, [customerId, navigate]);
+  const usedProducts = safeJsonParse(customer.profile?.used_products);
+  const skinFeel = safeJsonParse(customer.profile?.skin_feel);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-        >
-          <CloseIcon className="w-8 h-8" />
-        </button>
-
-        {isLoading ? (
-          <div className="text-center py-20 text-gray-500">
-            Loading customer profile...
+    <div className="flex-1 overflow-y-auto">
+      {/* Header */}
+      <div className="p-8 sticky top-0 bg-[#FDF8F5]/80 backdrop-blur-sm z-10 border-b border-rose-100/80">
+        <div className="flex items-center gap-6">
+          <img
+            src={
+              customer.avatar || `https://i.pravatar.cc/150?u=${customer.id}`
+            }
+            alt={customer.name}
+            className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+          />
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">
+              {customer.name}
+            </h1>
+            <p className="text-gray-500 mt-1">{customer.email}</p>
+            <p className="text-gray-500">{customer.phone}</p>
           </div>
-        ) : error ? (
-          <div className="text-center py-20 text-red-600">Error: {error}</div>
-        ) : customer ? (
+        </div>
+        {/* Tabs */}
+        <div className="mt-6 flex border-b border-rose-200/60">
+          <button
+            onClick={() => setActiveTab("profile")}
+            className={`px-4 py-2 text-sm font-semibold transition-colors ${
+              activeTab === "profile"
+                ? "border-b-2 border-rose-500 text-rose-600"
+                : "text-gray-500 hover:text-rose-500"
+            }`}
+          >
+            Profile
+          </button>
+          <button
+            onClick={() => setActiveTab("consultations")}
+            className={`px-4 py-2 text-sm font-semibold transition-colors ${
+              activeTab === "consultations"
+                ? "border-b-2 border-rose-500 text-rose-600"
+                : "text-gray-500 hover:text-rose-500"
+            }`}
+          >
+            Consultations
+          </button>
+        </div>
+      </div>
+
+      <div className="p-8">
+        {activeTab === "profile" && (
           <>
-            <div className="p-8">
-              <div className="flex flex-col sm:flex-row items-center gap-8">
-                <img
-                  src={
-                    customer.avatar ||
-                    `https://i.pravatar.cc/150?u=${customer.id}`
-                  }
-                  alt={customer.name}
-                  className="w-32 h-32 rounded-full object-cover border-4 border-rose-200"
-                  onError={(
-                    e: React.SyntheticEvent<HTMLImageElement, Event>
-                  ) => {
-                    const target = e.target as HTMLImageElement;
-                    target.onerror = null;
-                    const initial = customer.name
-                      ? customer.name.charAt(0).toUpperCase()
-                      : "?";
-                    target.src = `https://placehold.co/150x150/fbcfe8/4a044e?text=${initial}`;
-                  }}
+            <DetailSection
+              title="Personal Information"
+              icon={<User size={20} />}
+            >
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <InfoPill label="Address" value={customer.address} />
+                <InfoPill label="City" value={customer.city} />
+                <InfoPill label="Date of Birth" value={customer.birth_date} />
+              </div>
+            </DetailSection>
+            <DetailSection title="Skin Profile" icon={<Droplet size={20} />}>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <InfoPill
+                  label="Skin Type"
+                  value={customer.profile?.skin_type}
                 />
-                <div className="text-center sm:text-left">
-                  <h1 className="text-4xl font-bold text-gray-800">
-                    {customer.name}
-                  </h1>
-                  <p className="text-gray-500 mt-2">{customer.email}</p>
-                  <p className="text-gray-500">{customer.phone}</p>
+                <InfoPill label="Skin Feel" value={skinFeel.join(", ")} />
+                <InfoPill
+                  label="Sun Exposure"
+                  value={customer.profile?.sun_exposure}
+                />
+              </div>
+              {usedProducts.length > 0 && (
+                <div className="mt-6">
+                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-2">
+                    Used Products
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {usedProducts.map((p: string, i: number) => (
+                      <Tag key={i}>{p}</Tag>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-200 px-8 py-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                Personal Information
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-                <p>
-                  <strong>Address:</strong> {customer.address || "N/A"}
-                </p>
-                <p>
-                  <strong>City:</strong> {customer.city || "N/A"}
-                </p>
-                <p>
-                  <strong>Date of Birth:</strong> {customer.birth_date || "N/A"}
-                </p>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-200 px-8 py-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                Skin Profile
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-                <p>
-                  <strong>Skin Type:</strong>{" "}
-                  {customer.profile?.skin_type || "N/A"}
-                </p>
-                <p>
-                  <strong>Skin Feel:</strong>{" "}
-                  {customer.profile?.skin_feel || "N/A"}
-                </p>
-                <p>
-                  <strong>Sun Exposure:</strong>{" "}
-                  {customer.profile?.sun_exposure || "N/A"}
-                </p>
-                <p>
-                  <strong>Used Products:</strong>{" "}
-                  {customer.profile?.used_products
-                    ? JSON.parse(customer.profile.used_products).join(", ")
-                    : "N/A"}
-                </p>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-200 px-8 py-6">
+              )}
+            </DetailSection>
+            <DetailSection title="Health & Concerns" icon={<Heart size={20} />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                  <h3 className="font-semibold text-gray-700 mb-3">
                     Skin Concerns
-                  </h2>
-                  {customer.skin_concerns &&
-                  customer.skin_concerns.length > 0 ? (
-                    <ul className="list-disc list-inside space-y-2">
-                      {customer.skin_concerns.map((concern) => (
-                        <li key={concern.id}>{concern.name}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-gray-500">No skin concerns listed.</p>
-                  )}
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {(customer.skin_concerns?.length ?? 0) > 0 ? (
+                      customer.skin_concerns?.map((c) => (
+                        <Tag key={c.id}>{c.name}</Tag>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">None listed.</p>
+                    )}
+                  </div>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                  <h3 className="font-semibold text-gray-700 mb-3">
                     Health Conditions
-                  </h2>
-                  {customer.health_conditions &&
-                  customer.health_conditions.length > 0 ? (
-                    <ul className="list-disc list-inside space-y-2">
-                      {customer.health_conditions.map((condition) => (
-                        <li key={condition.id}>{condition.name}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-gray-500">
-                      No health conditions listed.
-                    </p>
-                  )}
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {(customer.health_conditions?.length ?? 0) > 0 ? (
+                      customer.health_conditions?.map((c) => (
+                        <Tag key={c.id}>{c.name}</Tag>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">None listed.</p>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="border-t border-gray-200 px-8 py-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">
-                Consultation History
-              </h2>
-              <div className="space-y-6">
-                {consultations.length > 0 ? (
-                  consultations.map((consult) => (
-                    <div
-                      key={consult.id}
-                      className="bg-rose-50/50 p-5 rounded-lg border-l-4 border-rose-400"
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="font-bold text-lg text-rose-800">
-                          {new Date(
-                            consult.consultation_date
-                          ).toLocaleDateString()}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          with {consult.doctor_name}
-                        </p>
-                      </div>
-                      <p className="text-gray-700">{consult.notes}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500">
-                    No consultation history found.
-                  </p>
-                )}
-              </div>
-            </div>
+            </DetailSection>
           </>
-        ) : (
-          <div className="text-center py-20 text-gray-500">
-            Customer not found.
-          </div>
+        )}
+        {activeTab === "consultations" && (
+          <DetailSection
+            title="Consultation History"
+            icon={<FileText size={20} />}
+          >
+            <div className="space-y-6">
+              {(consultations?.length ?? 0) > 0 ? (
+                consultations?.map((c) => (
+                  <div key={c.id} className="relative pl-8">
+                    <div className="absolute left-0 top-1 h-full border-l-2 border-rose-200"></div>
+                    <div className="absolute left-[-6px] top-1 w-3 h-3 bg-rose-500 rounded-full border-2 border-white"></div>
+                    <p className="font-bold text-rose-800">
+                      {new Date(c.consultation_date).toLocaleDateString(
+                        "en-US",
+                        { year: "numeric", month: "long", day: "numeric" }
+                      )}
+                    </p>
+                    <p className="text-sm text-gray-500 mb-2">
+                      with {c.doctor_name}
+                    </p>
+                    <p className="text-gray-700">{c.notes}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500">No consultation history found.</p>
+              )}
+            </div>
+          </DetailSection>
         )}
       </div>
     </div>
   );
 };
 
-// --- Customer Card Component ---
-const CustomerCard: FC<{ customer: Customer; onClick: () => void }> = ({
-  customer,
-  onClick,
-}) => (
-  <div onClick={onClick} className="cursor-pointer">
-    <div
-      className={
-        "bg-white shadow-md hover:shadow-xl rounded-xl p-4 transition-shadow duration-300 h-full"
-      }
-    >
-      <div className="flex items-center space-x-4">
-        <img
-          src={customer.avatar || `https://i.pravatar.cc/150?u=${customer.id}`}
-          alt={customer.name}
-          className="w-12 h-12 rounded-full object-cover bg-rose-100"
-          onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-            const target = e.target as HTMLImageElement;
-            target.onerror = null;
-            const initial = customer.name
-              ? customer.name.charAt(0).toUpperCase()
-              : "?";
-            target.src = `https://placehold.co/150x150/fbcfe8/4a044e?text=${initial}`;
-          }}
-        />
-        <div>
-          <h3 className="text-lg font-bold text-gray-800">{customer.name}</h3>
-          <p className="text-sm text-gray-500">{customer.phone}</p>
-          <p className="text-sm text-gray-500">{customer.email}</p>
+// --- Skeleton Loader Components ---
+const ListSkeleton = () => (
+  <div className="space-y-2">
+    {Array.from({ length: 8 }).map((_, i) => (
+      <div key={i} className="flex items-center gap-4 p-3 animate-pulse">
+        <div className="w-12 h-12 rounded-full bg-gray-200 flex-shrink-0"></div>
+        <div className="flex-1 space-y-2">
+          <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+          <div className="h-3 w-1/2 bg-gray-200 rounded"></div>
         </div>
       </div>
+    ))}
+  </div>
+);
+
+const DetailSkeleton = () => (
+  <div className="p-8 animate-pulse">
+    <div className="flex items-center gap-6 mb-10">
+      <div className="w-24 h-24 rounded-full bg-gray-200"></div>
+      <div className="space-y-3">
+        <div className="h-8 w-64 bg-gray-200 rounded"></div>
+        <div className="h-4 w-48 bg-gray-200 rounded"></div>
+        <div className="h-4 w-32 bg-gray-200 rounded"></div>
+      </div>
+    </div>
+    <div className="space-y-8">
+      <div className="h-6 w-48 bg-gray-200 rounded mb-4"></div>
+      <div className="bg-gray-100 h-32 rounded-xl"></div>
+      <div className="h-6 w-48 bg-gray-200 rounded mb-4"></div>
+      <div className="bg-gray-100 h-32 rounded-xl"></div>
     </div>
   </div>
 );
 
-// --- Main Customer List Page Component ---
+// --- Main Page Component ---
 export const CustomerListPage: FC = () => {
   const navigate = useNavigate();
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedCustomerId, setSelectedCustomerId] = useState<
     number | string | null
   >(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // --- CHANGE: This useEffect now fetches ALL customers just once on component mount ---
-  useEffect(() => {
-    const token = localStorage.getItem("auth_token");
+  const {
+    data: customers,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["customers"],
+    queryFn: fetchCustomers,
+  });
 
-    if (!token) {
-      console.error("Authentication error: No token found.");
-      navigate("/login", { replace: true });
-      return;
-    }
-
-    const fetchAllCustomers = async () => {
-      setIsLoading(true);
-      setError(null);
-      const url = "https://beauty-api.biniyammarkos.com/customers";
-
-      try {
-        const response = await fetch(url, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(
-            `Failed to fetch customers. Status: ${response.status}`
-          );
-        }
-
-        const result = await response.json();
-        const customerData = result?.customers;
-
-        if (Array.isArray(customerData)) {
-          setCustomers(customerData);
-        } else {
-          setCustomers([]);
-          console.warn(
-            "API response did not contain a customer array.",
-            result
-          );
-        }
-      } catch (err: any) {
-        setError(err.message);
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAllCustomers();
-  }, [navigate]); // --- CHANGE: Dependency array is now empty, so this runs only once ---
-
-  // --- NEW: Client-side filtering logic ---
-  const filteredCustomers = customers.filter((customer) =>
-    customer.phone.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCustomers = useMemo(
+    () =>
+      customers?.filter(
+        (c) =>
+          c.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          c.name.toLowerCase().includes(searchTerm.toLowerCase())
+      ) ?? [],
+    [customers, searchTerm]
   );
 
   return (
-    <>
-      <div className="min-h-screen bg-rose-50 font-sans p-4 sm:p-6 lg:p-8">
-        <div className="max-w-7xl mx-auto">
-          <header className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-            <h1 className="text-4xl font-bold text-gray-800 tracking-wide text-center sm:text-left">
-              Customer List
-            </h1>
-            <button
-              onClick={() => navigate("/reception")}
-              className="inline-flex items-center px-6 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-rose-600 hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 transition-colors"
-            >
-              Back to Dashboard
-            </button>
-          </header>
+    <div className="h-screen w-full bg-[#FDF8F5] font-sans flex flex-col">
+      <header className="flex items-center justify-between p-4 border-b border-rose-200/60 bg-white/50 backdrop-blur-sm flex-shrink-0">
+        <h1 className="text-xl font-bold text-gray-800">Client Profiles</h1>
+        <button
+          onClick={() => navigate("/reception")}
+          className="flex items-center gap-2 text-gray-600 font-semibold py-2 px-4 rounded-lg hover:bg-rose-100/50 transition-colors"
+        >
+          <ChevronLeft size={16} />
+          Back to Dashboard
+        </button>
+      </header>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
-            <div className="relative flex-grow w-full max-w-lg">
-              <input
-                type="tel"
-                placeholder="Search by Phone Number..."
-                value={searchTerm}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setSearchTerm(e.target.value)
-                }
-                className="w-full py-3 pl-4 pr-12 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Column: Customer List */}
+        <aside className="w-full md:w-1/3 lg:w-1/4 border-r border-rose-200/60 flex flex-col">
+          <div className="p-4 border-b border-rose-200/60">
+            <div className="relative">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={20}
               />
-              <button className="absolute inset-y-0 right-0 flex items-center justify-center w-12 h-full text-white bg-gray-800 rounded-r-lg hover:bg-gray-900">
-                <SearchIcon />
-              </button>
+              <input
+                type="text"
+                placeholder="Search by name or phone..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-white border border-rose-200/80 rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-rose-300 focus:outline-none transition"
+              />
             </div>
           </div>
+          <div className="flex-1 overflow-y-auto p-2">
+            {isLoading ? (
+              <ListSkeleton />
+            ) : isError ? (
+              <p className="p-4 text-red-500">{error.message}</p>
+            ) : filteredCustomers.length > 0 ? (
+              filteredCustomers.map((customer) => (
+                <CustomerListItem
+                  key={customer.id}
+                  customer={customer}
+                  isSelected={selectedCustomerId === customer.id}
+                  onClick={() => setSelectedCustomerId(customer.id)}
+                />
+              ))
+            ) : (
+              <p className="p-4 text-center text-gray-500">No clients found.</p>
+            )}
+          </div>
+        </aside>
 
-          {isLoading ? (
-            <div className="text-center py-12 text-gray-500">
-              Loading customers...
-            </div>
-          ) : error ? (
-            <div className="text-center py-12 text-red-600">Error: {error}</div>
+        {/* Right Column: Customer Details */}
+        <main className="flex-1 bg-[#FDF8F5] hidden md:block">
+          {selectedCustomerId ? (
+            <CustomerDetailView customerId={selectedCustomerId} />
           ) : (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* --- CHANGE: Mapping over the filtered list now --- */}
-                {filteredCustomers.map((customer) => (
-                  <CustomerCard
-                    key={customer.id}
-                    customer={customer}
-                    onClick={() => setSelectedCustomerId(customer.id)}
-                  />
-                ))}
-              </div>
-              {filteredCustomers.length === 0 && !isLoading && (
-                <div className="col-span-full text-center py-12">
-                  <p className="text-gray-500 text-lg">
-                    {searchTerm
-                      ? `No customers found for "${searchTerm}".`
-                      : "No customers found."}
-                  </p>
-                </div>
-              )}
-            </>
+            <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+              <User size={48} className="mb-4 text-rose-300" />
+              <h2 className="text-xl font-semibold">Select a client</h2>
+              <p>Choose a client from the list to view their full profile.</p>
+            </div>
           )}
-        </div>
+        </main>
       </div>
+
+      {/* Full-screen modal for mobile view */}
       {selectedCustomerId && (
-        <CustomerDetailModal
-          customerId={selectedCustomerId}
-          onClose={() => setSelectedCustomerId(null)}
-        />
+        <div className="md:hidden fixed inset-0 bg-[#FDF8F5] z-50">
+          <button
+            onClick={() => setSelectedCustomerId(null)}
+            className="absolute top-4 right-4 z-20 p-2 bg-white/50 rounded-full"
+          >
+            <X size={24} />
+          </button>
+          <CustomerDetailView customerId={selectedCustomerId} />
+        </div>
       )}
-    </>
+    </div>
   );
 };
 

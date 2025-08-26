@@ -17,6 +17,7 @@ import { ProfessionalSessionPage } from "./pages/professionals/ProfessionalSessi
 import { RemindersPage } from "./pages/reception/RemindersPage";
 import AssignedPatientsPage from "./pages/admin/AdminDashboardPage";
 import HomePage from "./pages/HomePage";
+import PrescriptionFulfillmentPage from "./pages/reception/ProductDeductionPage";
 
 // --- Font Import Component ---
 const FontLink = () => (
@@ -135,6 +136,17 @@ const AppRoutes: React.FC = () => {
         }
       />
 
+      <Route
+        path="/reception/product-deduction"
+        element={
+          <RequireAuth role="reception">
+            <GradientLayout>
+              <PrescriptionFulfillmentPage />
+            </GradientLayout>
+          </RequireAuth>
+        }
+      />
+
       {/* Professional Routes */}
       <Route
         path="/professional"
@@ -160,7 +172,7 @@ const AppRoutes: React.FC = () => {
         path="/admin/dashboard"
         element={
           <RequireAuth role="super-admin">
-              <AssignedPatientsPage />
+            <AssignedPatientsPage />
           </RequireAuth>
         }
       />

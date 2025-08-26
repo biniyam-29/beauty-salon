@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Product } from "../types";
 import { SearchIcon, EditIcon } from "./Icons";
 import { ProductModal } from "./Modals";
@@ -6,7 +7,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
-// TrashIcon component
+// --- Helper Components (Unchanged) ---
 const TrashIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -24,61 +25,134 @@ const TrashIcon = () => (
   </svg>
 );
 
+// --- API Functions ---
 const BASE_URL = "https://beauty-api.biniyammarkos.com";
 
+const getAuthToken = () => {
+  const token = localStorage.getItem("auth_token");
+  if (!token) throw new Error("Authentication token not found. Please log in.");
+  return token;
+};
+
+// Fetch all products
+const fetchProducts = async (
+  page: number
+): Promise<{ products: Product[]; totalPages: number }> => {
+  const token = getAuthToken();
+  const response = await fetch(`${BASE_URL}/products?page=${page}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok)
+    throw new Error(`Failed to fetch products: ${response.statusText}`);
+  return response.json();
+};
+
+// Add a new product
+const addProduct = async (
+  productData: Omit<Product, "id" | "image">
+): Promise<{ productId: number }> => {
+  const token = getAuthToken();
+  const response = await fetch(`${BASE_URL}/products`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(productData),
+  });
+  if (!response.ok) throw new Error("Failed to create product.");
+  return response.json();
+};
+
+// Update an existing product
+const updateProduct = async (
+  productData: Product
+): Promise<{ message: string }> => {
+  const token = getAuthToken();
+  const { id, ...payload } = productData;
+  const response = await fetch(`${BASE_URL}/products/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new Error("Failed to update product.");
+  return response.json();
+};
+
+// Delete a product
+const deleteProduct = async (
+  productId: number
+): Promise<{ message: string }> => {
+  const token = getAuthToken();
+  const response = await fetch(`${BASE_URL}/products/${productId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error("Failed to delete product.");
+  return response.json();
+};
+
+// --- Main Component ---
 export const ProductManagementView: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  // TanStack Query client for invalidation
+  const queryClient = useQueryClient();
+
+  // Local UI state remains managed by useState, which is its intended purpose.
   const [stockFilter, setStockFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
-  // API State
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
-  // --- Fetch Products ---
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      setError(null);
-      const token = localStorage.getItem("auth_token");
+  // --- TanStack Query for data fetching ---
+  const {
+    data: queryData,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["products", currentPage], // Re-fetches when currentPage changes
+    queryFn: () => fetchProducts(currentPage),
+    placeholderData: (previousData) => previousData, // Keeps old data visible while new data is fetched
+  });
 
-      if (!token) {
-        setError("Authentication token not found. Please log in.");
-        setLoading(false);
-        return;
-      }
+  const products = queryData?.products ?? [];
+  const totalPages = queryData?.totalPages ?? 1;
 
-      try {
-        const response = await fetch(
-          `${BASE_URL}/products?page=${currentPage}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+  // --- TanStack Mutations for API actions ---
+  const addProductMutation = useMutation({
+    mutationFn: addProduct,
+    onSuccess: () => {
+      // Invalidate the query to automatically refetch and show the new product
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      setIsAddModalOpen(false);
+    },
+    onError: (err) => alert(`Error: ${err.message}`),
+  });
 
-        if (!response.ok)
-          throw new Error(`Failed to fetch products: ${response.statusText}`);
+  const updateProductMutation = useMutation({
+    mutationFn: updateProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      setEditingProduct(null);
+    },
+    onError: (err) => alert(`Error: ${err.message}`),
+  });
 
-        const data = await response.json();
-        setProducts(data.products || []);
-        setTotalPages(data.totalPages || 1);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "An unknown error occurred."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+  const deleteProductMutation = useMutation({
+    mutationFn: deleteProduct,
+    onSuccess: () => {
+      // Invalidate and refetch to remove the product from the list
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (err) => alert(`Error: ${err.message}`),
+  });
 
-    fetchProducts();
-  }, [currentPage]);
-
-  // --- Filters ---
+  // --- Client-Side Filtering (Derived State) ---
+  // useMemo is still the correct hook for this synchronous, expensive calculation.
   const filteredProducts = useMemo(() => {
     return products
       .filter(
@@ -97,104 +171,9 @@ export const ProductManagementView: React.FC = () => {
       });
   }, [products, stockFilter, searchTerm]);
 
-  // --- Add Product ---
-  const handleAddProduct = async (
-    newProductData: Omit<Product, "id" | "image">
-  ) => {
-    const token = localStorage.getItem("auth_token");
-    try {
-      const response = await fetch(`${BASE_URL}/products`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(newProductData),
-      });
-
-      if (!response.ok) throw new Error("Failed to create product.");
-      const result = await response.json();
-
-      // Add the new product manually since API returns only productId
-      const newProduct: Product = {
-        ...newProductData,
-        id: Number(result.productId),
-        image: null,
-      };
-
-      setProducts((prev) => [newProduct, ...prev]);
-      setIsAddModalOpen(false);
-    } catch (err) {
-      alert(
-        `Error: ${
-          err instanceof Error ? err.message : "An unknown error occurred."
-        }`
-      );
-    }
-  };
-
-  // --- Update Product ---
-  const handleSaveProduct = async (updatedProduct: Product) => {
-    const token = localStorage.getItem("auth_token");
-    const payload = {
-      name: updatedProduct.name,
-      price: updatedProduct.price,
-      stock_quantity: updatedProduct.stock_quantity,
-      brand: updatedProduct.brand,
-      description: updatedProduct.description,
-    };
-
-    try {
-      const response = await fetch(
-        `${BASE_URL}/products/${updatedProduct.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to update product.");
-      await response.json(); // only message returned
-
-      setProducts((prev) =>
-        prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p))
-      );
-      setEditingProduct(null);
-    } catch (err) {
-      alert(
-        `Error: ${
-          err instanceof Error ? err.message : "An unknown error occurred."
-        }`
-      );
-    }
-  };
-
-  // --- Delete Product ---
-  const handleDeleteProduct = async (productId: number) => {
-    if (!window.confirm("Are you sure you want to delete this product?"))
-      return;
-    const token = localStorage.getItem("auth_token");
-
-    try {
-      const response = await fetch(`${BASE_URL}/products/${productId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) throw new Error("Failed to delete product.");
-      await response.json(); // just message
-
-      setProducts((prev) => prev.filter((p) => p.id !== productId));
-    } catch (err) {
-      alert(
-        `Error: ${
-          err instanceof Error ? err.message : "An unknown error occurred."
-        }`
-      );
+  const handleDelete = (productId: number) => {
+    if (window.confirm("Are you sure you want to delete this product?")) {
+      deleteProductMutation.mutate(productId);
     }
   };
 
@@ -247,13 +226,13 @@ export const ProductManagementView: React.FC = () => {
         </div>
       </div>
 
-      {/* products */}
-      {loading && (
+      {/* products list */}
+      {isLoading && (
         <p className="text-center text-gray-500">Loading products...</p>
       )}
-      {error && <p className="text-center text-red-500">{error}</p>}
+      {isError && <p className="text-center text-red-500">{error.message}</p>}
 
-      {!loading && !error && (
+      {!isLoading && !isError && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
@@ -304,8 +283,9 @@ export const ProductManagementView: React.FC = () => {
                         <EditIcon />
                       </button>
                       <button
-                        onClick={() => handleDeleteProduct(product.id)}
+                        onClick={() => handleDelete(product.id)}
                         className="text-gray-400 hover:text-red-500"
+                        disabled={deleteProductMutation.isPending}
                       >
                         <TrashIcon />
                       </button>
@@ -332,7 +312,7 @@ export const ProductManagementView: React.FC = () => {
           variant="outline"
           size="sm"
           onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-          disabled={currentPage === 1 || loading}
+          disabled={currentPage === 1 || isLoading}
         >
           <ChevronLeftIcon className="h-4 w-4 mr-1" /> Previous
         </Button>
@@ -343,7 +323,7 @@ export const ProductManagementView: React.FC = () => {
           variant="outline"
           size="sm"
           onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-          disabled={currentPage === totalPages || loading}
+          disabled={currentPage === totalPages || isLoading}
         >
           Next <ChevronRightIcon className="h-4 w-4 ml-1" />
         </Button>
@@ -355,14 +335,16 @@ export const ProductManagementView: React.FC = () => {
           title="Edit Product"
           product={editingProduct}
           onClose={() => setEditingProduct(null)}
-          onSave={handleSaveProduct}
+          onSave={(product) => updateProductMutation.mutate(product)}
+          isPending={updateProductMutation.isPending}
         />
       )}
       {isAddModalOpen && (
         <ProductModal
           title="Add New Product"
           onClose={() => setIsAddModalOpen(false)}
-          onSave={handleAddProduct}
+          onSave={(product) => addProductMutation.mutate(product)}
+          isPending={addProductMutation.isPending}
         />
       )}
     </section>

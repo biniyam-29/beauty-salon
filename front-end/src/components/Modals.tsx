@@ -7,6 +7,7 @@ interface ProductModalProps {
   onClose: () => void;
   onSave: (product: Product) => void;
   title: string;
+  isPending?: boolean;
 }
 
 export const ProductModal: React.FC<ProductModalProps> = ({

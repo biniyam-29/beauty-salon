@@ -1,9 +1,16 @@
-import React, { useState, useEffect, useMemo } from "react";
-// react-router-dom is a dependency. In a real app, you would
-// import this from the actual library.
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  PartyPopper,
+  AlertTriangle,
+} from "lucide-react";
 
-// --- Placeholder Types (replace with your actual type definitions) ---
+// --- FIXED: Type definitions are now self-contained in this file ---
 type PatientData = {
   name: string;
   address: string;
@@ -54,9 +61,61 @@ type LookupItem = {
   name: string;
 };
 
-// --- UI Component Placeholders ---
-// These are simple replacements using standard HTML and Tailwind CSS to make the component runnable.
+// --- API Functions ---
+const API_BASE_URL = "https://beauty-api.biniyammarkos.com";
 
+const getAuthToken = () => {
+  const token = localStorage.getItem("auth_token");
+  if (!token) throw new Error("Authentication token not found.");
+  return token;
+};
+
+const fetchLookups = async (): Promise<{
+  concerns: LookupItem[];
+  conditions: LookupItem[];
+}> => {
+  const token = getAuthToken();
+  const headers = { Authorization: `Bearer ${token}` };
+  const [concernsRes, conditionsRes] = await Promise.all([
+    fetch(`${API_BASE_URL}/lookups/skin-concerns`, { headers }),
+    fetch(`${API_BASE_URL}/lookups/health-conditions`, { headers }),
+  ]);
+  if (!concernsRes.ok || !conditionsRes.ok) {
+    throw new Error("Failed to fetch lookup data");
+  }
+  const concerns = await concernsRes.json();
+  const conditions = await conditionsRes.json();
+  return { concerns, conditions };
+};
+
+const fetchProfessionals = async (): Promise<ProfessionalData[]> => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/users/role/doctor`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error("Failed to fetch professionals.");
+  const data = await response.json();
+  return data.users || [];
+};
+
+const registerPatient = async (payload: any): Promise<PatientData> => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/customers`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const errorBody = await response.json();
+    throw new Error(errorBody.message || "An unknown error occurred.");
+  }
+  return response.json();
+};
+
+// --- Modern UI Components (Unchanged) ---
 const cn = (...classes: (string | boolean | undefined)[]) =>
   classes.filter(Boolean).join(" ");
 
@@ -66,7 +125,7 @@ const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({
 }) => (
   <div
     className={cn(
-      "bg-white rounded-2xl shadow-lg border border-gray-200",
+      "bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-rose-100/60",
       className
     )}
   >
@@ -74,96 +133,85 @@ const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({
   </div>
 );
 const CardHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="p-6 border-b border-pink-100">{children}</div>
+  <div className="p-6 border-b border-rose-100">{children}</div>
 );
-const CardContent: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="p-6">{children}</div>
+const CardContent: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+}> = ({ children, className }) => (
+  <div className={cn("p-6", className)}>{children}</div>
 );
 const CardTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <h2 className="text-2xl font-bold text-pink-800 font-display">{children}</h2>
+  <h2 className="text-2xl font-bold text-rose-800 font-sans">{children}</h2>
 );
-
 const Button: React.FC<
-  React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "outline" }
-> = ({ children, variant, ...props }) => (
+  React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    variant?: "outline" | "ghost";
+  }
+> = ({ children, variant, className, ...props }) => (
   <button
     className={cn(
-      "inline-flex items-center justify-center rounded-md text-sm font-semibold px-6 py-3 transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5",
-      variant === "outline"
-        ? "bg-transparent border border-pink-600 text-pink-700 hover:bg-pink-50"
-        : "bg-pink-600 text-white hover:bg-pink-700"
+      "inline-flex items-center justify-center rounded-lg text-sm font-semibold px-5 py-2.5 transition-all duration-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-px",
+      variant === "outline" &&
+        "bg-transparent border border-rose-500 text-rose-600 hover:bg-rose-50",
+      variant === "ghost" &&
+        "bg-transparent shadow-none text-rose-600 hover:bg-rose-100/50",
+      !variant && "bg-rose-600 text-white hover:bg-rose-700 shadow-rose-200",
+      className
     )}
     {...props}
   >
     {children}
   </button>
 );
-
 const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (
   props
 ) => (
   <input
-    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm p-3 bg-white/70"
+    className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500 sm:text-sm p-3 bg-white/70"
     {...props}
   />
 );
 const Label: React.FC<React.LabelHTMLAttributes<HTMLLabelElement>> = (
   props
 ) => (
-  <label className="block text-sm font-bold text-gray-700 mb-1" {...props} />
+  <label className="block text-sm font-bold text-gray-700 mb-2" {...props} />
 );
 const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement>> = (
   props
 ) => (
   <textarea
-    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm p-3 bg-white/70"
+    className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500 sm:text-sm p-3 bg-white/70"
     {...props}
   />
 );
-
-const RadioGroup: React.FC<{
-  children: React.ReactNode;
-  className?: string;
-}> = ({ children, className }) => <div className={className}>{children}</div>;
-const RadioGroupItem: React.FC<
-  React.InputHTMLAttributes<HTMLInputElement> & { children: React.ReactNode }
-> = ({ children, id, ...props }) => (
-  <div className="flex items-center">
-    <input
-      type="radio"
-      id={id}
-      className="h-4 w-4 text-pink-600 border-gray-300 focus:ring-pink-500"
-      {...props}
-    />
-    <label
-      htmlFor={id}
-      className="ml-3 block text-sm font-medium text-gray-700"
-    >
-      {children}
-    </label>
-  </div>
-);
-
 const Checkbox: React.FC<{
   children: React.ReactNode;
   id: string;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
 }> = ({ children, id, checked, onCheckedChange }) => (
-  <div className="flex items-center">
+  <label
+    htmlFor={id}
+    className={cn(
+      "flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all duration-200",
+      checked
+        ? "bg-rose-50 border-rose-500"
+        : "bg-white border-gray-200 hover:border-rose-300"
+    )}
+  >
     <input
       id={id}
       type="checkbox"
       checked={checked}
       onChange={(e) => onCheckedChange(e.target.checked)}
-      className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
+      className="h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500"
     />
-    <label htmlFor={id} className="ml-2 block text-sm text-gray-900">
+    <span className="ml-3 block text-sm font-medium text-gray-800">
       {children}
-    </label>
-  </div>
+    </span>
+  </label>
 );
-
 const Switch: React.FC<{
   id: string;
   checked: boolean;
@@ -173,8 +221,8 @@ const Switch: React.FC<{
     type="button"
     onClick={() => onCheckedChange(!checked)}
     className={cn(
-      "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2",
-      checked ? "bg-pink-600" : "bg-gray-200"
+      "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2",
+      checked ? "bg-rose-600" : "bg-gray-200"
     )}
     role="switch"
     aria-checked={checked}
@@ -187,199 +235,93 @@ const Switch: React.FC<{
     />
   </button>
 );
-
 const Progress: React.FC<{ value: number }> = ({ value }) => (
-  <div className="w-full bg-pink-100 rounded-full h-2.5">
+  <div className="w-full bg-rose-100 rounded-full h-1.5">
     <div
-      className="bg-pink-600 h-2.5 rounded-full"
+      className="bg-gradient-to-r from-rose-400 to-rose-600 h-1.5 rounded-full"
       style={{ width: `${value}%`, transition: "width 0.5s ease-in-out" }}
     ></div>
   </div>
 );
 
-const ChevronLeftIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className={cn("h-5 w-5 mr-2", className)}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M15 19l-7-7 7-7"
-    />
-  </svg>
-);
-const ChevronRightIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className={cn("h-5 w-5 ml-2", className)}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M9 5l7 7-7 7"
-    />
-  </svg>
-);
-const CheckIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M5 13l4 4L19 7"
-    />
-  </svg>
-);
-
-// --- NEW COMPONENT: Status Modal ---
 type StatusModalProps = {
-  type: "success" | "error";
+  status: "success" | "error";
   message: string;
   onClose: () => void;
 };
-
 const StatusModal: React.FC<StatusModalProps> = ({
-  type,
+  status,
   message,
   onClose,
 }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in">
     <div
-      className={`bg-white rounded-lg shadow-xl p-8 max-w-sm w-full text-center border-t-4 ${
-        type === "success" ? "border-green-500" : "border-red-500"
-      }`}
-    >
-      {type === "success" ? (
-        <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-          <svg
-            className="h-6 w-6 text-green-600"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-        </div>
-      ) : (
-        <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-          <svg
-            className="h-6 w-6 text-red-600"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-            />
-          </svg>
-        </div>
+      className={cn(
+        "bg-white rounded-lg shadow-xl p-8 max-w-sm w-full text-center border-t-4",
+        status === "success" ? "border-green-500" : "border-red-500"
       )}
-      <h3
-        className={`text-lg leading-6 font-medium ${
-          type === "success" ? "text-green-900" : "text-red-900"
-        } mt-4`}
+    >
+      <div
+        className={cn(
+          "mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full",
+          status === "success" ? "bg-green-100" : "bg-red-100"
+        )}
       >
-        {type === "success" ? "Success" : "Error"}
+        {status === "success" ? (
+          <PartyPopper className="h-6 w-6 text-green-600" />
+        ) : (
+          <AlertTriangle className="h-6 w-6 text-red-600" />
+        )}
+      </div>
+      <h3
+        className={cn(
+          "text-lg leading-6 font-medium mt-4",
+          status === "success" ? "text-green-900" : "text-red-900"
+        )}
+      >
+        {status === "success" ? "Success!" : "Oops!"}
       </h3>
-      <div className="mt-2 px-7 py-3">
-        <p className="text-sm text-gray-500">{message}</p>
-      </div>
-      <div className="mt-4">
-        <Button
-          onClick={onClose}
-          className={
-            type === "success"
-              ? "bg-green-600 hover:bg-green-700"
-              : "bg-red-600 hover:bg-red-700"
-          }
-        >
-          Close
-        </Button>
-      </div>
+      <p className="text-sm text-gray-500 mt-2">{message}</p>
+      <Button onClick={onClose} className="mt-6">
+        Close
+      </Button>
     </div>
   </div>
 );
 
-// --- API Configuration ---
-const API_BASE_URL = "http://beauty-api.biniyammarkos.com";
-
-// --- Registration Step Components ---
+// --- Step Components ---
 type StepProps = {
   formData: PatientData;
-  updateFormData: (updates: Partial<PatientData>) => void; // Add lookup data to props for steps that need it
-  skinConcernsOptions?: LookupItem[];
-  healthConditionsOptions?: LookupItem[];
-  isLoadingLookups?: boolean;
+  updateFormData: (updates: Partial<PatientData>) => void;
+  lookups: { concerns: LookupItem[]; conditions: LookupItem[] };
+  professionals: ProfessionalData[];
+  isLoading: boolean;
 };
 
 const PersonalInfoStep: React.FC<StepProps> = ({
   formData,
   updateFormData,
 }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
-    <div className="space-y-2">
-      <Label htmlFor="name">Name *</Label>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+    <div className="md:col-span-2">
+      <Label htmlFor="name">Full Name *</Label>
       <Input
         id="name"
         value={formData.name}
         onChange={(e) => updateFormData({ name: e.target.value })}
-        placeholder="Enter full name"
         required
       />
     </div>
-    <div className="space-y-2">
-      <Label htmlFor="phone">Phone Number *</Label>
+    <div>
+      <Label htmlFor="phone">Phone *</Label>
       <Input
         id="phone"
         value={formData.phone}
         onChange={(e) => updateFormData({ phone: e.target.value })}
-        placeholder="Enter phone number"
+        required
       />
     </div>
-    <div className="space-y-2 md:col-span-2">
-      <Label htmlFor="address">Address</Label>
-      <Input
-        id="address"
-        value={formData.address}
-        onChange={(e) => updateFormData({ address: e.target.value })}
-        placeholder="Enter street address"
-      />
-    </div>
-    <div className="space-y-2">
-      <Label htmlFor="city">City</Label>
-      <Input
-        id="city"
-        value={formData.city}
-        onChange={(e) => updateFormData({ city: e.target.value })}
-        placeholder="Enter city"
-      />
-    </div>
-    <div className="space-y-2">
+    <div>
       <Label htmlFor="dateOfBirth">Date of Birth *</Label>
       <Input
         id="dateOfBirth"
@@ -389,450 +331,202 @@ const PersonalInfoStep: React.FC<StepProps> = ({
         required
       />
     </div>
-    <div className="space-y-2 md:col-span-2">
-      <Label htmlFor="email">Email Address</Label>
-      <Input
-        id="email"
-        type="email"
-        value={formData.email}
-        onChange={(e) => updateFormData({ email: e.target.value })}
-        placeholder="Enter email address"
-      />
-    </div>
-    <div className="space-y-2">
-      <Label htmlFor="emergencyContact">Emergency Contact</Label>
-      <Input
-        id="emergencyContact"
-        value={formData.emergencyContact}
-        onChange={(e) => updateFormData({ emergencyContact: e.target.value })}
-        placeholder="Emergency contact name"
-      />
-    </div>
-    <div className="space-y-2">
-      <Label htmlFor="emergencyPhone">Emergency Phone</Label>
-      <Input
-        id="emergencyPhone"
-        value={formData.emergencyPhone}
-        onChange={(e) => updateFormData({ emergencyPhone: e.target.value })}
-        placeholder="Emergency contact phone"
-      />
-    </div>
   </div>
 );
-
-const SkinHealthStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
-  const handleCheckboxChange = (value: string, checked: boolean) => {
-    const currentArray = formData.skinFeel;
-    const updatedArray = checked
-      ? [...currentArray, value]
-      : currentArray.filter((item) => item !== value);
-    updateFormData({ skinFeel: updatedArray });
-  };
-  return (
-    <div className="space-y-8">
-      <div className="space-y-4">
-        <Label className="text-base font-bold text-gray-700">
-          What is your skin type?
-        </Label>
-        <RadioGroup className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {["Normal", "Dry", "Oily", "Combo"].map((type) => (
-            <RadioGroupItem
-              key={type}
-              value={type}
-              name="skinType"
-              id={`type-${type}`}
-              checked={formData.skinType === type}
-              onChange={() => updateFormData({ skinType: type })}
-            >
-              {type}
-            </RadioGroupItem>
-          ))}
-        </RadioGroup>
-      </div>
-      <div className="space-y-4">
-        <Label className="text-base font-bold text-gray-700">
-          Does your skin feel?
-        </Label>
-        <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
-          {["Flaky", "Redish", "Tight", "Excessive oil"].map((feel) => (
-            <Checkbox
-              key={feel}
-              id={`feel-${feel}`}
-              checked={formData.skinFeel.includes(feel)}
-              onCheckedChange={(checked) =>
-                handleCheckboxChange(feel, !!checked)
-              }
-            >
-              {feel}
-            </Checkbox>
-          ))}
-        </div>
-      </div>
-      <div className="space-y-4">
-        <Label className="text-base font-bold text-gray-700">
-          Your exposure to the sun?
-        </Label>
-        <RadioGroup className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {["Never", "Light", "Moderate", "Excessive"].map((exp) => (
-            <RadioGroupItem
-              key={exp}
-              value={exp}
-              name="sunExposure"
-              id={`exp-${exp}`}
-              checked={formData.sunExposure === exp}
-              onChange={() => updateFormData({ sunExposure: exp })}
-            >
-              {exp}
-            </RadioGroupItem>
-          ))}
-        </RadioGroup>
-      </div>
-    </div>
-  );
-};
-
-const SkinCareStep: React.FC<StepProps> = ({
-  formData,
-  updateFormData,
-  skinConcernsOptions = [],
-  isLoadingLookups,
-}) => {
-  const productOptions = [
-    "Facial cleanser",
-    "Sunscreen",
-    "Mask",
-    "Make-up remover",
-    "Bar soap",
-    "Eye product",
-    "Exfoliants",
-    "Face scrub",
-    "Toner",
-    "Moisturizer",
-    "Day cream",
-    "Body scrub",
-    "Serum",
-    "Lip products",
-    "Night cream",
-    "Body lotion",
-    "Face oil",
-  ];
-
-  const handleProductChange = (value: string, checked: boolean) => {
-    const currentArray = formData.usedProducts;
-    const updatedArray = checked
-      ? [...currentArray, value]
-      : currentArray.filter((item) => item !== value);
-    updateFormData({ usedProducts: updatedArray });
-  };
-
-  const handleConcernChange = (value: string, checked: boolean) => {
-    const currentArray = formData.skinConcerns;
-    const updatedArray = checked
-      ? [...currentArray, value]
-      : currentArray.filter((item) => item !== value);
-    updateFormData({ skinConcerns: updatedArray });
-  };
-
-  return (
-    <div className="space-y-8">
-      <div className="space-y-4">
-        <Label className="text-base font-bold text-gray-700">
-          Kindly tick your currently used products
-        </Label>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {productOptions.map((product) => (
-            <Checkbox
-              key={product}
-              id={`prod-${product}`}
-              checked={formData.usedProducts.includes(product)}
-              onCheckedChange={(checked) =>
-                handleProductChange(product, !!checked)
-              }
-            >
-              {product}
-            </Checkbox>
-          ))}
-        </div>
-      </div>
-      <div className="space-y-4">
-        <Label className="text-base font-bold text-gray-700">
-          Tell us your skin concerns
-        </Label>
-        {isLoadingLookups ? (
-          <p className="text-sm text-gray-500">Loading skin concerns...</p>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {skinConcernsOptions.map((concern) => (
-              <Checkbox
-                key={concern.id}
-                id={`concern-${concern.name}`}
-                checked={formData.skinConcerns.includes(concern.name)}
-                onCheckedChange={(checked) =>
-                  handleConcernChange(concern.name, !!checked)
-                }
-              >
-                {concern.name}
-              </Checkbox>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 const HealthHistoryStep: React.FC<StepProps> = ({
   formData,
   updateFormData,
-  healthConditionsOptions = [],
-  isLoadingLookups,
+  lookups,
+  isLoading,
 }) => {
-  const handleHealthChange = (value: string, checked: boolean) => {
-    const currentArray = formData.healthConditions;
-    const updatedArray = checked
-      ? [...currentArray, value]
-      : currentArray.filter((item) => item !== value);
-    updateFormData({ healthConditions: updatedArray });
+  const handleMultiSelect = (
+    field: "healthConditions" | "skinConcerns",
+    value: string
+  ) => {
+    const currentArray = formData[field] as string[];
+    const updatedArray = currentArray.includes(value)
+      ? currentArray.filter((item) => item !== value)
+      : [...currentArray, value];
+    updateFormData({ [field]: updatedArray });
   };
-
   return (
     <div className="space-y-8">
-      <div className="space-y-4">
-        <Label className="text-base font-bold text-gray-700">
-          Have you experienced any of these health conditions?
+      <div>
+        <Label className="text-base">
+          Do you have any of these health conditions?
         </Label>
-        {isLoadingLookups ? (
-          <p className="text-sm text-gray-500">Loading health conditions...</p>
+        {isLoading ? (
+          <p>Loading options...</p>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {healthConditionsOptions.map((condition) => (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+            {lookups.conditions.map((item) => (
               <Checkbox
-                key={condition.id}
-                id={`health-${condition.name}`}
-                checked={formData.healthConditions.includes(condition.name)}
-                onCheckedChange={(checked) =>
-                  handleHealthChange(condition.name, !!checked)
+                key={item.id}
+                id={`health-${item.id}`}
+                checked={formData.healthConditions.includes(item.name)}
+                onCheckedChange={() =>
+                  handleMultiSelect("healthConditions", item.name)
                 }
               >
-                {condition.name}
+                {item.name}
               </Checkbox>
             ))}
           </div>
         )}
       </div>
-      <div className="space-y-6">
-        <Label className="text-base font-bold text-gray-700">
-          Additional Health Information
-        </Label>
-        <div className="space-y-5">
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <Label htmlFor="usedRetinoids" className="mb-0">
-              Used Retin-A, Accutane, etc.?
-            </Label>
-            <Switch
-              id="usedRetinoids"
-              checked={formData.usedRetinoids}
-              onCheckedChange={(checked) =>
-                updateFormData({ usedRetinoids: checked })
-              }
-            />
+      <div>
+        <Label className="text-base">Please select your skin concerns.</Label>
+        {isLoading ? (
+          <p>Loading options...</p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+            {lookups.concerns.map((item) => (
+              <Checkbox
+                key={item.id}
+                id={`concern-${item.id}`}
+                checked={formData.skinConcerns.includes(item.name)}
+                onCheckedChange={() =>
+                  handleMultiSelect("skinConcerns", item.name)
+                }
+              >
+                {item.name}
+              </Checkbox>
+            ))}
           </div>
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <Label htmlFor="acneMedication" className="mb-0">
-              Taken any acne medication before?
-            </Label>
-            <Switch
-              id="acneMedication"
-              checked={formData.acneMedication}
-              onCheckedChange={(checked) =>
-                updateFormData({ acneMedication: checked })
-              }
-            />
-          </div>
-          {formData.acneMedication && (
-            <Textarea
-              value={formData.acneMedicationDetails}
-              onChange={(e) =>
-                updateFormData({ acneMedicationDetails: e.target.value })
-              }
-              placeholder="Please share when and which drugs were used"
-            />
-          )}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <Label htmlFor="alcoholOrSmoke" className="mb-0">
-              Do you drink alcohol or smoke?
-            </Label>
-            <Switch
-              id="alcoholOrSmoke"
-              checked={formData.alcoholOrSmoke}
-              onCheckedChange={(checked) =>
-                updateFormData({ alcoholOrSmoke: checked })
-              }
-            />
-          </div>
+        )}
+      </div>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+          <Label htmlFor="usedRetinoids" className="mb-0">
+            Used Retin-A, Accutane, etc.?
+          </Label>
+          <Switch
+            id="usedRetinoids"
+            checked={formData.usedRetinoids}
+            onCheckedChange={(c) => updateFormData({ usedRetinoids: c })}
+          />
         </div>
+        <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+          <Label htmlFor="acneMedication" className="mb-0">
+            Taken acne medication before?
+          </Label>
+          <Switch
+            id="acneMedication"
+            checked={formData.acneMedication}
+            onCheckedChange={(c) => updateFormData({ acneMedication: c })}
+          />
+        </div>
+        {formData.acneMedication && (
+          <Textarea
+            value={formData.acneMedicationDetails}
+            onChange={(e) =>
+              updateFormData({ acneMedicationDetails: e.target.value })
+            }
+            placeholder="Please specify medication and dates..."
+          />
+        )}
       </div>
     </div>
   );
 };
 
-const CompleteRegistrationStep: React.FC<StepProps> = ({
+const AssignmentStep: React.FC<StepProps> = ({
   formData,
   updateFormData,
+  professionals,
+  isLoading,
 }) => (
-  <div className="space-y-6 text-center">
-    <div className="bg-pink-50/50 rounded-lg p-6">
-      <h3 className="font-display text-xl font-bold text-pink-800 mb-2">
-        Registration Summary
+  <div className="space-y-6">
+    <div>
+      <Label htmlFor="conclusionNote">Notes for the Professional</Label>
+      <Textarea
+        id="conclusionNote"
+        value={formData.conclusionNote || ""}
+        onChange={(e) => updateFormData({ conclusionNote: e.target.value })}
+        placeholder="e.g., Client is particularly concerned about hyperpigmentation..."
+        rows={4}
+      />
+    </div>
+    <div>
+      <Label>Assign a Professional</Label>
+      {isLoading ? (
+        <p>Loading professionals...</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 max-h-60 overflow-y-auto p-2 bg-gray-50/50 rounded-lg">
+          {professionals.map((prof) => (
+            <label
+              key={prof.id}
+              htmlFor={`prof-${prof.id}`}
+              className={cn(
+                "flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all duration-200",
+                formData.assignedProfessionalId === String(prof.id)
+                  ? "bg-rose-50 border-rose-500"
+                  : "bg-white border-gray-200 hover:border-rose-300"
+              )}
+            >
+              <input
+                type="radio"
+                id={`prof-${prof.id}`}
+                value={String(prof.id)}
+                name="professional"
+                checked={formData.assignedProfessionalId === String(prof.id)}
+                onChange={() =>
+                  updateFormData({ assignedProfessionalId: String(prof.id) })
+                }
+                className="h-4 w-4 text-rose-600 border-gray-300 focus:ring-rose-500"
+              />
+              <span className="ml-3 font-semibold text-gray-800">
+                {prof.name}
+              </span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+const ConsentStep: React.FC<StepProps> = ({ formData, updateFormData }) => (
+  <div className="space-y-6 text-center flex flex-col items-center">
+    <div className="bg-rose-50/50 rounded-lg p-6 w-full max-w-md">
+      <h3 className="text-xl font-bold text-rose-800 mb-2">
+        Consent & Signature
       </h3>
-      <div className="text-sm text-gray-700 space-y-2">
+      <p className="text-xs text-gray-500 mb-4">
+        Please confirm the details are correct and provide your signature.
+      </p>
+      <div className="text-sm text-gray-700 space-y-2 text-left bg-white p-4 rounded-md">
         <p>
           <strong>Patient:</strong> {formData.name || "..."}
         </p>
         <p>
-          <strong>Phone:</strong> {formData.phone || "..."}
+          <strong>Primary Concerns:</strong>{" "}
+          {formData.skinConcerns.join(", ") || "None"}
         </p>
         <p>
-          <strong>Skin Type:</strong> {formData.skinType || "..."}
-        </p>
-        <p>
-          <strong>Primary Concerns:</strong>
-          {formData.skinConcerns.join(", ") || "None specified"}
+          <strong>Assigned To:</strong>{" "}
+          {formData.assignedProfessionalId
+            ? "Professional ID " + formData.assignedProfessionalId
+            : "Not Assigned"}
         </p>
       </div>
     </div>
-    <div className="space-y-2">
+    <div>
       <Label htmlFor="signature">Client Signature *</Label>
       <Input
         id="signature"
         value={formData.signature}
         onChange={(e) => updateFormData({ signature: e.target.value })}
-        placeholder="Type your full name to sign"
-        className="text-center font-display text-xl"
+        placeholder="Type your full name"
+        className="text-center font-serif text-xl"
         required
       />
     </div>
-    <p className="text-xs text-gray-500 max-w-md mx-auto">
-      By signing, you agree that you have completed this form to the best of
-      your knowledge and waive all liabilities for any misrepresentation of your
-      health history.
-    </p>
   </div>
 );
 
-const AssignmentStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
-  const navigate = useNavigate();
-  const [professionals, setProfessionals] = useState<ProfessionalData[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem("auth_token");
-
-    if (!token) {
-      console.error("Authentication error: No token found.");
-      navigate("/login", { replace: true });
-      return;
-    }
-
-    const fetchProfessionals = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(`${API_BASE_URL}/users/role/doctor`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (!response.ok)
-          throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
-        if (data && Array.isArray(data.users)) {
-          setProfessionals(data.users);
-        } else {
-          console.warn(
-            "API response for professionals is not in the expected format:",
-            data
-          );
-          setProfessionals([]);
-        }
-      } catch (error) {
-        console.error("Could not fetch professionals", error);
-        setProfessionals([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchProfessionals();
-  }, []);
-
-  const filteredProfessionals = useMemo(() => {
-    if (!searchTerm) return professionals;
-    return professionals.filter((prof) =>
-      prof.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [professionals, searchTerm]);
-
-  return (
-    <div className="space-y-8">
-      <div className="space-y-2">
-        <Label htmlFor="conclusionNote">Conclusion Note</Label>
-        <Textarea
-          id="conclusionNote"
-          value={formData.conclusionNote || ""}
-          onChange={(e) => updateFormData({ conclusionNote: e.target.value })}
-          placeholder="Add a short conclusion note for the professional..."
-          rows={4}
-        />
-      </div>
-      <div className="space-y-4">
-        <Label htmlFor="professionalSearch">
-          Search & Assign a Professional
-        </Label>
-        <Input
-          id="professionalSearch"
-          type="text"
-          placeholder="Start typing a professional's name..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        {isLoading ? (
-          <p className="text-sm text-gray-500 text-center py-4">
-            Loading professionals...
-          </p>
-        ) : filteredProfessionals.length > 0 ? (
-          <RadioGroup className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-60 overflow-y-auto p-2 bg-gray-50/50 rounded-lg">
-            {filteredProfessionals.map((prof) => (
-              <RadioGroupItem
-                key={prof.id}
-                value={String(prof.id)}
-                name="professional"
-                id={`prof-${prof.id}`}
-                checked={formData.assignedProfessionalId === String(prof.id)}
-                onChange={() =>
-                  updateFormData({ assignedProfessionalId: String(prof.id) })
-                }
-              >
-                <div>
-                  <p className="font-bold">{prof.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {prof.skills?.join(", ") || "No skills listed"}
-                  </p>
-                </div>
-              </RadioGroupItem>
-            ))}
-          </RadioGroup>
-        ) : (
-          <p className="text-sm text-gray-500 text-center py-4">
-            No professionals match your search.
-          </p>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// --- Main Registration Wizard Component ---
+// --- Main Wizard Component ---
 const initialData: PatientData = {
   name: "",
   address: "",
@@ -842,335 +536,251 @@ const initialData: PatientData = {
   email: "",
   emergencyContact: "",
   emergencyPhone: "",
-  heardFrom: "",
   skinType: "",
   skinFeel: [],
   sunExposure: "",
-  foundationType: "",
-  skinHeal: "",
-  bruiseEasily: false,
   usedProducts: [],
-  otherProducts: "",
   skinConcerns: [],
-  firstFacial: true,
-  previousTreatmentLikes: "",
-  treatmentGoal: "",
   usedRetinoids: false,
-  hadFillers: false,
   acneMedication: false,
   acneMedicationDetails: "",
   healthConditions: [],
+  alcoholOrSmoke: false,
+  signature: "",
+  assignedProfessionalId: null,
+  conclusionNote: "",
+  heardFrom: "",
+  foundationType: "",
+  skinHeal: "",
+  bruiseEasily: false,
+  otherProducts: "",
+  firstFacial: true,
+  previousTreatmentLikes: "",
+  treatmentGoal: "",
+  hadFillers: false,
   otherConditions: "",
   knownAllergies: false,
   supplements: false,
-  alcoholOrSmoke: false,
-  signature: "",
   signatureDate: "",
   prescriptionMeds: false,
-  assignedProfessionalId: undefined,
-  conclusionNote: "",
 };
 
-type PatientRegistrationWizardProps = {
+export const PatientRegistrationWizard: React.FC<{
   phone: string;
   onRegistrationComplete: (newUser: PatientData) => void;
-};
-
-export const PatientRegistrationWizard: React.FC<
-  PatientRegistrationWizardProps
-> = ({ phone, onRegistrationComplete }) => {
-  const [currentStep, setCurrentStep] = useState(1);
+}> = ({ phone, onRegistrationComplete }) => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<PatientData>({
     ...initialData,
     phone,
   });
-  const [skinConcernsOptions, setSkinConcernsOptions] = useState<LookupItem[]>(
-    []
+  const [newlyCreatedUser, setNewlyCreatedUser] = useState<PatientData | null>(
+    null
   );
-  const [healthConditionsOptions, setHealthConditionsOptions] = useState<
-    LookupItem[]
-  >([]);
-  const [isLoadingLookups, setIsLoadingLookups] = useState(true);
-  const navigate = useNavigate();
 
-  const [statusMessage, setStatusMessage] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
-
-  useEffect(() => {
-    const fetchLookups = async () => {
-      const token = localStorage.getItem("auth_token");
-      if (!token) {
-        console.error("Authentication error: No token found.");
-        setIsLoadingLookups(false);
-        return;
-      }
-
-      setIsLoadingLookups(true);
-      try {
-        const headers = { Authorization: `Bearer ${token}` };
-        const [concernsRes, conditionsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/lookups/skin-concerns`, { headers }),
-          fetch(`${API_BASE_URL}/lookups/health-conditions`, { headers }),
-        ]);
-
-        if (!concernsRes.ok || !conditionsRes.ok) {
-          console.error("Failed to fetch lookup data", {
-            concernsStatus: concernsRes.status,
-            conditionsStatus: conditionsRes.status,
-          });
-          throw new Error("Network response was not ok for lookup data");
-        }
-
-        const concernsData = await concernsRes.json();
-        const conditionsData = await conditionsRes.json();
-
-        setSkinConcernsOptions(concernsData);
-        setHealthConditionsOptions(conditionsData);
-      } catch (error) {
-        console.error("Could not fetch lookup data:", error);
-      } finally {
-        setIsLoadingLookups(false);
-      }
-    };
-
-    fetchLookups();
-  }, []);
-
-  const skinConcernsMap = useMemo(() => {
-    return skinConcernsOptions.reduce((acc, concern) => {
-      acc[concern.name] = concern.id;
-      return acc;
-    }, {} as { [key: string]: number });
-  }, [skinConcernsOptions]);
-
-  const healthConditionsMap = useMemo(() => {
-    return healthConditionsOptions.reduce((acc, condition) => {
-      acc[condition.name] = condition.id;
-      return acc;
-    }, {} as { [key: string]: number });
-  }, [healthConditionsOptions]);
-
-  // --- FIX: Reordered steps to assign professional before final submission ---
   const steps = [
-    {
-      id: 1,
-      name: "Personal Info",
-      title: "Personal Information",
-      component: PersonalInfoStep,
-    },
-    {
-      id: 2,
-      name: "Skin Health",
-      title: "Skin Health Check",
-      component: SkinHealthStep,
-    },
-    {
-      id: 3,
-      name: "Skin Care",
-      title: "Skin Care & Concerns",
-      component: SkinCareStep,
-    },
-    {
-      id: 4,
-      name: "Health History",
-      title: "Health History",
-      component: HealthHistoryStep,
-    },
-    {
-      id: 5,
-      name: "Assignment",
-      title: "Assign Professional",
-      component: AssignmentStep,
-    },
-    {
-      id: 6,
-      name: "Consent",
-      title: "Consent & Completion",
-      component: CompleteRegistrationStep,
-    },
+    { name: "Personal Info", component: PersonalInfoStep },
+    { name: "Health History", component: HealthHistoryStep },
+    { name: "Assign Professional", component: AssignmentStep },
+    { name: "Consent", component: ConsentStep },
   ];
 
+  const lookupsQuery = useQuery({
+    queryKey: ["lookups"],
+    queryFn: fetchLookups,
+  });
+  const professionalsQuery = useQuery({
+    queryKey: ["professionals"],
+    queryFn: fetchProfessionals,
+  });
+
+  const registrationMutation = useMutation({
+    mutationFn: registerPatient,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      setNewlyCreatedUser(data);
+    },
+    onError: (error) => {
+      console.error(error);
+    },
+  });
+
   const updateFormData = (updates: Partial<PatientData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
+    // ** FIXED: Added explicit type for 'prev' parameter **
+    setFormData((prev: PatientData) => ({ ...prev, ...updates }));
   };
 
   const nextStep = () =>
-    currentStep < steps.length && setCurrentStep(currentStep + 1);
-  const prevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
+    currentStep < steps.length - 1 && setCurrentStep(currentStep + 1);
+  const prevStep = () => currentStep > 0 && setCurrentStep(currentStep - 1);
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      setStatusMessage({
-        type: "error",
-        message: "Authentication error: No token found. Please log in again.",
-      });
+    if (currentStep < steps.length - 1) {
+      nextStep();
       return;
     }
+
+    const skinConcernsMap =
+      lookupsQuery.data?.concerns.reduce(
+        (acc, c) => ({ ...acc, [c.name]: c.id }),
+        {} as Record<string, number>
+      ) || {};
+    const healthConditionsMap =
+      lookupsQuery.data?.conditions.reduce(
+        (acc, c) => ({ ...acc, [c.name]: c.id }),
+        {} as Record<string, number>
+      ) || {};
 
     const apiPayload = {
       full_name: formData.name,
       phone: formData.phone,
-      email: formData.email,
-      address: formData.address,
-      city: formData.city,
       birth_date: formData.dateOfBirth,
       assigned_doctor_id: formData.assignedProfessionalId
         ? parseInt(formData.assignedProfessionalId, 10)
-        : undefined,
-      emergency_contact_name: formData.emergencyContact,
-      emergency_contact_phone: formData.emergencyPhone,
-      how_heard: formData.heardFrom,
+        : null,
       profile: {
         skin_type: formData.skinType,
-        skin_feel: formData.skinFeel.join(", "),
+        skin_feel: JSON.stringify(formData.skinFeel),
         sun_exposure: formData.sunExposure,
-        foundation_type: formData.foundationType,
-        healing_profile: formData.skinHeal,
-        bruises_easily: formData.bruiseEasily ? 1 : 0,
-        used_products: formData.usedProducts,
-        uses_retinoids_acids: formData.usedRetinoids ? 1 : 0,
-        recent_dermal_fillers: formData.hadFillers ? 1 : 0,
+        used_products: JSON.stringify(formData.usedProducts),
+        uses_retinoids_acids: formData.usedRetinoids,
         previous_acne_medication: formData.acneMedicationDetails,
-        known_allergies_details: formData.otherConditions,
-        dietary_supplements: formData.supplements ? "Yes" : "No",
-        other_medication: formData.prescriptionMeds ? "Yes" : "No",
-        drinks_smokes: formData.alcoholOrSmoke ? 1 : 0,
+        drinks_smokes: formData.alcoholOrSmoke,
       },
+      // ** FIXED: Added explicit type for 'name' parameter **
       skin_concerns: formData.skinConcerns
-        .map((concern) => skinConcernsMap[concern])
-        .filter((id) => id),
+        .map((name: string) => skinConcernsMap[name])
+        .filter(Boolean),
+      // ** FIXED: Added explicit type for 'name' parameter **
       health_conditions: formData.healthConditions
-        .map((condition) => healthConditionsMap[condition])
-        .filter((id) => id),
+        .map((name: string) => healthConditionsMap[name])
+        .filter(Boolean),
     };
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/customers`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(apiPayload),
-      });
-      if (!response.ok) {
-        const errorBody = await response.json();
-        console.error("API Error:", errorBody);
-        throw new Error(`API Error: ${response.statusText}`);
-      }
-      const savedUser = await response.json();
-      onRegistrationComplete(savedUser);
-      setStatusMessage({
-        type: "success",
-        message: "Registration successful! Redirecting...",
-      });
-      setTimeout(() => {
-        setStatusMessage(null);
-        navigate("/reception");
-      }, 2500);
-    } catch (error) {
-      console.error("Failed to save user:", error);
-      setStatusMessage({
-        type: "error",
-        message: `Failed to save user: ${error}. Please check your details and try again.`,
-      });
-    }
+    registrationMutation.mutate(apiPayload);
   };
 
-  const progress = (currentStep / steps.length) * 100;
-  const CurrentStepComponent = steps[currentStep - 1].component;
+  const progress = ((currentStep + 1) / steps.length) * 100;
+  const CurrentStepComponent = steps[currentStep].component;
 
   return (
-    <div className="w-full flex flex-col lg:flex-row gap-12">
-      {statusMessage && (
+    <div className="w-full bg-[#FDF8F5] p-4 sm:p-6 lg:p-8 min-h-screen">
+      {registrationMutation.status !== "idle" && (
         <StatusModal
-          type={statusMessage.type}
-          message={statusMessage.message}
-          onClose={() => setStatusMessage(null)}
+          status={registrationMutation.isSuccess ? "success" : "error"}
+          message={
+            registrationMutation.isSuccess
+              ? "Client registered successfully!"
+              : registrationMutation.error?.message || "An error occurred."
+          }
+          onClose={() => {
+            const wasSuccess = registrationMutation.isSuccess;
+            registrationMutation.reset();
+            if (wasSuccess && newlyCreatedUser) {
+              onRegistrationComplete(newlyCreatedUser);
+            }
+          }}
         />
       )}
-      <aside className="lg:w-72 lg:flex-shrink-0">
-        <div className="bg-white rounded-2xl shadow-2xl shadow-pink-200/20 p-6 border border-gray-200 sticky top-8">
-          <div className="mb-8 text-2xl font-bold text-pink-700 text-center font-display">
-            Registration
+
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-800">
+          New Client Registration
+        </h1>
+        <Button variant="ghost" onClick={() => navigate("/reception")}>
+          <ChevronLeft size={16} className="mr-2" />
+          Back to Dashboard
+        </Button>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-12">
+        <aside className="lg:w-72 lg:flex-shrink-0">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-rose-100/60 sticky top-8">
+            <ol className="space-y-5">
+              {steps.map((step, index) => (
+                <li key={step.name} className="flex items-center gap-4">
+                  <div
+                    className={cn(
+                      "flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold border-2 transition-all duration-300",
+                      currentStep > index
+                        ? "bg-rose-600 text-white border-rose-600"
+                        : currentStep === index
+                        ? "bg-white text-rose-700 border-rose-600 ring-2 ring-rose-200"
+                        : "bg-gray-100 text-gray-400 border-gray-200"
+                    )}
+                  >
+                    {currentStep > index ? <Check size={16} /> : index + 1}
+                  </div>
+                  <span
+                    className={cn(
+                      "font-semibold transition-colors",
+                      currentStep === index ? "text-rose-800" : "text-gray-500"
+                    )}
+                  >
+                    {step.name}
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-8 pt-6 border-t border-rose-100">
+              <Progress value={progress} />
+            </div>
           </div>
-          <ol className="space-y-5">
-            {steps.map((step) => (
-              <li key={step.id} className="flex items-center gap-4">
-                <div
-                  className={cn(
-                    "flex items-center justify-center w-10 h-10 rounded-full text-lg font-bold border-2 transition-all duration-300",
-                    currentStep > step.id
-                      ? "bg-pink-600 text-white border-pink-600"
-                      : currentStep === step.id
-                      ? "bg-white text-pink-700 border-pink-600 ring-4 ring-pink-200"
-                      : "bg-gray-100 text-gray-400 border-gray-200"
-                  )}
-                >
-                  {currentStep > step.id ? (
-                    <CheckIcon className="w-6 h-6" />
-                  ) : (
-                    step.id
-                  )}
-                </div>
-                <span
-                  className={cn(
-                    "text-base font-bold transition-colors",
-                    currentStep === step.id ? "text-pink-800" : "text-gray-500"
-                  )}
-                >
-                  {step.name}
-                </span>
-              </li>
-            ))}
-          </ol>
-          <div className="mt-8 pt-8 border-t border-pink-100">
-            <Progress value={progress} />
-          </div>
-        </div>
-      </aside>
-      <main className="flex-1 min-w-0">
-        <form onSubmit={handleSubmit}>
-          <Card>
-            <CardHeader>
-              <CardTitle>{steps[currentStep - 1]?.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CurrentStepComponent
-                formData={formData}
-                updateFormData={updateFormData}
-                skinConcernsOptions={skinConcernsOptions}
-                healthConditionsOptions={healthConditionsOptions}
-                isLoadingLookups={isLoadingLookups}
-              />
-            </CardContent>
-          </Card>
-          <div className="flex justify-between gap-4 mt-8">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={prevStep}
-              disabled={currentStep === 1}
-            >
-              <ChevronLeftIcon /> Previous
-            </Button>
-            {currentStep < steps.length ? (
-              <Button type="button" onClick={nextStep}>
-                Next <ChevronRightIcon />
+        </aside>
+
+        <main className="flex-1 min-w-0">
+          <form onSubmit={handleSubmit}>
+            <Card className="animate-fade-in">
+              <CardHeader>
+                <CardTitle>{steps[currentStep].name}</CardTitle>
+              </CardHeader>
+              <CardContent className="min-h-[400px]">
+                <CurrentStepComponent
+                  formData={formData}
+                  updateFormData={updateFormData}
+                  lookups={
+                    lookupsQuery.data || { concerns: [], conditions: [] }
+                  }
+                  professionals={professionalsQuery.data || []}
+                  isLoading={
+                    lookupsQuery.isLoading || professionalsQuery.isLoading
+                  }
+                />
+              </CardContent>
+            </Card>
+            <div className="flex justify-between gap-4 mt-8">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={prevStep}
+                disabled={currentStep === 0}
+              >
+                <ChevronLeft /> Previous
               </Button>
-            ) : (
-              <Button type="submit">Complete Registration</Button>
-            )}
-          </div>
-        </form>
-      </main>
+              {currentStep < steps.length - 1 ? (
+                <Button type="submit">
+                  Next <ChevronRight />
+                </Button>
+              ) : (
+                <Button type="submit" disabled={registrationMutation.isPending}>
+                  {registrationMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                      Submitting...
+                    </>
+                  ) : (
+                    "Complete Registration"
+                  )}
+                </Button>
+              )}
+            </div>
+          </form>
+        </main>
+      </div>
     </div>
   );
 };
 
-// --- Add a default export for better compatibility with some environments ---
 export default PatientRegistrationWizard;
