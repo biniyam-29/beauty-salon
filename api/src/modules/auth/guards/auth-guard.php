@@ -29,7 +29,6 @@ class AuthGuard {
         self::ensureDbConnection();
         AuthConstants::initialize(); 
 
-        // 1. Check Authorization header
         if (!isset($_SERVER['HTTP_AUTHORIZATION'])) {
             http_response_code(401);
             return false;
@@ -43,7 +42,7 @@ class AuthGuard {
         }
 
         try {
-            $decoded = JWT::decode($token, new Key(AuthConstants::$secretKey, 'HS256'));
+            $decoded = JWT::decode($token, new Key(AuthConstants::$secretKey, 'HS26'));
 
             if (!isset($decoded->data) || !isset($decoded->data->id)) {
                 http_response_code(401);
@@ -52,16 +51,14 @@ class AuthGuard {
 
             $userId = $decoded->data->id;
 
-            // 3. Check user in DB
             $user = self::read("users", "id", $userId);
             if (empty($user)) {
                 http_response_code(401);
                 return false;
             }
 
-            // 4. Check if user is active
-            if ($user['is_active'] == 0 && $user['role'] !== 'OWNER' && $caller !== "newUser") {
-                http_response_code(401);
+            if ($user['is_active'] == 0) {
+                http_response_code(403);
                 return false;
             }
 
@@ -94,7 +91,7 @@ class AuthGuard {
 
     private static function read($table, $column = 'id', $value = null) {
         try {
-            $sql = "SELECT * FROM $table WHERE $column = :value";
+            $sql = "SELECT id, is_active, role FROM $table WHERE $column = :value";
             $stmt = self::$conn->prepare($sql);
             $stmt->bindParam(':value', $value);
             $stmt->execute();
@@ -104,4 +101,3 @@ class AuthGuard {
         }
     }
 }
-?>

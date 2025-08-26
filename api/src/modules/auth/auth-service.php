@@ -32,10 +32,18 @@ class AuthService{
                 http_response_code(400);
                 return json_encode(["message" => "Bad request! Please fill out all fields!"]);
             }
-            //$sql = 'SELECT * FROM users WHERE email = ?';
-            $stmt = $this->conn->prepare('SELECT * FROM users WHERE email = ?');
+
+            $stmt = $this->conn->prepare(
+                "SELECT id, name, email, password_hash, phone, role, is_active 
+                 FROM users WHERE email = ?"
+            );
             $stmt->execute([$data->email]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($user['is_active'] == 0) {
+                http_response_code(403);
+                return json_encode(["message" => "This account has been deactivated."]);
+            }
 
             if (!$user) {
                 http_response_code(401);
