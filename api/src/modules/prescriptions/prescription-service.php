@@ -135,7 +135,7 @@ class PrescriptionService {
     /**
      * Retrieves prescriptions for a customer, filtered by status.
      */
-    public function getPrescriptionsByStatusForCustomer(int $customerId, string $status): string {
+    public function getPrescriptionsByStatus(string $status): string {
         try {
             $stmt = $this->conn->prepare(
                 "SELECT 
@@ -152,9 +152,9 @@ class PrescriptionService {
                  JOIN consultations co ON pr.consultation_id = co.id
                  JOIN customers c ON co.customer_id = c.id
                  JOIN products p ON pr.product_id = p.id
-                 WHERE c.id = :customer_id AND pr.status = :status"
+                 WHERE pr.status = :status"
             );
-            $stmt->execute([':customer_id' => $customerId, ':status' => $status]);
+            $stmt->execute([':status' => $status]);
             $prescriptions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // Format the image data into a usable data URI
