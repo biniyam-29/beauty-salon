@@ -40,6 +40,16 @@ class ConsultationController implements ControllerInterface {
         $id = $paths[1] ?? null;
         $subResource = $paths[2] ?? null;
 
+        if ($method === 'GET' && $id === 'follow-ups' && $subResource === 'today') {
+            if (RoleGuard::roleGuard('reception') || RoleGuard::roleGuard('super-admin')) {
+                return $this->consultationService->getTodaysFollowUps();
+            } else {
+                http_response_code(403);
+                return json_encode(['message' => 'Forbidden: Only receptionists can access the follow-up list.']);
+            }
+        }
+
+
         switch ($method) {
             case 'POST':
                 if ($id && $subResource === 'prescriptions') {
@@ -76,11 +86,6 @@ class ConsultationController implements ControllerInterface {
                 return $this->consultationService->updateConsultation($id, $body);
 
             case 'GET':
-                // GET /consultations/follow-ups/today
-                if ($id === 'follow-ups' && $subResource === 'today') {
-                    return $this->consultationService->getTodaysFollowUps();
-                }
-
                 // GET /consultations/{id}/prescriptions
                 if ($id && $subResource === 'prescriptions') {
                 return $this->prescriptionService->getPrescriptionsForConsultation($id);
