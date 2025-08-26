@@ -10,7 +10,6 @@ require_once __DIR__ . '/../../modules/consultations/consultation-service.php';
 use src\modules\ControllerInterface;
 use src\modules\auth\guards\AuthGuard;
 use src\modules\auth\guards\RoleGuard;
-use src\modules\consultations\Consultation;
 use src\modules\consultations\ConsultationService;
 
 class CustomerController implements ControllerInterface {
@@ -65,6 +64,10 @@ class CustomerController implements ControllerInterface {
                 // GET /customers/{id}/consultations
                 if ($id && $subResource === 'consultations') {
                     return $this->consultationService->getConsultationsForCustomer($id);
+                }
+
+                if ($id && $subResource === 'images') {
+                    return $this->customerService->getImagesForCustomer($id);
                 }
 
                 if ($id === 'assigned') {

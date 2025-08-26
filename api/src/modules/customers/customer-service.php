@@ -468,6 +468,35 @@ class CustomerService {
         }
     }
 
+       /**
+     * Retrieves all consultation images for a specific customer.
+     */
+    public function getImagesForCustomer(int $customerId): string {
+        try {
+            $stmt = $this->conn->prepare(
+                "SELECT ci.id, ci.description, ci.uploaded_at, TO_BASE64(ci.image_data) as image_data, ci.consultation_id 
+                 FROM consultation_images ci
+                 JOIN consultations co ON ci.consultation_id = co.id
+                 WHERE co.customer_id = :customer_id
+                 ORDER BY ci.uploaded_at DESC"
+            );
+            $stmt->execute([':customer_id' => $customerId]);
+            $images = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Prepend the data URI scheme for easy rendering
+            foreach ($images as &$image) {
+                if ($image['image_data']) {
+                    $image['image_data'] = 'data:image/jpeg;base64,' . $image['image_data'];
+                }
+            }
+
+            return json_encode($images);
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+        }
+    }
+
     public function isCustomerAssignedToDoctor(int $customerId, int $doctorId): bool {
         $stmt = $this->conn->prepare("
             SELECT COUNT(*) FROM customers
