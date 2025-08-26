@@ -555,6 +555,58 @@ class CustomerService {
         }
     }
 
+    /**
+     * Searches for customers by name, email, or phone with pagination.
+     */
+    public function searchCustomers(string $searchTerm, $page = 1): string {
+        $limit = 10;
+        $offset = max(0, ($page - 1)) * $limit;
+        $searchPattern = '%' . $searchTerm . '%';
+
+        try {
+            // Query to find matching customers
+            $stmt = $this->conn->prepare(
+                "SELECT id, full_name, phone, email, TO_BASE64(profile_picture) as profile_picture, profile_picture_mimetype 
+                 FROM customers 
+                 WHERE (full_name LIKE :searchTerm OR email LIKE :searchTerm OR phone LIKE :searchTerm)
+                 LIMIT :limit OFFSET :offset"
+            );
+            $stmt->bindValue(':searchTerm', $searchPattern, PDO::PARAM_STR);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->execute();
+            $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Format profile pictures
+            foreach ($customers as &$customer) {
+                if ($customer['profile_picture'] && $customer['profile_picture_mimetype']) {
+                    $customer['profile_picture'] = 'data:' . $customer['profile_picture_mimetype'] . ';base64,' . $customer['profile_picture'];
+                }
+                unset($customer['profile_picture_mimetype']);
+            }
+
+            // Query to get the total count for pagination
+            $totalStmt = $this->conn->prepare(
+                "SELECT COUNT(*) FROM customers 
+                 WHERE (full_name LIKE :searchTerm OR email LIKE :searchTerm OR phone LIKE :searchTerm)"
+            );
+            $totalStmt->bindValue(':searchTerm', $searchPattern, PDO::PARAM_STR);
+            $totalStmt->execute();
+            $totalCustomers = $totalStmt->fetchColumn();
+
+            return json_encode([
+                'customers' => $customers,
+                'totalPages' => ceil($totalCustomers / $limit),
+                'currentPage' => (int)$page,
+                'totalCustomers' => (int)$totalCustomers
+            ]);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+        }
+    }
+
     public function isCustomerAssignedToDoctor(int $customerId, int $doctorId): bool {
         $stmt = $this->conn->prepare("
             SELECT COUNT(*) FROM customers

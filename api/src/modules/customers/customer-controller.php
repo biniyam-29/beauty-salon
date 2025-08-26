@@ -65,6 +65,12 @@ class CustomerController implements ControllerInterface {
                 return $this->customerService->createCustomer($body, $receptionistId);
 
             case 'GET':
+                // GET /customers/search/{searchTerm}
+                if ($id === 'search' && $subResource) {
+                    $page = $_GET['page'] ?? 1;
+                    return $this->customerService->searchCustomers($subResource, $page);
+                }
+                
                 // GET /customers/{id}/consultations
                 if ($id && $subResource === 'consultations') {
                     return $this->consultationService->getConsultationsForCustomer($id);
