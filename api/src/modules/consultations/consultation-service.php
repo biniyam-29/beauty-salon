@@ -153,4 +153,38 @@ class ConsultationService {
             return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
         }
     }
+
+    /**
+     * Retrieves a list of all customers with a follow-up scheduled for today.
+     */
+    public function getTodaysFollowUps(): string {
+        try {
+            $stmt = $this->conn->query(
+                "SELECT 
+                    co.id as consultation_id,
+                    co.follow_up_date,
+                    cu.id as customer_id,
+                    cu.full_name as customer_name,
+                    cu.phone as customer_phone,
+                    u.name as doctor_name,
+                    GROUP_CONCAT(DISTINCT sc.name SEPARATOR ', ') as skin_concerns,
+                    GROUP_CONCAT(DISTINCT hc.name SEPARATOR ', ') as health_conditions
+                 FROM consultations co
+                 JOIN customers cu ON co.customer_id = cu.id
+                 JOIN users u ON co.doctor_id = u.id
+                 LEFT JOIN customer_skin_concerns csc ON cu.id = csc.customer_id AND csc.end_date IS NULL
+                 LEFT JOIN skin_concerns sc ON csc.concern_id = sc.id
+                 LEFT JOIN customer_health_conditions chc ON cu.id = chc.customer_id AND chc.end_date IS NULL
+                 LEFT JOIN health_conditions hc ON chc.condition_id = hc.id
+                 WHERE co.follow_up_date = CURDATE()
+                 GROUP BY co.id"
+            );
+            $followUps = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            return json_encode($followUps);
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+        }
+    }
 }
