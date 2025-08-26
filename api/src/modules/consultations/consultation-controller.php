@@ -32,14 +32,11 @@ class ConsultationController implements ControllerInterface {
             return json_encode(['message' => 'Unauthorized']);
         }
         
-        if (!RoleGuard::roleGuard('doctor') && !RoleGuard::roleGuard('super-admin')) {
-             http_response_code(403);
-             return json_encode(['message' => 'Forbidden']);
-        }
-
         $id = $paths[1] ?? null;
         $subResource = $paths[2] ?? null;
 
+        // --- CORRECTED LOGIC ---
+        // 1. Check for the special receptionist permission case FIRST.
         if ($method === 'GET' && $id === 'follow-ups' && $subResource === 'today') {
             if (RoleGuard::roleGuard('reception') || RoleGuard::roleGuard('super-admin')) {
                 return $this->consultationService->getTodaysFollowUps();
@@ -49,6 +46,11 @@ class ConsultationController implements ControllerInterface {
             }
         }
 
+        // 2. For ALL OTHER requests, enforce the default doctor/admin permission.
+        if (!RoleGuard::roleGuard('doctor') && !RoleGuard::roleGuard('super-admin')) {
+             http_response_code(403);
+             return json_encode(['message' => 'Forbidden']);
+        }
 
         switch ($method) {
             case 'POST':
@@ -56,9 +58,7 @@ class ConsultationController implements ControllerInterface {
                     return $this->prescriptionService->createPrescription($id, $body, $user->id);
                 }
 
-                // POST /consultations/{id}/images
                 if ($id && $subResource === 'images') {
-                    // Validate file upload
                     if (!isset($_FILES['file'])) {
                         http_response_code(400);
                         return json_encode(['error' => 'No file uploaded. Field name should be "file".']);
@@ -75,7 +75,6 @@ class ConsultationController implements ControllerInterface {
                     return $this->imageService->uploadImage((int)$id, $file, $description);
                 }
 
-                // POST /consultations
                 return $this->consultationService->createConsultation($body);
 
             case 'PUT':
@@ -86,22 +85,18 @@ class ConsultationController implements ControllerInterface {
                 return $this->consultationService->updateConsultation($id, $body);
 
             case 'GET':
-                // GET /consultations/{id}/prescriptions
                 if ($id && $subResource === 'prescriptions') {
                 return $this->prescriptionService->getPrescriptionsForConsultation($id);
                 }
 
-                // GET /consultations/{id}/images
                 if ($id && $subResource === 'images') {
                     return $this->imageService->getImagesForConsultation($id);
                 }
                 
-                // GET /consultations/{id}
                 if ($id) {
                     return $this->consultationService->getConsultationById($id);
                 }
-                // This controller doesn't support GET /consultations (all consultations)
-                // To get consultations for a specific customer, use the CustomerController endpoint
+                
                 http_response_code(404);
                 return json_encode(['message' => 'Endpoint not found. To get consultations for a customer, use GET /customers/{id}/consultations']);
 
