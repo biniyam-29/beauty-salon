@@ -152,9 +152,7 @@ const AppRoutes: React.FC = () => {
         path="/professional"
         element={
           <RequireAuth role="doctor">
-            <GradientLayout>
               <ProfessionalDashboardPage />
-            </GradientLayout>
           </RequireAuth>
         }
       />

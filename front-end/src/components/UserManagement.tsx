@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
 
-// --- A simple debounce hook to prevent API calls on every keystroke ---
+// --- A simple debounce hook ---
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
   useEffect(() => {
@@ -15,7 +15,7 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-// --- Prop Type Definitions (Unchanged) ---
+// --- Prop Type Definitions ---
 interface BaseProps {
   children: React.ReactNode;
   className?: string;
@@ -32,7 +32,7 @@ interface BadgeProps extends BaseProps {
   variant?: "default" | "secondary";
 }
 interface AvatarImageProps {
-  src?: string;
+  src?: string | null;
   alt?: string;
 }
 interface DialogProps extends BaseProps {
@@ -43,7 +43,7 @@ interface DropdownMenuContentProps extends BaseProps {
   align: "start" | "end";
 }
 
-// --- UI Components (Unchanged) ---
+// --- UI Components (Reverted to former style) ---
 const Card = ({ children, className = "" }: BaseProps) => (
   <div className={`border rounded-lg shadow-sm bg-white ${className}`}>
     {children}
@@ -58,13 +58,13 @@ const CardTitle = ({ children, className = "" }: BaseProps) => (
 const CardContent = ({ children, className = "" }: BaseProps) => (
   <div className={`p-4 ${className}`}>{children}</div>
 );
-const Button = ({
+const Button: React.FC<ButtonProps> = ({
   children,
   variant = "default",
   size = "md",
   className = "",
   ...props
-}: ButtonProps) => {
+}) => {
   const baseClasses =
     "inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2";
   const variantClasses: Record<ButtonVariant, string> = {
@@ -94,11 +94,11 @@ const Input = ({
     {...props}
   />
 );
-const Badge = ({
+const Badge: React.FC<BadgeProps> = ({
   children,
   variant = "default",
   className = "",
-}: BadgeProps) => {
+}) => {
   const variantClasses: Record<"default" | "secondary", string> = {
     default: "bg-slate-900 text-white",
     secondary: "bg-slate-100 text-slate-900",
@@ -120,7 +120,7 @@ const Avatar = ({ children, className = "" }: BaseProps) => (
 );
 const AvatarImage = ({ src, alt = "" }: AvatarImageProps) => (
   <img
-    src={src}
+    src={src || undefined}
     alt={alt}
     className="aspect-square h-full w-full object-cover"
   />
@@ -130,12 +130,12 @@ const AvatarFallback = ({ children }: { children: React.ReactNode }) => (
     {children}
   </span>
 );
-const Dialog = ({
+const Dialog: React.FC<DialogProps & { className?: string }> = ({
   children,
   open,
   onOpenChange,
   className = "",
-}: DialogProps & { className?: string }) => {
+}) => {
   if (!open) return null;
   return (
     <div
@@ -165,7 +165,10 @@ const DialogTitle = ({ children }: { children: React.ReactNode }) => (
 const DialogDescription = ({ children }: { children: React.ReactNode }) => (
   <p className="text-sm text-slate-500 mt-1">{children}</p>
 );
-const DropdownMenuContent = ({ children, align }: DropdownMenuContentProps) => (
+const DropdownMenuContent: React.FC<DropdownMenuContentProps> = ({
+  children,
+  align,
+}) => (
   <div
     className={`origin-top-right absolute ${
       align === "end" ? "right-0" : "left-0"
@@ -174,11 +177,9 @@ const DropdownMenuContent = ({ children, align }: DropdownMenuContentProps) => (
     {children}
   </div>
 );
-const DropdownMenuItem = ({
-  children,
-  className,
-  ...props
-}: BaseProps & React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+const DropdownMenuItem: React.FC<
+  BaseProps & React.AnchorHTMLAttributes<HTMLAnchorElement>
+> = ({ children, className, ...props }) => (
   <a
     href="#"
     className={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${className}`}
@@ -205,7 +206,7 @@ const TabsContent = ({
   <div className={className}>{children}</div>
 );
 
-// --- Icon Placeholders (Unchanged) ---
+// --- Icon Components ---
 const PlusIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
@@ -354,7 +355,7 @@ interface SystemUser {
   name: string;
   email: string;
   role: UserRole;
-  avatar?: string | null; // Can be a string (Data URL) or null
+  avatar?: string | null;
   lastLogin?: string;
   createdAt: string;
   department?: string;
@@ -374,12 +375,10 @@ const getAuthToken = () => {
   return token;
 };
 
-// ** UPDATED ** Helper to format user data, now handling profile_picture
 const formatUser = (user: any): SystemUser => ({
   ...user,
   id: String(user.id),
   createdAt: new Date().toISOString().split("T")[0],
-  // If profile_picture exists, create a Data URL. Otherwise, it's null.
   avatar: user.profile_picture
     ? `data:image/jpeg;base64,${user.profile_picture}`
     : null,
@@ -397,12 +396,10 @@ const fetchUsers = async (
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) {
+  if (!response.ok)
     throw new Error(`Failed to fetch users: ${response.statusText}`);
-  }
   const data = await response.json();
-  const formattedUsers = data.users.map(formatUser);
-  return { users: formattedUsers, totalPages: data.totalPages };
+  return { users: data.users.map(formatUser), totalPages: data.totalPages };
 };
 
 const searchUserByPhone = async (phone: string): Promise<SystemUser[]> => {
@@ -416,8 +413,7 @@ const searchUserByPhone = async (phone: string): Promise<SystemUser[]> => {
     throw new Error(`Failed to search user: ${response.statusText}`);
   }
   const data = await response.json();
-  const usersArray = Array.isArray(data) ? data : [data];
-  return usersArray.map(formatUser);
+  return (Array.isArray(data) ? data : [data]).map(formatUser);
 };
 
 const addUser = async (userData: UserPayload): Promise<SystemUser> => {
@@ -458,11 +454,17 @@ const updateUser = async ({
 };
 
 const deleteUser = async (userId: string): Promise<void> => {
-  console.log("Simulating API call to delete user:", userId);
-  return new Promise((resolve) => setTimeout(resolve, 500));
+  const token = getAuthToken();
+  const response = await fetch(`${BASE_URL}/users/${userId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    throw new Error("Failed to delete user.");
+  }
 };
 
-// --- Local UserForm Component (Unchanged) ---
+// ** FIXED: Restored the full UserForm component **
 const UserForm = ({
   initialData,
   onSubmit,
@@ -475,8 +477,14 @@ const UserForm = ({
   isPending?: boolean;
 }) => {
   const [formData, setFormData] = useState(
-    initialData || { name: "", email: "", phone: "", role: "reception" }
+    initialData || {
+      name: "",
+      email: "",
+      phone: "",
+      role: "reception",
+    }
   );
+
   const roleDescriptions: Record<UserRole, string> = {
     reception:
       "Manages appointments, patient check-ins, and basic client communication.",
@@ -489,16 +497,19 @@ const UserForm = ({
     "super-admin":
       "Full access to all system settings, user management, and financial data.",
   };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
   };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-4">
       <div>
@@ -561,7 +572,7 @@ const UserForm = ({
         </Button>
         <Button
           type="submit"
-          className="bg-rose-600 hover:bg-rose-700"
+          className="bg-rose-600 hover:bg-rose-700 text-white"
           disabled={isPending}
         >
           {isPending ? "Saving..." : "Save"}
@@ -640,16 +651,35 @@ export function UserManagementView() {
 
   const deleteUserMutation = useMutation({
     mutationFn: deleteUser,
-    onSuccess: () => {
+    onMutate: async (userId: string) => {
+      await queryClient.cancelQueries({ queryKey: ["users"] });
+      const previousUsersData = queryClient.getQueryData([
+        "users",
+        currentPage,
+        selectedRole,
+      ]);
+      queryClient.setQueryData(
+        ["users", currentPage, selectedRole],
+        (oldData: any) => ({
+          ...oldData,
+          users: oldData.users.filter((u: SystemUser) => u.id !== userId),
+        })
+      );
+      return { previousUsersData };
+    },
+    onError: (err, _userId, context) => {
+      if (context?.previousUsersData) {
+        queryClient.setQueryData(
+          ["users", currentPage, selectedRole],
+          context.previousUsersData
+        );
+      }
+      alert(`Error deleting user: ${(err as Error).message}`);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
-    onError: (err) => alert(`Error deleting user: ${err.message}`),
   });
-
-  const handleRoleChange = (role: UserRole | "all") => {
-    setSelectedRole(role);
-    setCurrentPage(1);
-  };
 
   const getRoleBadge = (role: UserRole) => {
     const roleColors: Record<UserRole, string> = {
@@ -678,7 +708,6 @@ export function UserManagementView() {
       <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-4 flex-1 min-w-0">
           <Avatar className="h-12 w-12">
-            {/* ** UPDATED ** Conditionally render image or fallback */}
             {user.avatar ? (
               <AvatarImage src={user.avatar} alt={user.name} />
             ) : (
@@ -730,14 +759,20 @@ export function UserManagementView() {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   onClick={() => {
-                    if (window.confirm("Are you sure?")) {
+                    if (
+                      window.confirm(
+                        "Are you sure you want to delete this user?"
+                      )
+                    ) {
                       deleteUserMutation.mutate(user.id);
                     }
                     setIsMenuOpen(null);
                   }}
-                  className="text-red-600 focus:text-red-600"
+                  className="text-red-600 focus:text-red-600 hover:bg-red-50"
                 >
-                  <TrashIcon className="h-4 w-4 mr-2" /> Delete User
+                  <div className="flex items-center">
+                    <TrashIcon className="h-4 w-4 mr-2" /> Delete User
+                  </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             )}
@@ -754,7 +789,7 @@ export function UserManagementView() {
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
           <Button
             onClick={() => setIsAddDialogOpen(true)}
-            className="bg-rose-600 hover:bg-rose-700 w-full sm:w-auto"
+            className="bg-rose-600 hover:bg-rose-700 text-white w-full sm:w-auto"
           >
             <PlusIcon className="h-4 w-4 mr-2" /> Add User
           </Button>
@@ -788,7 +823,10 @@ export function UserManagementView() {
                     key={role}
                     variant={selectedRole === role ? "default" : "outline"}
                     size="sm"
-                    onClick={() => handleRoleChange(role)}
+                    onClick={() => {
+                      setSelectedRole(role);
+                      setCurrentPage(1);
+                    }}
                     disabled={isPhoneSearch}
                     className={
                       selectedRole === role
@@ -833,7 +871,7 @@ export function UserManagementView() {
             </CardContent>
           </Card>
         )}
-        {!isPhoneSearch && (
+        {!isPhoneSearch && totalPages > 1 && (
           <div className="flex items-center justify-center space-x-2 pt-4">
             <Button
               variant="outline"

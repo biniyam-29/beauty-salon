@@ -10,7 +10,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-// --- FIXED: Type definitions are now self-contained in this file ---
+// --- Type Definitions ---
 type PatientData = {
   name: string;
   address: string;
@@ -98,6 +98,7 @@ const fetchProfessionals = async (): Promise<ProfessionalData[]> => {
   return data.users || [];
 };
 
+// ** UPDATED: Improved error handling for 409 Conflict **
 const registerPatient = async (payload: any): Promise<PatientData> => {
   const token = getAuthToken();
   const response = await fetch(`${API_BASE_URL}/customers`, {
@@ -108,9 +109,19 @@ const registerPatient = async (payload: any): Promise<PatientData> => {
     },
     body: JSON.stringify(payload),
   });
+
   if (!response.ok) {
+    // Specifically handle the 409 Conflict error
+    if (response.status === 409) {
+      throw new Error(
+        "A client with this phone number or email already exists."
+      );
+    }
+    // Handle other errors
     const errorBody = await response.json();
-    throw new Error(errorBody.message || "An unknown error occurred.");
+    throw new Error(
+      errorBody.message || `An API error occurred: ${response.statusText}`
+    );
   }
   return response.json();
 };
@@ -608,7 +619,6 @@ export const PatientRegistrationWizard: React.FC<{
   });
 
   const updateFormData = (updates: Partial<PatientData>) => {
-    // ** FIXED: Added explicit type for 'prev' parameter **
     setFormData((prev: PatientData) => ({ ...prev, ...updates }));
   };
 
@@ -650,11 +660,9 @@ export const PatientRegistrationWizard: React.FC<{
         previous_acne_medication: formData.acneMedicationDetails,
         drinks_smokes: formData.alcoholOrSmoke,
       },
-      // ** FIXED: Added explicit type for 'name' parameter **
       skin_concerns: formData.skinConcerns
         .map((name: string) => skinConcernsMap[name])
         .filter(Boolean),
-      // ** FIXED: Added explicit type for 'name' parameter **
       health_conditions: formData.healthConditions
         .map((name: string) => healthConditionsMap[name])
         .filter(Boolean),

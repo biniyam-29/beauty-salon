@@ -45,6 +45,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           Product Management
         </button>
+        <button
+          className={`block w-full text-left p-2 rounded ${
+            activeTab === "Customize Options" ? "bg-gray-200" : ""
+          }`}
+          onClick={() => setActiveTab("Customize Options")}
+        >
+          Customize Options
+        </button>
       </nav>
 
       {/* Footer */}
