@@ -55,11 +55,23 @@ class ProductService {
         $offset = max(0, ($page - 1)) * $limit;
 
         try {
-            $stmt = $this->conn->prepare("SELECT id, name, brand, price, stock_quantity FROM products ORDER BY name ASC LIMIT :limit OFFSET :offset");
+            $stmt = $this->conn->prepare(
+                "SELECT id, name, brand, price, stock_quantity, TO_BASE64(image_data) as image_data, image_data_mimetype 
+                 FROM products 
+                 ORDER BY name ASC 
+                 LIMIT :limit OFFSET :offset"
+            );
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
             $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($products as &$product) {
+                if ($product['image_data'] && $product['image_data_mimetype']) {
+                    $product['image_data'] = 'data:' . $product['image_data_mimetype'] . ';base64,' . $product['image_data'];
+                }
+                unset($product['image_mimetype']);
+            }
 
             $totalStmt = $this->conn->query("SELECT COUNT(*) FROM products");
             $totalProducts = $totalStmt->fetchColumn();
@@ -80,7 +92,11 @@ class ProductService {
      */
     public function getProductById(int $id): string {
         try {
-            $stmt = $this->conn->prepare("SELECT * FROM products WHERE id = :id");
+            // UPDATED: Added columns for the product image
+            $stmt = $this->conn->prepare(
+                "SELECT *, TO_BASE64(image_data) as image_data 
+                 FROM products WHERE id = :id"
+            );
             $stmt->execute([':id' => $id]);
             $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -88,6 +104,12 @@ class ProductService {
                 http_response_code(404);
                 return json_encode(['error' => 'Product not found.']);
             }
+
+            // Build the full data URI for the image
+            if ($product['image_data'] && $product['image_mimetype']) {
+                $product['image_data'] = 'data:' . $product['image_data_mimetype'] . ';base64,' . $product['image_data'];
+            }
+            unset($product['image_mimetype']); // Clean up the response
 
             return json_encode($product);
         } catch (Exception $e) {
@@ -155,6 +177,41 @@ class ProductService {
             }
 
             return json_encode(['message' => 'Product deleted successfully.']);
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Updates the picture for an existing product.
+     */
+    public function updateProductPicture(int $productId, array $file): string {
+        if (empty($file) || $file['error'] !== UPLOAD_ERR_OK) {
+            http_response_code(400);
+            return json_encode(['error' => 'File upload error or no file provided.']);
+        }
+        if ($file['size'] > 2000000) { // 2MB limit
+            http_response_code(400);
+            return json_encode(['error' => 'File is too large. Max size is 2MB.']);
+        }
+
+        $imageData = file_get_contents($file['tmp_name']);
+        $imageMimeType = $file['type'];
+
+        try {
+            $stmt = $this->conn->prepare("UPDATE products SET image_data = :image_data, image_data_mimetype = :mimetype WHERE id = :id");
+            $stmt->bindParam(':image_data', $imageData, PDO::PARAM_LOB);
+            $stmt->bindParam(':mimetype', $imageMimeType, PDO::PARAM_STR);
+            $stmt->bindParam(':id', $productId, PDO::PARAM_INT);
+            $stmt->execute();
+
+            if ($stmt->rowCount() === 0) {
+                 http_response_code(404);
+                 return json_encode(['error' => 'Product not found.']);
+            }
+
+            return json_encode(['message' => 'Product picture updated successfully.']);
         } catch (Exception $e) {
             http_response_code(500);
             return json_encode(['error' => 'Database error: ' . $e->getMessage()]);

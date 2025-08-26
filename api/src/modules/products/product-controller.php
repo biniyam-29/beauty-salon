@@ -37,6 +37,15 @@ class ProductController implements ControllerInterface {
         $subResource = $paths[2] ?? null;
         $subResourceId = $paths[3] ?? null;
 
+        if ($method === 'POST' && $id && $subResource === 'picture') {
+            if (!RoleGuard::roleGuard('super-admin') && !RoleGuard::roleGuard('inventory-manager')) {
+                 http_response_code(403);
+                 return json_encode(['message' => 'Forbidden: You do not have permission to manage products.']);
+            }
+            $file = $_FILES['product_picture'] ?? null;
+            return $this->productService->updateProductPicture($id, $file);
+        }
+
         if ($id && $subResource === 'contraindications') {
             if (!RoleGuard::roleGuard('super-admin')) {
                  http_response_code(403);
