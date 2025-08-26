@@ -170,11 +170,23 @@ class UserService {
         $offset = max(0, ($page - 1)) * $limit;
 
         try {
-            $stmt = $this->conn->prepare("SELECT id, name, email, phone, role FROM users WHERE is_active = 1 ORDER BY created_at DESC LIMIT :limit OFFSET :offset");
+            $stmt = $this->conn->prepare(
+                "SELECT id, name, email, phone, role, TO_BASE64(profile_picture) as profile_picture, profile_picture_mimetype 
+                 FROM users WHERE is_active = 1 
+                 ORDER BY created_at DESC 
+                 LIMIT :limit OFFSET :offset"
+            );
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($users as &$user) {
+                if ($user['profile_picture'] && $user['profile_picture_mimetype']) {
+                    $user['profile_picture'] = 'data:' . $user['profile_picture_mimetype'] . ';base64,' . $user['profile_picture'];
+                }
+                unset($user['profile_picture_mimetype']);
+            }
 
             $totalStmt = $this->conn->query("SELECT COUNT(*) FROM users WHERE is_active = 1");
             $totalUsers = $totalStmt->fetchColumn();
@@ -195,7 +207,10 @@ class UserService {
      */
     public function getUserById($id): string {
         try {
-            $stmt = $this->conn->prepare("SELECT id, name, email, phone, role FROM users WHERE id = :id AND is_active = 1");
+            $stmt = $this->conn->prepare(
+                "SELECT id, name, email, phone, role, TO_BASE64(profile_picture) as profile_picture, profile_picture_mimetype 
+                 FROM users WHERE id = :id AND is_active = 1"
+            );
             $stmt->execute([':id' => $id]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -203,6 +218,11 @@ class UserService {
                 http_response_code(404);
                 return json_encode(['error' => 'User not found.']);
             }
+
+            if ($user['profile_picture'] && $user['profile_picture_mimetype']) {
+                $user['profile_picture'] = 'data:' . $user['profile_picture_mimetype'] . ';base64,' . $user['profile_picture'];
+            }
+            unset($user['profile_picture_mimetype']);
 
             return json_encode($user);
         } catch (Exception $e) {
