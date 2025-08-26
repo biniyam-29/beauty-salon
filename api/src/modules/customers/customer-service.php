@@ -134,11 +134,23 @@ class CustomerService {
         $offset = max(0, ($page - 1)) * $limit;
 
         try {
-            $stmt = $this->conn->prepare("SELECT id, full_name, phone, email FROM customers ORDER BY created_at DESC LIMIT :limit OFFSET :offset");
+            $stmt = $this->conn->prepare(
+                "SELECT id, full_name, phone, email, TO_BASE64(profile_picture) as profile_picture, profile_picture_mimetype 
+                 FROM customers 
+                 ORDER BY created_at DESC 
+                 LIMIT :limit OFFSET :offset"
+            );
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
             $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($customers as &$customer) {
+                if ($customer['profile_picture'] && $customer['profile_picture_mimetype']) {
+                    $customer['profile_picture'] = 'data:' . $customer['profile_picture_mimetype'] . ';base64,' . $customer['profile_picture'];
+                }
+                unset($customer['profile_picture_mimetype']); // Clean up the response
+            }
 
             $totalStmt = $this->conn->query("SELECT COUNT(*) FROM customers");
             $totalCustomers = $totalStmt->fetchColumn();
@@ -166,9 +178,8 @@ class CustomerService {
         $offset = max(0, ($page - 1)) * $limit;
 
         try {
-            // Get the paginated list of customers assigned to this doctor
             $stmt = $this->conn->prepare(
-                "SELECT id, full_name, phone, email 
+                "SELECT id, full_name, phone, email, TO_BASE64(profile_picture) as profile_picture, profile_picture_mimetype 
                  FROM customers 
                  WHERE assigned_doctor_id = :doctorId 
                  ORDER BY created_at DESC 
@@ -180,7 +191,13 @@ class CustomerService {
             $stmt->execute();
             $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Get the total count of customers assigned to this doctor for pagination
+            foreach ($customers as &$customer) {
+                if ($customer['profile_picture'] && $customer['profile_picture_mimetype']) {
+                    $customer['profile_picture'] = 'data:' . $customer['profile_picture_mimetype'] . ';base64,' . $customer['profile_picture'];
+                }
+                unset($customer['profile_picture_mimetype']);
+            }
+
             $totalStmt = $this->conn->prepare("SELECT COUNT(*) FROM customers WHERE assigned_doctor_id = :doctorId");
             $totalStmt->bindValue(':doctorId', $doctorId, PDO::PARAM_INT);
             $totalStmt->execute();
@@ -204,8 +221,11 @@ class CustomerService {
         try {
             $this->conn->beginTransaction();
 
-            // Get main customer data
-            $stmt = $this->conn->prepare("SELECT * FROM customers WHERE id = :id");
+            // Get main customer data, including the profile picture
+            $stmt = $this->conn->prepare(
+                "SELECT *, TO_BASE64(profile_picture) as profile_picture 
+                 FROM customers WHERE id = :id"
+            );
             $stmt->execute([':id' => $id]);
             $customer = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -213,6 +233,12 @@ class CustomerService {
                 http_response_code(404);
                 return json_encode(['error' => 'Customer not found.']);
             }
+
+            // Build the full data URI for the profile picture
+            if ($customer['profile_picture'] && $customer['profile_picture_mimetype']) {
+                $customer['profile_picture'] = 'data:' . $customer['profile_picture_mimetype'] . ';base64,' . $customer['profile_picture'];
+            }
+            unset($customer['profile_picture_mimetype']); // Clean up the response object
 
             // Get profile data
             $stmt = $this->conn->prepare("SELECT * FROM customer_profile WHERE customer_id = :id");
@@ -229,12 +255,12 @@ class CustomerService {
             $stmt->execute([':id' => $id]);
             $customer['health_conditions'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            //Get customer consents
+            // Get customer consents
             $stmt = $this->conn->prepare("SELECT id, signature_data, consent_date, created_at FROM customer_consents WHERE customer_id = :id ORDER BY consent_date DESC");
             $stmt->execute([':id' => $id]);
             $customer['consents'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            //Get visit notes
+            // Get visit notes
             $stmt = $this->conn->prepare(
                 "SELECT cn.id, cn.note_text, cn.status, cn.created_at, u.name as author_name 
                  FROM visit_notes cn
