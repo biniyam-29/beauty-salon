@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS `customers` (
   `emergency_contact_name` VARCHAR(255) NULL,
   `emergency_contact_phone` VARCHAR(20) NULL,
   `how_heard` VARCHAR(255) NULL,
+  `profile_picture` MEDIUMBLOB NULL,
+  `profile_picture_mimetype` VARCHAR(20) NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

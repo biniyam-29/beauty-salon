@@ -497,6 +497,38 @@ class CustomerService {
         }
     }
 
+    public function updateProfilePicture(int $customerId, array $file): string {
+        if (empty($file) || $file['error'] !== UPLOAD_ERR_OK) {
+            http_response_code(400);
+            return json_encode(['error' => 'File upload error or no file provided.']);
+        }
+        if ($file['size'] > 2000000) { // 2MB limit
+            http_response_code(400);
+            return json_encode(['error' => 'File is too large. Max size is 2MB.']);
+        }
+
+        $imageData = file_get_contents($file['tmp_name']);
+        $imageMimeType = $file['type'];
+
+        try {
+            $stmt = $this->conn->prepare("UPDATE customers SET profile_picture = :image_data, profile_picture_mimetype = :mimetype WHERE id = :id");
+            $stmt->bindParam(':image_data', $imageData, PDO::PARAM_LOB);
+            $stmt->bindParam(':mimetype', $imageMimeType, PDO::PARAM_STR);
+            $stmt->bindParam(':id', $customerId, PDO::PARAM_INT);
+            $stmt->execute();
+
+            if ($stmt->rowCount() === 0) {
+                 http_response_code(404);
+                 return json_encode(['error' => 'Customer not found.']);
+            }
+
+            return json_encode(['message' => 'Profile picture updated successfully.']);
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+        }
+    }
+
     public function isCustomerAssignedToDoctor(int $customerId, int $doctorId): bool {
         $stmt = $this->conn->prepare("
             SELECT COUNT(*) FROM customers

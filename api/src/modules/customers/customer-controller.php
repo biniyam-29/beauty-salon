@@ -43,6 +43,10 @@ class CustomerController implements ControllerInterface {
 
         switch ($method) {
             case 'POST':
+                if ($id && $subResource === 'picture') {
+                    $file = $_FILES['profile_picture'] ?? null;
+                    return $this->customerService->updateProfilePicture($id, $file);
+                }
                 // POST /customers/{id}/skin-concerns
                 if ($subResource === 'skin-concerns') {
                     return $this->customerService->addSkinConcern($id, $body);
