@@ -94,9 +94,11 @@ export interface User {
 export interface Product {
   id: number;
   name: string;
-  brand: string;
-  description: string;
-  price: number;
+  brand: string | null;
+  description: string | null;
+  price: number; 
   stock_quantity: number;
-  image: any;
+  image_data: string | null; // Base64 data string from the API
+  image_data_mimetype?: string;
 }
+

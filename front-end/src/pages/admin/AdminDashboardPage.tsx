@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { adminUser } from "../../data";
 import type { User } from "../../types";
 import { Sidebar } from "../../components/sidebar";
 import { UserManagementView } from "../../components/UserManagement";
@@ -127,7 +126,7 @@ const AdminDashboard: React.FC = () => {
       {isAdminProfileOpen && (
         <UserModal
           title="Admin Profile"
-          user={loggedInAdmin ?? adminUser} // 👈 show localStorage user first
+          user={loggedInAdmin} // 👈 show localStorage user first
           onClose={() => setIsAdminProfileOpen(false)}
           onSave={handleSaveAdmin}
         />

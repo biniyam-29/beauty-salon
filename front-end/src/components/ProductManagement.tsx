@@ -7,7 +7,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
-// --- Helper Components (Unchanged) ---
+// --- Helper Components ---
 const TrashIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -34,7 +34,6 @@ const getAuthToken = () => {
   return token;
 };
 
-// Fetch all products
 const fetchProducts = async (
   page: number
 ): Promise<{ products: Product[]; totalPages: number }> => {
@@ -47,9 +46,8 @@ const fetchProducts = async (
   return response.json();
 };
 
-// Add a new product
 const addProduct = async (
-  productData: Omit<Product, "id" | "image">
+  productData: Omit<Product, "id" | "image_data">
 ): Promise<{ productId: number }> => {
   const token = getAuthToken();
   const response = await fetch(`${BASE_URL}/products`, {
@@ -64,7 +62,6 @@ const addProduct = async (
   return response.json();
 };
 
-// Update an existing product
 const updateProduct = async (
   productData: Product
 ): Promise<{ message: string }> => {
@@ -82,7 +79,6 @@ const updateProduct = async (
   return response.json();
 };
 
-// Delete a product
 const deleteProduct = async (
   productId: number
 ): Promise<{ message: string }> => {
@@ -95,42 +91,75 @@ const deleteProduct = async (
   return response.json();
 };
 
+const uploadProductImage = async ({
+  productId,
+  imageFile,
+}: {
+  productId: number;
+  imageFile: File;
+}) => {
+  const token = getAuthToken();
+  const formData = new FormData();
+  formData.append("product_picture", imageFile);
+
+  const response = await fetch(`${BASE_URL}/products/${productId}/picture`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+  if (!response.ok) throw new Error("Failed to upload product image.");
+  return response.json();
+};
+
 // --- Main Component ---
 export const ProductManagementView: React.FC = () => {
-  // TanStack Query client for invalidation
   const queryClient = useQueryClient();
 
-  // Local UI state remains managed by useState, which is its intended purpose.
   const [stockFilter, setStockFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
-  // --- TanStack Query for data fetching ---
   const {
     data: queryData,
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["products", currentPage], // Re-fetches when currentPage changes
+    queryKey: ["products", currentPage],
     queryFn: () => fetchProducts(currentPage),
-    placeholderData: (previousData) => previousData, // Keeps old data visible while new data is fetched
+    placeholderData: (previousData) => previousData,
   });
 
   const products = queryData?.products ?? [];
   const totalPages = queryData?.totalPages ?? 1;
 
-  // --- TanStack Mutations for API actions ---
+  const uploadImageMutation = useMutation({
+    mutationFn: uploadProductImage,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      console.log("Image uploaded and product list updated.");
+    },
+    onError: (err) => alert(`Image upload failed: ${err.message}`),
+  });
+
   const addProductMutation = useMutation({
     mutationFn: addProduct,
-    onSuccess: () => {
-      // Invalidate the query to automatically refetch and show the new product
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+    onSuccess: (data) => {
+      console.log("Product created with ID:", data.productId);
+      if (imageFile) {
+        uploadImageMutation.mutate({ productId: data.productId, imageFile });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["products"] });
+      }
       setIsAddModalOpen(false);
+      setImageFile(null);
     },
-    onError: (err) => alert(`Error: ${err.message}`),
+    onError: (err) => alert(`Error creating product: ${err.message}`),
   });
 
   const updateProductMutation = useMutation({
@@ -145,14 +174,11 @@ export const ProductManagementView: React.FC = () => {
   const deleteProductMutation = useMutation({
     mutationFn: deleteProduct,
     onSuccess: () => {
-      // Invalidate and refetch to remove the product from the list
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (err) => alert(`Error: ${err.message}`),
   });
 
-  // --- Client-Side Filtering (Derived State) ---
-  // useMemo is still the correct hook for this synchronous, expensive calculation.
   const filteredProducts = useMemo(() => {
     return products
       .filter(
@@ -179,7 +205,6 @@ export const ProductManagementView: React.FC = () => {
 
   return (
     <section className="p-6">
-      {/* header */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Product Management</h2>
         <button
@@ -190,7 +215,6 @@ export const ProductManagementView: React.FC = () => {
         </button>
       </div>
 
-      {/* search & filters */}
       <div className="bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-col sm:flex-row items-center gap-4">
         <div className="relative flex-grow w-full sm:w-auto">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -226,7 +250,6 @@ export const ProductManagementView: React.FC = () => {
         </div>
       </div>
 
-      {/* products list */}
       {isLoading && (
         <p className="text-center text-gray-500">Loading products...</p>
       )}
@@ -240,9 +263,10 @@ export const ProductManagementView: React.FC = () => {
                 key={product.id}
                 className="bg-white rounded-lg shadow-sm overflow-hidden group flex flex-col"
               >
+                {/* MODIFIED: Use `product.image_data` for the image source */}
                 <img
                   src={
-                    product.image ||
+                    product.image_data ||
                     "https://placehold.co/600x400/fecdd3/4c0519?text=No+Image"
                   }
                   alt={product.name}
@@ -306,7 +330,6 @@ export const ProductManagementView: React.FC = () => {
         </>
       )}
 
-      {/* pagination */}
       <div className="flex items-center justify-center space-x-2 mt-6">
         <Button
           variant="outline"
@@ -329,22 +352,31 @@ export const ProductManagementView: React.FC = () => {
         </Button>
       </div>
 
-      {/* modals */}
       {editingProduct && (
         <ProductModal
           title="Edit Product"
           product={editingProduct}
           onClose={() => setEditingProduct(null)}
-          onSave={(product) => updateProductMutation.mutate(product)}
+          onSave={(product) => updateProductMutation.mutate(product as Product)}
           isPending={updateProductMutation.isPending}
         />
       )}
       {isAddModalOpen && (
         <ProductModal
           title="Add New Product"
-          onClose={() => setIsAddModalOpen(false)}
-          onSave={(product) => addProductMutation.mutate(product)}
-          isPending={addProductMutation.isPending}
+          onClose={() => {
+            setIsAddModalOpen(false);
+            setImageFile(null);
+          }}
+          onSave={(product) =>
+            addProductMutation.mutate(
+              product as Omit<Product, "id" | "image_data">
+            )
+          }
+          isPending={
+            addProductMutation.isPending || uploadImageMutation.isPending
+          }
+          onFileChange={(file: File | null) => setImageFile(file)}
         />
       )}
     </section>

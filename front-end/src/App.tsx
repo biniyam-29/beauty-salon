@@ -7,13 +7,14 @@ import {
   useNavigate,
   Navigate,
 } from "react-router-dom";
+// Make sure to install and import jwt-decode
+import { jwtDecode } from "jwt-decode";
 import type { PatientData } from "./types";
 import { CustomerListPage } from "./pages/reception/CustomerListPage";
 import LandingPage from "./pages/reception/LandingPage";
 import { PatientRegistrationWizard } from "./components/PatientRegistrationWizard";
 import LoginPage from "./pages/LoginPage";
-import  ProfessionalDashboardPage  from "./pages/professionals/ProfessionalDashboardPage";
-import { ProfessionalSessionPage } from "./pages/professionals/ProfessionalSessionPage";
+import ProfessionalDashboardPage from "./pages/professionals/ProfessionalDashboardPage";
 import { RemindersPage } from "./pages/reception/RemindersPage";
 import AssignedPatientsPage from "./pages/admin/AdminDashboardPage";
 import HomePage from "./pages/HomePage";
@@ -152,16 +153,8 @@ const AppRoutes: React.FC = () => {
         path="/professional"
         element={
           <RequireAuth role="doctor">
-              <ProfessionalDashboardPage />
+            <ProfessionalDashboardPage />
           </RequireAuth>
-        }
-      />
-      <Route
-        path="/professional/session/:customerId"
-        element={
-          <GradientLayout>
-            <ProfessionalSessionPage />
-          </GradientLayout>
         }
       />
 
@@ -193,6 +186,12 @@ const LoginRouteWrapper: React.FC = () => {
 };
 
 // --- Auth Wrappers ---
+
+/**
+ * A component that protects routes requiring authentication.
+ * It checks for the presence, validity, and expiration of a JWT,
+ * and also verifies the user's role.
+ */
 const RequireAuth = ({
   children,
   role,
@@ -200,16 +199,47 @@ const RequireAuth = ({
   children: React.ReactElement;
   role: string;
 }) => {
-  const isAuthenticated = !!localStorage.getItem("auth_token");
-  const roleValue = localStorage.getItem("role");
+  const token = localStorage.getItem("auth_token");
+  const userRole = localStorage.getItem("role");
 
-  return isAuthenticated && roleValue === role ? (
-    children
-  ) : (
-    <Navigate to="/login" replace />
-  );
+  // Helper function to handle logout
+  const handleLogout = () => {
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("role");
+    return <Navigate to="/login" replace />;
+  };
+
+  // 1. Check if token exists
+  if (!token) {
+    return handleLogout();
+  }
+
+  try {
+    // 2. Decode the token to check expiration
+    const decodedToken: { exp: number } = jwtDecode(token);
+    const currentTime = Date.now() / 1000; // Convert ms to seconds
+
+    // 3. Check if token is expired
+    if (decodedToken.exp < currentTime) {
+      console.log("Auth token expired. Logging out.");
+      return handleLogout();
+    }
+
+    // 4. Check if the user role matches the required role
+    if (userRole === role) {
+      return children; // All checks passed, render the component
+    } else {
+      console.warn(
+        `Role mismatch: Required '${role}', but user has '${userRole}'.`
+      );
+      return handleLogout(); // Role doesn't match, log out
+    }
+  } catch (error) {
+    // 5. Handle cases where the token is malformed
+    console.error("Failed to decode auth token:", error);
+    return handleLogout();
+  }
 };
-
 
 const RedirectIfAuth = ({ children }: { children: React.ReactElement }) => {
   switch (localStorage.getItem("role")) {
@@ -235,15 +265,15 @@ const App: React.FC = () => (
     </Router>
 
     <style>{`
-      .font-display { font-family: 'Playfair Display', serif; }
-      .font-sans { font-family: 'Lato', sans-serif; }
-      @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-      .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
-      @keyframes fadeInFast { from { opacity: 0; } to { opacity: 1; } }
-      .animate-fade-in-fast { animation: fadeInFast 0.2s ease-out forwards; }
-      @keyframes slideUp { from { transform: translateY(20px); } to { transform: translateY(0); } }
-      .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
-    `}</style>
+       .font-display { font-family: 'Playfair Display', serif; }
+       .font-sans { font-family: 'Lato', sans-serif; }
+       @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+       .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+       @keyframes fadeInFast { from { opacity: 0; } to { opacity: 1; } }
+       .animate-fade-in-fast { animation: fadeInFast 0.2s ease-out forwards; }
+       @keyframes slideUp { from { transform: translateY(20px); } to { transform: translateY(0); } }
+       .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
+     `}</style>
   </>
 );
 

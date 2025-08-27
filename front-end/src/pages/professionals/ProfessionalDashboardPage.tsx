@@ -10,7 +10,7 @@ import {
   LogOut,
   User,
   Users,
-  ClipboardPlus,
+  ClipboardList,
   Loader2,
   X,
   Droplet,
@@ -362,7 +362,7 @@ const PatientDetailView: React.FC<{
             </p>
           </div>
           <Button onClick={onAddConsultation}>
-            <ClipboardPlus size={16} className="mr-2" /> Add Consultation
+            <ClipboardList size={16} className="mr-2" /> Add Consultation
           </Button>
         </div>
         <div className="mt-6 flex border-b border-rose-200/60">

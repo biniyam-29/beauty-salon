@@ -1,13 +1,13 @@
-// FILE: src/components/Modals.tsx
 import React, { useState } from "react";
 import type { User, Product } from "../types";
 
 interface ProductModalProps {
   product?: Product | null;
   onClose: () => void;
-  onSave: (product: Product) => void;
+  onSave: (product: Product | Omit<Product, "id" | "image_data">) => void;
   title: string;
   isPending?: boolean;
+  onFileChange?: (file: File | null) => void;
 }
 
 export const ProductModal: React.FC<ProductModalProps> = ({
@@ -15,16 +15,17 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   onClose,
   onSave,
   title,
+  isPending,
+  onFileChange,
 }) => {
   const [formData, setFormData] = useState(
     product || {
-      id: Date.now(),
       name: "",
       brand: "",
       description: "",
       price: 0,
       stock_quantity: 0,
-      image: "https://placehold.co/600x400/fecdd3/4c0519?text=New+Product",
+      image_data: null, // MODIFIED: Added missing property to the initial state
     }
   );
 
@@ -32,12 +33,25 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value as any }));
+    const newValue =
+      e.target.type === "number" ? parseFloat(value) || 0 : value;
+    setFormData((prev) => ({ ...prev, [name]: newValue }));
   };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    if (product?.id) {
+      onSave({ ...formData, id: product.id } as Product);
+    } else {
+      onSave(formData);
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files ? event.target.files[0] : null;
+    if (onFileChange) {
+      onFileChange(file);
+    }
   };
 
   return (
@@ -66,7 +80,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               <input
                 type="text"
                 name="brand"
-                value={formData.brand}
+                value={formData.brand || ""} // MODIFIED: Handle null value
                 onChange={handleChange}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500"
                 required
@@ -78,7 +92,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               </label>
               <textarea
                 name="description"
-                value={formData.description}
+                value={formData.description || ""} // MODIFIED: Handle null value
                 onChange={handleChange}
                 rows={3}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500"
@@ -116,6 +130,25 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 />
               </div>
             </div>
+
+            {onFileChange && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Product Image
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="mt-1 block w-full text-sm text-gray-500
+                                       file:mr-4 file:py-2 file:px-4
+                                       file:rounded-full file:border-0
+                                       file:text-sm file:font-semibold
+                                       file:bg-pink-50 file:text-red-600
+                                       hover:file:bg-pink-100"
+                />
+              </div>
+            )}
           </div>
           <div className="mt-6 flex justify-end space-x-3">
             <button
@@ -127,9 +160,10 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+              disabled={isPending}
+              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:bg-red-300"
             >
-              Save
+              {isPending ? "Saving..." : "Save"}
             </button>
           </div>
         </form>
@@ -138,6 +172,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   );
 };
 
+// --- UserModal is unchanged ---
 interface UserModalProps {
   user?: User | null;
   onClose: () => void;
@@ -151,7 +186,6 @@ export const UserModal: React.FC<UserModalProps> = ({
   onSave,
   title,
 }) => {
-  // Ensure all user fields are initialized, including is_active for new users
   const [formData, setFormData] = useState(
     user || {
       id: 0,
@@ -159,7 +193,7 @@ export const UserModal: React.FC<UserModalProps> = ({
       email: "",
       phone: "",
       role: "reception",
-      is_active: true, // Assume new users are active by default
+      is_active: true,
       avatar: "",
     }
   );
@@ -182,7 +216,6 @@ export const UserModal: React.FC<UserModalProps> = ({
       return;
     }
 
-    // Prepare the data payload for the API
     const apiPayload = {
       name: formData.name,
       email: formData.email,
@@ -210,14 +243,12 @@ export const UserModal: React.FC<UserModalProps> = ({
 
       const responseData = await response.json();
 
-      // FIX: Construct the user object from the form data, which is guaranteed
-      // to have a 'name' property, and merge it with the ID from the API response.
       const finalUserObject = {
         ...formData,
         id: responseData.id || responseData.user_id || Date.now(),
       };
 
-      onSave(finalUserObject as User); // Pass the complete object back
+      onSave(finalUserObject as User);
     } catch (error) {
       console.error("Error saving user:", error);
       alert(

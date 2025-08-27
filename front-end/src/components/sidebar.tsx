@@ -1,6 +1,5 @@
 import React from "react";
 import type { User } from "../types";
-import { adminUser } from "../data";
 
 export interface SidebarProps {
   activeTab: string;
@@ -17,7 +16,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
   admin,
 }) => {
-  const displayAdmin = admin ?? adminUser; // 👈 fallback if no logged-in admin
+  const displayAdmin:any = admin; // 👈 fallback if no logged-in admin
 
   return (
     <div className="h-full w-64 bg-white shadow flex flex-col">
