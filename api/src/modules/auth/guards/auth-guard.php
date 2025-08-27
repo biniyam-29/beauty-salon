@@ -42,7 +42,7 @@ class AuthGuard {
         }
 
         try {
-            $decoded = JWT::decode($token, new Key(AuthConstants::$secretKey, 'HS26'));
+            $decoded = JWT::decode($token, new Key(AuthConstants::$secretKey, 'HS256'));
 
             if (!isset($decoded->data) || !isset($decoded->data->id)) {
                 http_response_code(401);
