@@ -67,13 +67,16 @@ const AdminDashboard: React.FC = () => {
     <div className="h-screen w-screen flex font-sans overflow-hidden bg-gray-50">
       {/* Sidebar */}
       <div className="hidden md:block shrink-0">
-        <Sidebar
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          onAdminProfileClick={() => setIsAdminProfileOpen(true)}
-          onLogout={handleLogout}
-          admin={loggedInAdmin} // 👈 pass parsed admin data
-        />
+        {/* MODIFIED: Conditionally render Sidebar only when admin data is loaded */}
+        {loggedInAdmin && (
+          <Sidebar
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            onAdminProfileClick={() => setIsAdminProfileOpen(true)}
+            onLogout={handleLogout}
+            admin={loggedInAdmin}
+          />
+        )}
       </div>
 
       {/* Mobile Sidebar (Drawer) */}
@@ -84,19 +87,22 @@ const AdminDashboard: React.FC = () => {
             onClick={() => setSidebarOpen(false)}
           />
           <div className="relative z-50 w-64 bg-white shadow-xl">
-            <Sidebar
-              activeTab={activeTab}
-              setActiveTab={(tab) => {
-                setActiveTab(tab);
-                setSidebarOpen(false);
-              }}
-              onAdminProfileClick={() => {
-                setIsAdminProfileOpen(true);
-                setSidebarOpen(false);
-              }}
-              onLogout={handleLogout}
-              admin={loggedInAdmin} // 👈 pass parsed admin data
-            />
+            {/* MODIFIED: Conditionally render Sidebar only when admin data is loaded */}
+            {loggedInAdmin && (
+              <Sidebar
+                activeTab={activeTab}
+                setActiveTab={(tab) => {
+                  setActiveTab(tab);
+                  setSidebarOpen(false);
+                }}
+                onAdminProfileClick={() => {
+                  setIsAdminProfileOpen(true);
+                  setSidebarOpen(false);
+                }}
+                onLogout={handleLogout}
+                admin={loggedInAdmin}
+              />
+            )}
           </div>
         </div>
       )}
@@ -126,7 +132,7 @@ const AdminDashboard: React.FC = () => {
       {isAdminProfileOpen && (
         <UserModal
           title="Admin Profile"
-          user={loggedInAdmin} // 👈 show localStorage user first
+          user={loggedInAdmin}
           onClose={() => setIsAdminProfileOpen(false)}
           onSave={handleSaveAdmin}
         />
