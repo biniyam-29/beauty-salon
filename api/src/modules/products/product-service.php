@@ -106,7 +106,7 @@ class ProductService {
             }
 
             // Build the full data URI for the image
-            if ($product['image_data'] && $product['image_mimetype']) {
+            if ($product['image_data'] && $product['image_data_mimetype']) {
                 $product['image_data'] = 'data:' . $product['image_data_mimetype'] . ';base64,' . $product['image_data'];
             }
             unset($product['image_mimetype']); // Clean up the response
