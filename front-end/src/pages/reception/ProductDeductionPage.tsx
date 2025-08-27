@@ -1,21 +1,22 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronLeft,
-  CheckCircle,
   Loader2,
   Sparkles,
+  ShoppingCart, // NEW: Icon for checkout button
 } from "lucide-react";
+import { Toaster, toast } from "sonner"; // Assuming sonner for notifications
 
-// --- Type Definitions (Updated to match API response) ---
+// --- Type Definitions ---
 interface Prescription {
   prescription_id: number;
   quantity: number;
   instructions: string;
   product_id: number;
   product_name: string;
-  product_image: string | null; // Changed from product_picture
+  product_image: string | null;
   customer_name: string;
   customer_phone: string;
 }
@@ -29,7 +30,6 @@ const getAuthToken = () => {
   return token;
 };
 
-// ** UPDATED: Fetches live data from the API **
 const fetchPendingPrescriptions = async (): Promise<Prescription[]> => {
   const token = getAuthToken();
   const response = await fetch(
@@ -42,20 +42,28 @@ const fetchPendingPrescriptions = async (): Promise<Prescription[]> => {
     throw new Error("Failed to fetch pending prescriptions.");
   }
   const data = await response.json();
-  return data || []; // API returns a direct array
+  return data || [];
 };
 
-const fulfillPrescription = async (prescriptionId: number): Promise<void> => {
-  console.log(`Fulfilling prescription ID: ${prescriptionId}`);
-  // This would be the real API call to deduct the product
-  // const token = getAuthToken();
-  // const response = await fetch(`${API_BASE_URL}/prescriptions/fulfill`, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-  //   body: JSON.stringify({ prescription_id: prescriptionId }),
-  // });
-  // if (!response.ok) throw new Error("Failed to fulfill prescription.");
-  await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate network delay
+// NEW: API function to process the checkout
+const processCheckout = async (
+  prescriptionIds: number[]
+): Promise<{ message: string }> => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/checkout`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ prescription_ids: prescriptionIds }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || "Failed to process checkout.");
+  }
+  return response.json();
 };
 
 // --- Modern UI Components ---
@@ -81,14 +89,28 @@ const Button: React.FC<
   </button>
 );
 
+// MODIFIED: PrescriptionCard now includes a checkbox
 const PrescriptionCard: React.FC<{
   prescription: Prescription;
-  onFulfill: () => void;
-  isFulfilling: boolean;
-}> = ({ prescription, onFulfill, isFulfilling }) => (
-  <div className="bg-white rounded-2xl shadow-sm border border-rose-100/60 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 transition-shadow hover:shadow-md animate-fade-in">
+  isSelected: boolean;
+  onToggleSelect: (id: number) => void;
+}> = ({ prescription, isSelected, onToggleSelect }) => (
+  <div
+    className={cn(
+      "bg-white rounded-2xl shadow-sm border p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 transition-all duration-200 animate-fade-in",
+      isSelected
+        ? "border-rose-500 ring-2 ring-rose-200"
+        : "border-rose-100/60 hover:shadow-md"
+    )}
+  >
     {/* Product Info */}
-    <div className="flex items-center gap-4 w-full sm:w-1/2">
+    <div className="flex items-center gap-4 w-full">
+      <input
+        type="checkbox"
+        checked={isSelected}
+        onChange={() => onToggleSelect(prescription.prescription_id)}
+        className="h-5 w-5 rounded border-gray-300 text-rose-600 focus:ring-rose-500 cursor-pointer flex-shrink-0"
+      />
       <img
         src={
           prescription.product_image ||
@@ -111,8 +133,8 @@ const PrescriptionCard: React.FC<{
     {/* Divider */}
     <div className="h-px sm:h-12 w-full sm:w-px bg-rose-200/60"></div>
 
-    {/* Customer Info & Action */}
-    <div className="flex items-center justify-between w-full sm:w-1/2">
+    {/* Customer Info */}
+    <div className="flex items-center justify-between w-full sm:w-auto sm:min-w-[200px] pl-7 sm:pl-0">
       <div>
         <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
           Client
@@ -122,17 +144,6 @@ const PrescriptionCard: React.FC<{
         </h3>
         <p className="text-sm text-gray-500">{prescription.customer_phone}</p>
       </div>
-      <Button onClick={onFulfill} disabled={isFulfilling} className="w-40">
-        {isFulfilling ? (
-          <>
-            <Loader2 size={18} className="animate-spin mr-2" /> Fulfilling...
-          </>
-        ) : (
-          <>
-            <CheckCircle size={18} className="mr-2" /> Fulfill
-          </>
-        )}
-      </Button>
     </div>
   </div>
 );
@@ -145,6 +156,7 @@ const SkeletonLoader: React.FC = () => (
         className="bg-white rounded-2xl p-5 flex items-center justify-between animate-pulse"
       >
         <div className="flex items-center gap-4 w-1/2">
+          <div className="w-5 h-5 bg-gray-200 rounded"></div>
           <div className="w-16 h-16 bg-gray-200 rounded-lg"></div>
           <div className="space-y-2">
             <div className="h-3 w-24 bg-gray-200 rounded"></div>
@@ -155,9 +167,7 @@ const SkeletonLoader: React.FC = () => (
           <div className="space-y-2">
             <div className="h-3 w-16 bg-gray-200 rounded"></div>
             <div className="h-5 w-32 bg-gray-200 rounded"></div>
-            <div className="h-4 w-24 bg-gray-200 rounded"></div>
           </div>
-          <div className="h-10 w-40 bg-gray-200 rounded-lg"></div>
         </div>
       </div>
     ))}
@@ -168,6 +178,8 @@ const SkeletonLoader: React.FC = () => (
 export const PrescriptionFulfillmentPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  // NEW: State to track selected prescription IDs
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   const {
     data: prescriptions = [],
@@ -179,36 +191,55 @@ export const PrescriptionFulfillmentPage: React.FC = () => {
     queryFn: fetchPendingPrescriptions,
   });
 
-  const fulfillMutation = useMutation({
-    mutationFn: fulfillPrescription,
-    onMutate: async (prescriptionId: number) => {
+  // MODIFIED: Mutation now uses the new checkout function
+  const checkoutMutation = useMutation({
+    mutationFn: processCheckout,
+    onMutate: async (idsToCheckout: number[]) => {
       await queryClient.cancelQueries({ queryKey: ["prescriptions"] });
       const previousPrescriptions = queryClient.getQueryData<Prescription[]>([
         "prescriptions",
       ]);
+      // Optimistically remove all selected items from the list
       queryClient.setQueryData<Prescription[]>(["prescriptions"], (old) =>
-        old ? old.filter((p) => p.prescription_id !== prescriptionId) : []
+        old ? old.filter((p) => !idsToCheckout.includes(p.prescription_id)) : []
       );
       return { previousPrescriptions };
     },
-    onError: (err, _prescriptionId, context) => {
+    onError: (err, _vars, context) => {
+      toast.error((err as Error).message || "Checkout failed.");
       if (context?.previousPrescriptions) {
         queryClient.setQueryData(
           ["prescriptions"],
           context.previousPrescriptions
         );
       }
-      console.error("Failed to fulfill prescription:", err);
+    },
+    onSuccess: (data) => {
+      toast.success(data.message || "Checkout successful!");
+      setSelectedIds([]); // Clear selection on success
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["prescriptions"] });
     },
   });
 
+  const handleToggleSelect = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleCheckout = () => {
+    if (selectedIds.length > 0) {
+      checkoutMutation.mutate(selectedIds);
+    }
+  };
+
   return (
     <div className="w-full bg-[#FDF8F5] min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
+      <Toaster position="top-right" richColors />
       <div className="max-w-5xl mx-auto">
-        <header className="flex justify-between items-center mb-8">
+        <header className="flex flex-col sm:flex-row justify-between sm:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">
               Prescription Fulfillment
@@ -217,10 +248,24 @@ export const PrescriptionFulfillmentPage: React.FC = () => {
               Deduct prescribed products for clients from the inventory.
             </p>
           </div>
-          <Button variant="ghost" onClick={() => navigate("/reception")}>
-            <ChevronLeft size={16} className="mr-2" />
-            Back to Dashboard
-          </Button>
+          <div className="flex gap-4">
+            <Button variant="ghost" onClick={() => navigate("/reception")}>
+              <ChevronLeft size={16} className="mr-2" />
+              Back
+            </Button>
+            <Button
+              onClick={handleCheckout}
+              disabled={selectedIds.length === 0 || checkoutMutation.isPending}
+              className="w-60"
+            >
+              {checkoutMutation.isPending ? (
+                <Loader2 size={18} className="animate-spin mr-2" />
+              ) : (
+                <ShoppingCart size={18} className="mr-2" />
+              )}
+              Checkout ({selectedIds.length}) Items
+            </Button>
+          </div>
         </header>
 
         {isLoading ? (
@@ -245,11 +290,8 @@ export const PrescriptionFulfillmentPage: React.FC = () => {
               <PrescriptionCard
                 key={p.prescription_id}
                 prescription={p}
-                onFulfill={() => fulfillMutation.mutate(p.prescription_id)}
-                isFulfilling={
-                  fulfillMutation.isPending &&
-                  fulfillMutation.variables === p.prescription_id
-                }
+                isSelected={selectedIds.includes(p.prescription_id)}
+                onToggleSelect={handleToggleSelect}
               />
             ))}
           </div>

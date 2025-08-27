@@ -15,7 +15,12 @@ import {
   X,
   Droplet,
   Heart,
+  PlusCircle,
+  Search,
+  Menu, 
+  AlertTriangle, 
 } from "lucide-react";
+import { Toaster, toast } from "sonner";
 
 // --- Type Definitions ---
 interface Professional {
@@ -50,6 +55,18 @@ interface Consultation {
   consultation_date: string;
   doctor_notes: string;
   doctor_name: string;
+}
+interface Product {
+  id: number;
+  name: string;
+  brand: string;
+  price: string;
+  stock_quantity: number;
+  image_data: string | null;
+}
+interface PrescriptionItem extends Product {
+  quantity: number;
+  instructions: string;
 }
 
 // --- API Functions ---
@@ -98,7 +115,7 @@ const addConsultation = async (payload: {
   feedback: string[];
   goals: string[];
   followUpDate?: string;
-}): Promise<void> => {
+}): Promise<{ consultationId: number }> => {
   const token = getAuthToken();
   const userStr = localStorage.getItem("user");
   if (!userStr) throw new Error("Doctor ID not found in local storage.");
@@ -124,6 +141,47 @@ const addConsultation = async (payload: {
     const errorData = await response.json();
     throw new Error(errorData.message || "Failed to save consultation.");
   }
+  return response.json();
+};
+
+const fetchProducts = async (page: number = 1): Promise<Product[]> => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/products?page=${page}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error("Failed to fetch products.");
+  const data = await response.json();
+  return data.products || [];
+};
+
+const addPrescriptionToConsultation = async (payload: {
+  consultationId: number;
+  productId: number;
+  quantity: number;
+  instructions: string;
+}) => {
+  const token = getAuthToken();
+  const body = {
+    product_id: payload.productId,
+    quantity: payload.quantity,
+    instructions: payload.instructions,
+  };
+  const response = await fetch(
+    `${API_BASE_URL}/consultations/${payload.consultationId}/prescriptions`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    }
+  );
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || "Failed to add prescription.");
+  }
+  return response.json();
 };
 
 // --- UI Components ---
@@ -150,7 +208,8 @@ const Button: React.FC<
 const AddConsultationModal: React.FC<{
   patient: Patient;
   onClose: () => void;
-}> = ({ patient, onClose }) => {
+  onSaveSuccess: (consultationId: number) => void;
+}> = ({ patient, onClose, onSaveSuccess }) => {
   const [notes, setNotes] = useState("");
   const [feedback, setFeedback] = useState("");
   const [goals, setGoals] = useState("");
@@ -159,13 +218,15 @@ const AddConsultationModal: React.FC<{
 
   const mutation = useMutation({
     mutationFn: addConsultation,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({
         queryKey: ["consultations", patient.id],
       });
       onClose();
+      onSaveSuccess(data.consultationId);
     },
-    onError: (error) => alert(`Error: ${error.message}`),
+    onError: (error: Error) =>
+      toast.error(error.message || "An unknown error occurred."),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -261,6 +322,225 @@ const AddConsultationModal: React.FC<{
             </Button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+const PrescriptionModal: React.FC<{
+  consultationId: number;
+  patientName: string;
+  onClose: () => void;
+}> = ({ consultationId, patientName, onClose }) => {
+  const [selectedProducts, setSelectedProducts] = useState<PrescriptionItem[]>(
+    []
+  );
+  const [searchTerm, setSearchTerm] = useState("");
+  const queryClient = useQueryClient();
+
+  const { data: allProducts, isLoading: isLoadingProducts } = useQuery({
+    queryKey: ["products"],
+    queryFn: () => fetchProducts(),
+  });
+
+  const addPrescriptionMutation = useMutation({
+    mutationFn: addPrescriptionToConsultation,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["consultations"] });
+    },
+    onError: (error: Error) =>
+      toast.error(error.message || "Failed to add prescription item."),
+  });
+
+  const handleSelectProduct = (product: Product) => {
+    if (!selectedProducts.find((p) => p.id === product.id)) {
+      setSelectedProducts([
+        ...selectedProducts,
+        { ...product, quantity: 1, instructions: "" },
+      ]);
+    }
+  };
+
+  const handleUpdatePrescriptionItem = (
+    productId: number,
+    field: "quantity" | "instructions",
+    value: string | number
+  ) => {
+    setSelectedProducts(
+      selectedProducts.map((p) =>
+        p.id === productId ? { ...p, [field]: value } : p
+      )
+    );
+  };
+
+  const handleRemoveProduct = (productId: number) => {
+    setSelectedProducts(selectedProducts.filter((p) => p.id !== productId));
+  };
+
+  const handleSavePrescription = () => {
+    const prescriptionPromises = selectedProducts.map((p) =>
+      addPrescriptionMutation.mutateAsync({
+        consultationId,
+        productId: p.id,
+        quantity: p.quantity,
+        instructions: p.instructions,
+      })
+    );
+
+    toast.promise(Promise.all(prescriptionPromises), {
+      loading: "Saving prescription...",
+      success: () => {
+        onClose();
+        return "Prescription saved successfully!";
+      },
+      error: "Could not save the full prescription.",
+    });
+  };
+
+  const filteredProducts = allProducts?.filter(
+    (p) =>
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.brand.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-4xl h-[90vh] flex flex-col">
+        <div className="flex justify-between items-center mb-4 flex-shrink-0">
+          <h2 className="text-xl font-bold text-gray-800">
+            Add Prescription for {patientName}
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-gray-700"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-hidden">
+          {/* Left Side: Product List */}
+          <div className="flex flex-col overflow-hidden">
+            <div className="relative mb-4">
+              <Search
+                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 pl-10 focus:ring-2 focus:ring-rose-300 focus:outline-none"
+              />
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+              {isLoadingProducts && <p>Loading products...</p>}
+              {filteredProducts?.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between p-2 border rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={
+                        p.image_data || `https://i.pravatar.cc/150?u=${p.id}`
+                      }
+                      alt={p.name}
+                      className="w-10 h-10 rounded-md object-cover"
+                    />
+                    <div>
+                      <p className="font-semibold text-gray-700">{p.name}</p>
+                      <p className="text-xs text-gray-500">{p.brand}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleSelectProduct(p)}
+                    className="p-1 text-rose-500 hover:text-rose-700"
+                  >
+                    <PlusCircle size={20} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Right Side: Selected Items */}
+          <div className="flex flex-col overflow-hidden bg-gray-50/50 p-4 rounded-lg">
+            <h3 className="font-bold mb-4 text-gray-700 flex-shrink-0">
+              Selected for Prescription
+            </h3>
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+              {selectedProducts.length === 0 ? (
+                <p className="text-center text-sm text-gray-500 pt-10">
+                  No products selected.
+                </p>
+              ) : (
+                selectedProducts.map((p) => (
+                  <div key={p.id} className="bg-white p-3 rounded-lg border">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-semibold text-gray-700">{p.name}</p>
+                        <p className="text-xs text-gray-500">{p.brand}</p>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveProduct(p.id)}
+                        className="p-1 text-gray-400 hover:text-red-500"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <div className="mt-3 grid grid-cols-5 gap-2 items-center">
+                      <label className="text-sm col-span-1">Qty:</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={p.quantity}
+                        onChange={(e) =>
+                          handleUpdatePrescriptionItem(
+                            p.id,
+                            "quantity",
+                            parseInt(e.target.value)
+                          )
+                        }
+                        className="w-full border rounded-md p-1 col-span-4"
+                      />
+                    </div>
+                    <div className="mt-2 grid grid-cols-5 gap-2 items-start">
+                      <label className="text-sm col-span-1 pt-1">Notes:</label>
+                      <textarea
+                        placeholder="Instructions..."
+                        rows={2}
+                        value={p.instructions}
+                        onChange={(e) =>
+                          handleUpdatePrescriptionItem(
+                            p.id,
+                            "instructions",
+                            e.target.value
+                          )
+                        }
+                        className="w-full border rounded-md p-1 col-span-4 text-sm"
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 pt-4 flex-shrink-0">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSavePrescription}
+            disabled={
+              addPrescriptionMutation.isPending || selectedProducts.length === 0
+            }
+          >
+            {addPrescriptionMutation.isPending
+              ? "Saving..."
+              : "Save Prescription"}
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -514,6 +794,37 @@ const PatientListSkeleton: React.FC = () => (
   </div>
 );
 
+// RESTORED: This is the missing component definition
+const ConfirmationModal: React.FC<{
+  isOpen: boolean;
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ isOpen, title, message, onConfirm, onCancel }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 animate-fade-in-fast">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm text-center transform animate-slide-up">
+        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-rose-100">
+          <AlertTriangle className="h-6 w-6 text-rose-600" aria-hidden="true" />
+        </div>
+        <h3 className="mt-4 text-lg font-semibold text-gray-800">{title}</h3>
+        <p className="mt-2 text-sm text-gray-500">{message}</p>
+        <div className="mt-6 flex justify-center gap-3">
+          <Button type="button" variant="ghost" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="button" onClick={onConfirm}>
+            Yes, Proceed
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Main Page ---
 const ProfessionalDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -521,8 +832,22 @@ const ProfessionalDashboard: React.FC = () => {
     null
   );
   const [isAddingConsultation, setIsAddingConsultation] = useState(false);
+  const [pendingPrescription, setPendingPrescription] = useState<{
+    consultationId: number;
+    patientName: string;
+  } | null>(null);
 
+  // RESTORED: State for mobile sidebar
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [doctorInfo, setDoctorInfo] = useState<Professional | null>(null);
+
+  const [confirmation, setConfirmation] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
+
   useEffect(() => {
     const userStr = localStorage.getItem("user");
     if (userStr) setDoctorInfo(JSON.parse(userStr));
@@ -538,14 +863,54 @@ const ProfessionalDashboard: React.FC = () => {
     navigate("/login", { replace: true });
   };
 
+  const handleConsultationSaveSuccess = (consultationId: number) => {
+    toast.success("Consultation has been saved.");
+    const patient = patients?.find((p) => p.id === selectedPatientId);
+    if (patient) {
+      setConfirmation({
+        isOpen: true,
+        title: "Proceed to Prescription?",
+        message: "Would you like to add a prescription for this patient now?",
+        onConfirm: () => {
+          setPendingPrescription({
+            consultationId,
+            patientName: patient.full_name,
+          });
+          setConfirmation(null);
+        },
+      });
+    }
+  };
+
   const selectedPatient = patients?.find((p) => p.id === selectedPatientId);
 
   return (
     <div className="flex h-screen w-full bg-[#FDF8F5] font-sans">
+      <Toaster position="top-right" richColors />
+
+      {confirmation && (
+        <ConfirmationModal
+          isOpen={confirmation.isOpen}
+          title={confirmation.title}
+          message={confirmation.message}
+          onConfirm={confirmation.onConfirm}
+          onCancel={() => setConfirmation(null)}
+        />
+      )}
+
       {isAddingConsultation && selectedPatient && (
         <AddConsultationModal
           patient={selectedPatient}
           onClose={() => setIsAddingConsultation(false)}
+          onSaveSuccess={handleConsultationSaveSuccess}
+        />
+      )}
+
+      {pendingPrescription && (
+        <PrescriptionModal
+          consultationId={pendingPrescription.consultationId}
+          patientName={pendingPrescription.patientName}
+          onClose={() => setPendingPrescription(null)}
         />
       )}
 
@@ -593,63 +958,94 @@ const ProfessionalDashboard: React.FC = () => {
         )}
       </aside>
 
-      <main className="flex flex-1 overflow-hidden">
-        <div className="w-full md:w-2/5 lg:w-1/3 border-r border-rose-100/60 flex flex-col">
-          <div className="p-4 border-b border-rose-100/60">
-            <h2 className="font-bold text-gray-800">
-              Your Patients ({patients?.length || 0})
-            </h2>
-          </div>
-          <div className="flex-1 overflow-y-auto p-2">
-            {isLoading ? (
-              <PatientListSkeleton />
-            ) : (
-              patients?.map((patient) => (
-                <div
-                  key={patient.id}
-                  onClick={() => setSelectedPatientId(patient.id)}
-                  className={cn(
-                    "flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-colors",
-                    selectedPatientId === patient.id
-                      ? "bg-rose-100/60"
-                      : "hover:bg-rose-100/40"
-                  )}
-                >
-                  <img
-                    src={
-                      patient.profile_picture ||
-                      `https://i.pravatar.cc/150?u=${patient.id}`
-                    }
-                    alt={patient.full_name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                  <div>
-                    <h3 className="font-bold text-gray-800">
-                      {patient.full_name}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {patient.skin_concerns?.[0]?.name || "No concerns listed"}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
+      {/* RESTORED: Mobile sidebar drawer */}
+      {sidebarOpen && doctorInfo && (
+        <div className="fixed inset-0 z-40 flex md:hidden">
+          <div
+            className="fixed inset-0 bg-black opacity-50"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div className="relative z-50 w-64 bg-white shadow-xl">
+            {/* The Sidebar component is assumed to be in another file */}
+            {/* You would pass props to it similarly to the desktop version */}
+            <div className="p-6">
+              <h1 className="text-2xl font-bold text-gray-800 mb-10">Menu</h1>
+              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold bg-rose-100/60 text-rose-700">
+                <Users size={20} /> Assigned Patients
+              </button>
+            </div>
           </div>
         </div>
+      )}
 
-        <div className="flex-1 hidden md:flex flex-col">
-          {selectedPatientId ? (
-            <PatientDetailView
-              patientId={selectedPatientId}
-              onAddConsultation={() => setIsAddingConsultation(true)}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
-              <User size={48} className="mb-4 text-rose-300" />
-              <h2 className="text-xl font-semibold">Select a Patient</h2>
-              <p>Choose a patient from the list to view their details.</p>
+      <main className="flex flex-1 overflow-hidden flex-col">
+        {/* RESTORED: Mobile top bar */}
+        <div className="md:hidden flex items-center justify-between p-4 bg-white shadow-sm flex-shrink-0">
+          <button onClick={() => setSidebarOpen(true)}>
+            <Menu className="h-6 w-6 text-gray-600" />
+          </button>
+          <h1 className="text-lg font-semibold text-gray-800">Dashboard</h1>
+        </div>
+
+        <div className="flex flex-1 overflow-hidden">
+          <div className="w-full md:w-2/5 lg:w-1/3 border-r border-rose-100/60 flex flex-col">
+            <div className="p-4 border-b border-rose-100/60">
+              <h2 className="font-bold text-gray-800">
+                Your Patients ({patients?.length || 0})
+              </h2>
             </div>
-          )}
+            <div className="flex-1 overflow-y-auto p-2">
+              {isLoading ? (
+                <PatientListSkeleton />
+              ) : (
+                patients?.map((patient) => (
+                  <div
+                    key={patient.id}
+                    onClick={() => setSelectedPatientId(patient.id)}
+                    className={cn(
+                      "flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-colors",
+                      selectedPatientId === patient.id
+                        ? "bg-rose-100/60"
+                        : "hover:bg-rose-100/40"
+                    )}
+                  >
+                    <img
+                      src={
+                        patient.profile_picture ||
+                        `https://i.pravatar.cc/150?u=${patient.id}`
+                      }
+                      alt={patient.full_name}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                    <div>
+                      <h3 className="font-bold text-gray-800">
+                        {patient.full_name}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {patient.skin_concerns?.[0]?.name ||
+                          "No concerns listed"}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="flex-1 hidden md:flex flex-col">
+            {selectedPatientId ? (
+              <PatientDetailView
+                patientId={selectedPatientId}
+                onAddConsultation={() => setIsAddingConsultation(true)}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+                <User size={48} className="mb-4 text-rose-300" />
+                <h2 className="text-xl font-semibold">Select a Patient</h2>
+                <p>Choose a patient from the list to view their details.</p>
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>

@@ -92,7 +92,7 @@ interface Appointment {
   follow_up_date: string;
   customer_name: string;
   doctor_name: string;
-  skin_concerns: string;
+  skin_concerns: string; // This can be null from the API
 }
 
 // --- API Functions ---
@@ -235,7 +235,8 @@ const TodaysSchedule: React.FC = () => {
                   </span>
                 </div>
                 <span className="text-sm text-gray-500 bg-pink-50 px-3 py-1 rounded-full">
-                  {appt.skin_concerns.split(",")[0]}
+                  {/* MODIFIED: Safely handle null or undefined 'skin_concerns' */}
+                  {appt.skin_concerns?.split(",")[0] ?? "N/A"}
                 </span>
               </div>
             ))
@@ -250,7 +251,6 @@ const TodaysSchedule: React.FC = () => {
   );
 };
 
-// ** NEW: Sidebar content extracted into its own component for reuse **
 const SidebarContent: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const quote = getRandomQuote();
   return (
