@@ -56,7 +56,7 @@ class ProductService {
 
         try {
             $stmt = $this->conn->prepare(
-                "SELECT id, name, brand, price, stock_quantity, TO_BASE64(image_data) as image_data, image_data_mimetype 
+                "SELECT id, name, brand, price, stock_quantity,description, TO_BASE64(image_data) as image_data, image_data_mimetype 
                  FROM products 
                  ORDER BY name ASC 
                  LIMIT :limit OFFSET :offset"
