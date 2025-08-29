@@ -28,12 +28,25 @@ class CheckoutService {
             $this->conn->beginTransaction();
 
             foreach ($data['prescription_ids'] as $prescriptionId) {
-                $stmt = $this->conn->prepare("SELECT product_id, quantity FROM prescriptions WHERE id = :id AND status = 'prescribed'");
+                $stmt = $this->conn->prepare("
+                    SELECT 
+                        pr.product_id, 
+                        pr.quantity, 
+                        p.stock_quantity, 
+                        p.name as product_name
+                    FROM prescriptions pr
+                    JOIN products p ON pr.product_id = p.id
+                    WHERE pr.id = :id AND pr.status = 'prescribed'
+                ");
                 $stmt->execute([':id' => $prescriptionId]);
                 $prescription = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 if (!$prescription) {
                     throw new Exception("Prescription with ID {$prescriptionId} not found or already processed.");
+                }
+
+                if ($prescription['stock_quantity'] < $prescription['quantity']) {
+                    throw new Exception("Product '{$prescription['product_name']}' is out of stock. {$prescription['stock_quantity']} remaining.");
                 }
 
                 $updateStmt = $this->conn->prepare(
@@ -52,7 +65,7 @@ class CheckoutService {
 
         } catch (Exception $e) {
             $this->conn->rollBack();
-            http_response_code(500);
+            http_response_code(409); 
             return json_encode(['error' => 'An error occurred during checkout: ' . $e->getMessage()]);
         }
     }
