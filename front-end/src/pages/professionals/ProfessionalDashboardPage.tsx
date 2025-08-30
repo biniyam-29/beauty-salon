@@ -718,7 +718,6 @@ const PatientDetailView: FC<{
   onAddConsultation: () => void;
 }> = ({ patientId, onAddConsultation }) => {
   const [activeTab, setActiveTab] = useState("profile");
-
   const results = useQueries({
     queries: [
       {
@@ -1162,13 +1161,9 @@ const ProfessionalDashboard: FC = () => {
           <div>
             <div className="border-t border-rose-100/60 pt-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <img
-                  src={
-                    doctorInfo.avatar ||
-                    `https://i.pravatar.cc/150?u=${doctorInfo.id}`
-                  }
-                  alt={doctorInfo.name}
-                  className="w-10 h-10 rounded-full"
+                <AvatarPlaceholder
+                  name={doctorInfo.name}
+                  className="w-10 h-10"
                 />
                 <div>
                   <p className="font-semibold text-gray-800">
@@ -1235,19 +1230,14 @@ const ProfessionalDashboard: FC = () => {
                         : "hover:bg-rose-100/40"
                     )}
                   >
-                    <img
-                      src={
-                        patient.profile_picture ||
-                        `https://i.pravatar.cc/150?u=${patient.id}`
-                      }
-                      alt={patient.full_name}
-                      className="w-12 h-12 rounded-full object-cover"
+                    <AvatarPlaceholder
+                      name={patient.full_name}
+                      className="w-12 h-12 text-xl"
                     />
                     <div>
                       <h3 className="font-bold text-gray-800">
                         {patient.full_name}
                       </h3>
-                      {/* --- FIXED: Use patient.phone as it is available in the list view --- */}
                       <p className="text-sm text-gray-500">{patient.phone}</p>
                     </div>
                   </div>
