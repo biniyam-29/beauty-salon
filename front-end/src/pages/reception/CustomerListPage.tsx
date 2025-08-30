@@ -15,9 +15,10 @@ import {
   MessageSquare,
   ClipboardCheck,
   Settings,
+  ClipboardList,
 } from "lucide-react";
 
-// --- Type Definitions (Unchanged) ---
+// --- Type Definitions ---
 interface CustomerProfile {
   customer_id: number;
   skin_type: string;
@@ -93,7 +94,18 @@ interface Consultation {
   doctor_name: string;
 }
 
-// --- API Fetching Functions (Unchanged) ---
+interface Prescription {
+  prescription_id: number;
+  quantity: number;
+  instructions: string;
+  product_id: number;
+  product_name: string;
+  product_image: string;
+  customer_name: string;
+  customer_phone: string;
+}
+
+// --- API Fetching Functions ---
 const BASE_URL = "https://beauty-api.biniyammarkos.com";
 const getAuthToken = () => {
   const token = localStorage.getItem("auth_token");
@@ -137,7 +149,30 @@ const fetchCustomerConsultations = async (
   return data || [];
 };
 
-// --- Child Components (Unchanged) ---
+const fetchPrescriptions = async (): Promise<Prescription[]> => {
+  const token = getAuthToken();
+  const response = await fetch(`${BASE_URL}/prescriptions?status=sold`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error("Failed to fetch prescriptions.");
+  return response.json();
+};
+
+// --- Child Components ---
+const AvatarPlaceholder: FC<{ name: string; className?: string }> = ({
+  name,
+  className = "",
+}) => {
+  const initial = name?.charAt(0).toUpperCase() || "?";
+  return (
+    <div
+      className={`flex-shrink-0 flex items-center justify-center rounded-full bg-rose-200 text-rose-700 font-bold ${className}`}
+    >
+      <span>{initial}</span>
+    </div>
+  );
+};
+
 const CustomerListItem: FC<{
   customer: Customer;
   isSelected: boolean;
@@ -149,12 +184,9 @@ const CustomerListItem: FC<{
       isSelected ? "bg-rose-100/60" : "hover:bg-rose-100/40"
     }`}
   >
-    <img
-      src={
-        customer.profile_picture || `https://i.pravatar.cc/150?u=${customer.id}`
-      }
-      alt={customer.full_name}
-      className="w-12 h-12 rounded-full object-cover bg-rose-200 flex-shrink-0"
+    <AvatarPlaceholder
+      name={customer.full_name}
+      className="w-12 h-12 text-xl"
     />
     <div className="overflow-hidden">
       <h3 className="font-bold text-gray-800 truncate">{customer.full_name}</h3>{" "}
@@ -212,6 +244,28 @@ const FactItem: FC<{ label: string; value: boolean | number | undefined }> = ({
   </div>
 );
 
+const PrescriptionCard: FC<{ prescription: Prescription }> = ({
+  prescription,
+}) => (
+  <div className="flex items-start gap-4 p-4 border-b border-rose-100/80 last:border-b-0">
+    <img
+      src={prescription.product_image || "https://via.placeholder.com/80"}
+      alt={prescription.product_name}
+      className="w-20 h-20 rounded-lg object-cover bg-rose-100"
+    />
+    <div className="flex-1">
+      <h3 className="font-bold text-gray-800">{prescription.product_name}</h3>
+      <p className="text-sm text-gray-500 mb-2">
+        Quantity: {prescription.quantity}
+      </p>
+      <p className="text-gray-700 text-sm">
+        <span className="font-semibold">Instructions:</span>{" "}
+        {prescription.instructions}
+      </p>
+    </div>
+  </div>
+);
+
 const formatDateTime = (dateString?: string) => {
   if (!dateString) return null;
   return new Date(dateString).toLocaleString("en-US", {
@@ -247,11 +301,17 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
     enabled: !!customer,
   });
 
-  // --- FIX: Moved useMemo hook before any conditional returns ---
-  const lifestyleFactors = useMemo(() => {
-    // Guard against the customer object being undefined during the initial load
-    if (!customer?.profile) return [];
+  const {
+    data: allPrescriptions,
+    isLoading: arePrescriptionsLoading,
+    isError: isPrescriptionsError,
+  } = useQuery({
+    queryKey: ["prescriptions"],
+    queryFn: fetchPrescriptions,
+  });
 
+  const lifestyleFactors = useMemo(() => {
+    if (!customer?.profile) return [];
     return [
       { key: "smokes", label: "Smokes", value: customer.profile.smokes },
       {
@@ -275,13 +335,24 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
         value: customer.profile.recent_dermal_fillers,
       },
     ].filter((factor) => factor.value === 1);
-  }, [customer]); // Depend on the customer object itself
+  }, [customer]);
 
-  if (isCustomerLoading || areConsultationsLoading) return <DetailSkeleton />;
-  if (isCustomerError || isConsultationsError)
+  const customerPrescriptions = useMemo(() => {
+    if (!customer || !allPrescriptions) return [];
+    return allPrescriptions.filter(
+      (p) =>
+        p.customer_name === customer.full_name ||
+        p.customer_phone === customer.phone
+    );
+  }, [customer, allPrescriptions]);
+
+  if (isCustomerLoading || areConsultationsLoading || arePrescriptionsLoading)
+    return <DetailSkeleton />;
+
+  if (isCustomerError || isConsultationsError || isPrescriptionsError)
     return (
       <div className="p-10 text-center text-red-500">
-        Error loading profile.
+        Error loading profile data.
       </div>
     );
   if (!customer) return null;
@@ -306,13 +377,9 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
     <div className="flex-1">
       <div className="p-8 sticky top-0 bg-[#FDF8F5]/80 backdrop-blur-sm z-10 border-b border-rose-100/80">
         <div className="flex items-center gap-6">
-          <img
-            src={
-              customer.profile_picture ||
-              `https://i.pravatar.cc/150?u=${customer.id}`
-            }
-            alt={customer.full_name}
-            className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+          <AvatarPlaceholder
+            name={customer.full_name}
+            className="w-24 h-24 text-4xl border-4 border-white shadow-lg"
           />
           <div>
             <h1 className="text-3xl font-bold text-gray-800">
@@ -345,10 +412,21 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
           >
             Consultations
           </button>
+          <button
+            onClick={() => setActiveTab("prescriptions")}
+            className={`px-4 py-2 text-sm font-semibold transition-colors ${
+              activeTab === "prescriptions"
+                ? "border-b-2 border-rose-500 text-rose-600"
+                : "text-gray-500 hover:text-rose-500"
+            }`}
+          >
+            Prescriptions
+          </button>
         </div>
       </div>
 
       <div className="p-8">
+        {/* --- PROFILE TAB CONTENT (RESTORED) --- */}
         {activeTab === "profile" && (
           <>
             <DetailSection
@@ -579,6 +657,8 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
             </DetailSection>
           </>
         )}
+
+        {/* --- CONSULTATIONS TAB CONTENT --- */}
         {activeTab === "consultations" && (
           <DetailSection
             title="Consultation History"
@@ -593,7 +673,11 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
                     <p className="font-bold text-rose-800">
                       {new Date(c.consultation_date).toLocaleDateString(
                         "en-US",
-                        { year: "numeric", month: "long", day: "numeric" }
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        }
                       )}
                     </p>
                     <p className="text-sm text-gray-500 mb-2">
@@ -604,6 +688,26 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
                 ))
               ) : (
                 <p className="text-gray-500">No consultation history found.</p>
+              )}
+            </div>
+          </DetailSection>
+        )}
+
+        {/* --- PRESCRIPTIONS TAB CONTENT --- */}
+        {activeTab === "prescriptions" && (
+          <DetailSection
+            title="Prescription History"
+            icon={<ClipboardList size={20} />}
+          >
+            <div className="divide-y divide-rose-100/60 -m-6">
+              {customerPrescriptions.length > 0 ? (
+                customerPrescriptions.map((p) => (
+                  <PrescriptionCard key={p.prescription_id} prescription={p} />
+                ))
+              ) : (
+                <p className="text-gray-500 p-6">
+                  No prescriptions found for this client.
+                </p>
               )}
             </div>
           </DetailSection>
