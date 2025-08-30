@@ -44,7 +44,7 @@ const HomePage: React.FC = () => {
       <div className="relative z-10 h-full flex flex-col justify-center items-start text-left p-8 sm:p-12 md:p-16 lg:p-24">
         {/* Added transform properties for the slide-in effect */}
         <div
-          className={`max-w-3xl text-slate-300 p-8 rounded-2xl backdrop-blur-sm border border-white/20 shadow-lg bg-rose-400/20 transition-all duration-1000 ease-in-out ${
+          className={`max-w-3xl text-slate-300 p-8 rounded-2xl backdrop-blur-sm border border-white/20 shadow-lg bg-rose-400/50 transition-all duration-1000 ease-in-out ${
             isVisible
               ? "opacity-100 translate-x-0"
               : "opacity-0 -translate-x-12"
@@ -58,7 +58,7 @@ const HomePage: React.FC = () => {
           </h1>
 
           {/* Subheading - Made slightly bigger */}
-          <p className="text-xl md:text-2xl mb-8 text-shadow">
+          <p className="text-xl md:text-2xl mb-8 text-white">
             Every treatment you perform helps our clients shine. Thank you for
             your dedication.
           </p>
