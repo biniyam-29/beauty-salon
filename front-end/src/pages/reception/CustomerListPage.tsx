@@ -1,6 +1,6 @@
 import React, { useState, useMemo, type FC } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   User,
   Heart,
@@ -9,36 +9,83 @@ import {
   Search,
   ChevronLeft,
   X,
+  Pill,
+  CheckCircle2,
+  XCircle,
+  MessageSquare,
+  ClipboardCheck,
+  Settings,
 } from "lucide-react";
 
 // --- Type Definitions (Unchanged) ---
 interface CustomerProfile {
+  customer_id: number;
   skin_type: string;
   skin_feel: string;
   sun_exposure: string;
+  foundation_type?: string | null;
+  healing_profile?: string | null;
+  bruises_easily?: number;
   used_products: string;
+  uses_retinoids_acids?: number;
+  recent_dermal_fillers?: number;
+  previous_acne_medication?: string;
+  known_allergies_details?: string | null;
+  dietary_supplements?: string | null;
+  current_prescription?: string | null;
+  other_conditions?: string | null;
+  other_medication?: string | null;
+  smokes?: number;
+  drinks?: number;
+  updated_at: string;
 }
+
+interface Consent {
+  id: number;
+  name: string;
+  status: "given" | "revoked" | string;
+  date: string;
+}
+
+interface Note {
+  id: number;
+  content: string;
+  author: string;
+  created_at: string;
+}
+
 interface SkinConcern {
   id: number;
   name: string;
 }
+
 interface HealthCondition {
   id: number;
   name: string;
 }
+
 interface Customer {
   id: number | string;
-  name: string;
+  full_name: string;
   phone: string;
-  email: string;
-  avatar?: string;
-  address?: string;
-  city?: string;
-  birth_date?: string;
+  email: string | null;
+  profile_picture?: string | null;
+  address?: string | null;
+  city?: string | null;
+  birth_date?: string | null;
+  assigned_doctor_id?: number | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+  how_heard?: string | null;
+  created_at: string;
+  updated_at: string;
   profile?: CustomerProfile;
   skin_concerns?: SkinConcern[];
   health_conditions?: HealthCondition[];
+  consents?: Consent[];
+  notes?: Note[];
 }
+
 interface Consultation {
   id: number;
   consultation_date: string;
@@ -46,7 +93,7 @@ interface Consultation {
   doctor_name: string;
 }
 
-// --- API Fetching Functions ---
+// --- API Fetching Functions (Unchanged) ---
 const BASE_URL = "https://beauty-api.biniyammarkos.com";
 const getAuthToken = () => {
   const token = localStorage.getItem("auth_token");
@@ -75,7 +122,6 @@ const fetchCustomerDetails = async (
   return response.json();
 };
 
-// ** FIXED: Correctly handle the direct array response from the API **
 const fetchCustomerConsultations = async (
   customerId: number | string
 ): Promise<Consultation[]> => {
@@ -88,11 +134,10 @@ const fetchCustomerConsultations = async (
   );
   if (!response.ok) throw new Error("Failed to fetch consultations.");
   const data = await response.json();
-  // The API returns a direct array, not an object with a 'consultations' key.
   return data || [];
 };
 
-
+// --- Child Components (Unchanged) ---
 const CustomerListItem: FC<{
   customer: Customer;
   isSelected: boolean;
@@ -105,12 +150,14 @@ const CustomerListItem: FC<{
     }`}
   >
     <img
-      src={customer.avatar || `https://i.pravatar.cc/150?u=${customer.id}`}
-      alt={customer.name}
+      src={
+        customer.profile_picture || `https://i.pravatar.cc/150?u=${customer.id}`
+      }
+      alt={customer.full_name}
       className="w-12 h-12 rounded-full object-cover bg-rose-200 flex-shrink-0"
     />
     <div className="overflow-hidden">
-      <h3 className="font-bold text-gray-800 truncate">{customer.name}</h3>
+      <h3 className="font-bold text-gray-800 truncate">{customer.full_name}</h3>{" "}
       <p className="text-sm text-gray-500 truncate">{customer.phone}</p>
     </div>
   </div>
@@ -132,17 +179,18 @@ const DetailSection: FC<{
   </div>
 );
 
-const InfoPill: FC<{ label: string; value?: string | null }> = ({
+const InfoPill: FC<{ label: string; value?: string | number | null }> = ({
   label,
   value,
-}) => (
-  <div>
-    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
-      {label}
-    </p>
-    <p className="text-gray-700 font-semibold">{value || "N/A"}</p>
-  </div>
-);
+}) =>
+  value || value === 0 ? (
+    <div>
+      <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+        {label}
+      </p>
+      <p className="text-gray-700 font-semibold">{String(value)}</p>
+    </div>
+  ) : null;
 
 const Tag: FC<{ children: React.ReactNode }> = ({ children }) => (
   <span className="bg-rose-100/60 text-rose-800 text-sm font-medium px-3 py-1.5 rounded-full">
@@ -150,35 +198,84 @@ const Tag: FC<{ children: React.ReactNode }> = ({ children }) => (
   </span>
 );
 
+const FactItem: FC<{ label: string; value: boolean | number | undefined }> = ({
+  label,
+  value,
+}) => (
+  <div className="flex items-center gap-3 p-3 bg-rose-50/70 rounded-lg">
+    {value ? (
+      <CheckCircle2 size={20} className="text-green-600 flex-shrink-0" />
+    ) : (
+      <XCircle size={20} className="text-red-500 flex-shrink-0" />
+    )}
+    <span className="text-gray-700">{label}</span>
+  </div>
+);
+
+const formatDateTime = (dateString?: string) => {
+  if (!dateString) return null;
+  return new Date(dateString).toLocaleString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 const CustomerDetailView: FC<{ customerId: number | string }> = ({
   customerId,
 }) => {
   const [activeTab, setActiveTab] = useState("profile");
 
-  const results = useQueries({
-    queries: [
-      {
-        queryKey: ["customer", customerId],
-        queryFn: () => fetchCustomerDetails(customerId),
-      },
-      {
-        queryKey: ["consultations", customerId],
-        queryFn: () => fetchCustomerConsultations(customerId),
-      },
-    ],
-  });
-
-  const [customerQuery, consultationsQuery] = results;
   const {
     data: customer,
     isLoading: isCustomerLoading,
     isError: isCustomerError,
-  } = customerQuery;
+  } = useQuery({
+    queryKey: ["customer", customerId],
+    queryFn: () => fetchCustomerDetails(customerId),
+  });
+
   const {
     data: consultations,
     isLoading: areConsultationsLoading,
     isError: isConsultationsError,
-  } = consultationsQuery;
+  } = useQuery({
+    queryKey: ["consultations", customerId],
+    queryFn: () => fetchCustomerConsultations(customerId),
+    enabled: !!customer,
+  });
+
+  // --- FIX: Moved useMemo hook before any conditional returns ---
+  const lifestyleFactors = useMemo(() => {
+    // Guard against the customer object being undefined during the initial load
+    if (!customer?.profile) return [];
+
+    return [
+      { key: "smokes", label: "Smokes", value: customer.profile.smokes },
+      {
+        key: "drinks",
+        label: "Drinks Alcohol",
+        value: customer.profile.drinks,
+      },
+      {
+        key: "bruises_easily",
+        label: "Bruises Easily",
+        value: customer.profile.bruises_easily,
+      },
+      {
+        key: "uses_retinoids_acids",
+        label: "Uses Retinoids/Acids",
+        value: customer.profile.uses_retinoids_acids,
+      },
+      {
+        key: "recent_dermal_fillers",
+        label: "Recent Dermal Fillers",
+        value: customer.profile.recent_dermal_fillers,
+      },
+    ].filter((factor) => factor.value === 1);
+  }, [customer]); // Depend on the customer object itself
 
   if (isCustomerLoading || areConsultationsLoading) return <DetailSkeleton />;
   if (isCustomerError || isConsultationsError)
@@ -198,7 +295,6 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
       }
       return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-      console.error("Failed to parse JSON string:", jsonString, e);
       return [];
     }
   };
@@ -207,21 +303,24 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
   const skinFeel = safeJsonParse(customer.profile?.skin_feel);
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1">
       <div className="p-8 sticky top-0 bg-[#FDF8F5]/80 backdrop-blur-sm z-10 border-b border-rose-100/80">
         <div className="flex items-center gap-6">
           <img
             src={
-              customer.avatar || `https://i.pravatar.cc/150?u=${customer.id}`
+              customer.profile_picture ||
+              `https://i.pravatar.cc/150?u=${customer.id}`
             }
-            alt={customer.name}
+            alt={customer.full_name}
             className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
           />
           <div>
             <h1 className="text-3xl font-bold text-gray-800">
-              {customer.name}
+              {customer.full_name}
             </h1>
-            <p className="text-gray-500 mt-1">{customer.email}</p>
+            <p className="text-gray-500 mt-1">
+              {customer.email || "No email provided"}
+            </p>
             <p className="text-gray-500">{customer.phone}</p>
           </div>
         </div>
@@ -260,18 +359,36 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
                 <InfoPill label="Address" value={customer.address} />
                 <InfoPill label="City" value={customer.city} />
                 <InfoPill label="Date of Birth" value={customer.birth_date} />
+                <InfoPill
+                  label="Emergency Contact"
+                  value={
+                    customer.emergency_contact_name &&
+                    customer.emergency_contact_phone
+                      ? `${customer.emergency_contact_name} (${customer.emergency_contact_phone})`
+                      : customer.emergency_contact_name
+                  }
+                />
+                <InfoPill label="How they heard" value={customer.how_heard} />
               </div>
             </DetailSection>
+
             <DetailSection title="Skin Profile" icon={<Droplet size={20} />}>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                 <InfoPill
                   label="Skin Type"
                   value={customer.profile?.skin_type}
                 />
-                <InfoPill label="Skin Feel" value={skinFeel.join(", ")} />
+                <InfoPill
+                  label="Skin Feel"
+                  value={skinFeel.length > 0 ? skinFeel.join(", ") : null}
+                />
                 <InfoPill
                   label="Sun Exposure"
                   value={customer.profile?.sun_exposure}
+                />
+                <InfoPill
+                  label="Foundation Type"
+                  value={customer.profile?.foundation_type}
                 />
               </div>
               {usedProducts.length > 0 && (
@@ -287,6 +404,35 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
                 </div>
               )}
             </DetailSection>
+
+            <DetailSection
+              title="Medications & Allergies"
+              icon={<Pill size={20} />}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <InfoPill
+                  label="Known Allergies"
+                  value={customer.profile?.known_allergies_details}
+                />
+                <InfoPill
+                  label="Current Prescriptions"
+                  value={customer.profile?.current_prescription}
+                />
+                <InfoPill
+                  label="Dietary Supplements"
+                  value={customer.profile?.dietary_supplements}
+                />
+                <InfoPill
+                  label="Previous Acne Medication"
+                  value={customer.profile?.previous_acne_medication}
+                />
+                <InfoPill
+                  label="Other Medication"
+                  value={customer.profile?.other_medication}
+                />
+              </div>
+            </DetailSection>
+
             <DetailSection title="Health & Concerns" icon={<Heart size={20} />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
@@ -299,7 +445,9 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
                         <Tag key={c.id}>{c.name}</Tag>
                       ))
                     ) : (
-                      <p className="text-sm text-gray-500">None listed.</p>
+                      <p className="text-sm text-gray-500">
+                        No skin concerns listed.
+                      </p>
                     )}
                   </div>
                 </div>
@@ -313,10 +461,120 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
                         <Tag key={c.id}>{c.name}</Tag>
                       ))
                     ) : (
-                      <p className="text-sm text-gray-500">None listed.</p>
+                      <p className="text-sm text-gray-500">
+                        No health conditions listed.
+                      </p>
                     )}
                   </div>
                 </div>
+                <div className="md:col-span-2">
+                  <InfoPill
+                    label="Other Conditions"
+                    value={customer.profile?.other_conditions}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <InfoPill
+                    label="Healing Profile"
+                    value={customer.profile?.healing_profile}
+                  />
+                </div>
+              </div>
+
+              {lifestyleFactors.length > 0 && (
+                <div className="mt-8 pt-6 border-t border-rose-200/60">
+                  <h3 className="font-semibold text-gray-700 mb-4">
+                    Lifestyle & Health Factors
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {lifestyleFactors.map((factor) => (
+                      <FactItem
+                        key={factor.key}
+                        label={factor.label}
+                        value={true}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </DetailSection>
+
+            <DetailSection
+              title="Client Notes"
+              icon={<MessageSquare size={20} />}
+            >
+              <div className="space-y-4">
+                {(customer.notes?.length ?? 0) > 0 ? (
+                  customer.notes?.map((note) => (
+                    <div key={note.id} className="p-3 bg-rose-50/70 rounded-lg">
+                      <p className="text-gray-800">{note.content}</p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        - {note.author} on {formatDateTime(note.created_at)}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500">
+                    No notes found for this client.
+                  </p>
+                )}
+              </div>
+            </DetailSection>
+
+            <DetailSection title="Consents" icon={<ClipboardCheck size={20} />}>
+              <div className="flex flex-wrap gap-3">
+                {(customer.consents?.length ?? 0) > 0 ? (
+                  customer.consents?.map((consent) => (
+                    <div
+                      key={consent.id}
+                      className="flex items-center gap-2 bg-rose-100/60 text-rose-800 text-sm font-medium px-3 py-1.5 rounded-full"
+                    >
+                      <CheckCircle2
+                        size={16}
+                        className={
+                          consent.status === "given"
+                            ? "text-green-600"
+                            : "text-gray-400"
+                        }
+                      />
+                      <span>
+                        {consent.name} ({consent.status} on{" "}
+                        {new Date(consent.date).toLocaleDateString()})
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500">No consent forms found.</p>
+                )}
+              </div>
+            </DetailSection>
+
+            <DetailSection
+              title="Administrative Details"
+              icon={<Settings size={20} />}
+            >
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <InfoPill label="Client ID" value={customer.id} />
+                <InfoPill
+                  label="Profile ID"
+                  value={customer.profile?.customer_id}
+                />
+                <InfoPill
+                  label="Assigned Doctor ID"
+                  value={customer.assigned_doctor_id}
+                />
+                <InfoPill
+                  label="Record Created On"
+                  value={formatDateTime(customer.created_at)}
+                />
+                <InfoPill
+                  label="Record Last Updated"
+                  value={formatDateTime(customer.updated_at)}
+                />
+                <InfoPill
+                  label="Profile Last Updated"
+                  value={formatDateTime(customer.profile?.updated_at)}
+                />
               </div>
             </DetailSection>
           </>
@@ -355,7 +613,7 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
   );
 };
 
-// --- Skeleton Loader Components ---
+// --- Skeleton Loader Components (Unchanged) ---
 const ListSkeleton = () => (
   <div className="space-y-2">
     {Array.from({ length: 8 }).map((_, i) => (
@@ -369,7 +627,6 @@ const ListSkeleton = () => (
     ))}
   </div>
 );
-
 const DetailSkeleton = () => (
   <div className="p-8 animate-pulse">
     <div className="flex items-center gap-6 mb-10">
@@ -389,7 +646,7 @@ const DetailSkeleton = () => (
   </div>
 );
 
-// --- Main Page Component ---
+// --- Main Page Component (Unchanged) ---
 export const CustomerListPage: FC = () => {
   const navigate = useNavigate();
   const [selectedCustomerId, setSelectedCustomerId] = useState<
@@ -412,10 +669,20 @@ export const CustomerListPage: FC = () => {
       customers?.filter(
         (c) =>
           c.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          c.name.toLowerCase().includes(searchTerm.toLowerCase())
+          c.full_name.toLowerCase().includes(searchTerm.toLowerCase())
       ) ?? [],
     [customers, searchTerm]
   );
+
+  React.useEffect(() => {
+    if (
+      selectedCustomerId &&
+      customers &&
+      !filteredCustomers.find((c) => c.id === selectedCustomerId)
+    ) {
+      setSelectedCustomerId(null);
+    }
+  }, [filteredCustomers, selectedCustomerId, customers]);
 
   return (
     <div className="h-screen w-full bg-[#FDF8F5] font-sans flex flex-col">
@@ -451,7 +718,7 @@ export const CustomerListPage: FC = () => {
             {isLoading ? (
               <ListSkeleton />
             ) : isError ? (
-              <p className="p-4 text-red-500">{error.message}</p>
+              <p className="p-4 text-red-500">{(error as Error).message}</p>
             ) : filteredCustomers.length > 0 ? (
               filteredCustomers.map((customer) => (
                 <CustomerListItem
@@ -467,7 +734,7 @@ export const CustomerListPage: FC = () => {
           </div>
         </aside>
 
-        <main className="flex-1 bg-[#FDF8F5] hidden md:block">
+        <main className="flex-1 bg-[#FDF8F5] hidden md:block overflow-y-auto">
           {selectedCustomerId ? (
             <CustomerDetailView customerId={selectedCustomerId} />
           ) : (
@@ -481,7 +748,7 @@ export const CustomerListPage: FC = () => {
       </div>
 
       {selectedCustomerId && (
-        <div className="md:hidden fixed inset-0 bg-[#FDF8F5] z-50">
+        <div className="md:hidden fixed inset-0 bg-[#FDF8F5] z-50 overflow-y-auto">
           <button
             onClick={() => setSelectedCustomerId(null)}
             className="absolute top-4 right-4 z-20 p-2 bg-white/50 rounded-full"
