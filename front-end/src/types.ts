@@ -95,7 +95,7 @@ export interface Product {
   id: number;
   name: string;
   brand: string | null;
-  cost: string | null;
+  cost: number;
   description: string | null;
   price: number;
   stock_quantity: number;

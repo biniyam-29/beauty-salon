@@ -24,8 +24,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       brand: "",
       description: "",
       price: 0,
+      cost: 0,
       stock_quantity: 0,
-      image_data: null, // MODIFIED: Added missing property to the initial state
     }
   );
 
@@ -102,6 +102,21 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
+                  Cost 
+                </label>
+                <input
+                  type="number"
+                  name="cost"
+                  value={formData.cost}
+                  onChange={handleChange}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500"
+                  required
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
                   Price
                 </label>
                 <input
@@ -131,24 +146,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               </div>
             </div>
 
-            {onFileChange && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Product Image
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="mt-1 block w-full text-sm text-gray-500
-                                       file:mr-4 file:py-2 file:px-4
-                                       file:rounded-full file:border-0
-                                       file:text-sm file:font-semibold
-                                       file:bg-pink-50 file:text-red-600
-                                       hover:file:bg-pink-100"
-                />
-              </div>
-            )}
+            
           </div>
           <div className="mt-6 flex justify-end space-x-3">
             <button
