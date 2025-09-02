@@ -32,7 +32,7 @@ const HomePage: React.FC = () => {
     <div className="fixed inset-0 font-serif">
       {/* Background Image - now covers the full screen */}
       <img
-        src="https://cdn1.treatwell.net/images/view/v2.i5059481.w1080.h720.xF2EAA46A/"
+        src="src/assets/hero-image.png"
         alt="A woman applying serum to her face, illustrating radiant skin care."
         className="absolute inset-0 w-full h-full object-cover"
         onError={handleImageError}
