@@ -95,8 +95,9 @@ export interface Product {
   id: number;
   name: string;
   brand: string | null;
+  cost: string | null;
   description: string | null;
-  price: number; 
+  price: number;
   stock_quantity: number;
   image_data: string | null; // Base64 data string from the API
   image_data_mimetype?: string;

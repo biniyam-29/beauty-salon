@@ -43,7 +43,15 @@ const fetchProducts = async (
   });
   if (!response.ok)
     throw new Error(`Failed to fetch products: ${response.statusText}`);
-  return response.json();
+  const data = await response.json();
+  // Ensure image_data is included for the modal, even if not shown in the table
+  const productsWithImageData = data.products.map((p: Product) => ({
+    ...p,
+    image_data: p.image_data
+      ? `data:image/jpeg;base64,${p.image_data.split(",").pop()}`
+      : null,
+  }));
+  return { ...data, products: productsWithImageData };
 };
 
 const addProduct = async (
@@ -144,7 +152,7 @@ export const ProductManagementView: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       console.log("Image uploaded and product list updated.");
     },
-    onError: (err) => alert(`Image upload failed: ${err.message}`),
+    onError: (err) => alert(`Image upload failed: ${(err as Error).message}`),
   });
 
   const addProductMutation = useMutation({
@@ -159,7 +167,8 @@ export const ProductManagementView: React.FC = () => {
       setIsAddModalOpen(false);
       setImageFile(null);
     },
-    onError: (err) => alert(`Error creating product: ${err.message}`),
+    onError: (err) =>
+      alert(`Error creating product: ${(err as Error).message}`),
   });
 
   const updateProductMutation = useMutation({
@@ -168,7 +177,7 @@ export const ProductManagementView: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setEditingProduct(null);
     },
-    onError: (err) => alert(`Error: ${err.message}`),
+    onError: (err) => alert(`Error: ${(err as Error).message}`),
   });
 
   const deleteProductMutation = useMutation({
@@ -176,7 +185,7 @@ export const ProductManagementView: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
-    onError: (err) => alert(`Error: ${err.message}`),
+    onError: (err) => alert(`Error: ${(err as Error).message}`),
   });
 
   const filteredProducts = useMemo(() => {
@@ -204,7 +213,7 @@ export const ProductManagementView: React.FC = () => {
   };
 
   return (
-    <section className="p-6">
+    <section className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Product Management</h2>
         <button
@@ -251,58 +260,87 @@ export const ProductManagementView: React.FC = () => {
       </div>
 
       {isLoading && (
-        <p className="text-center text-gray-500">Loading products...</p>
+        <p className="text-center text-gray-500 py-10">Loading products...</p>
       )}
-      {isError && <p className="text-center text-red-500">{error.message}</p>}
+      {isError && (
+        <p className="text-center text-red-500 py-10">
+          {(error as Error).message}
+        </p>
+      )}
 
       {!isLoading && !isError && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className="bg-white rounded-lg shadow-sm overflow-hidden group flex flex-col"
-              >
-                {/* MODIFIED: Use `product.image_data` for the image source */}
-                <img
-                  src={
-                    product.image_data ||
-                    "https://placehold.co/600x400/fecdd3/4c0519?text=No+Image"
-                  }
-                  alt={product.name}
-                  className="w-full h-40 object-cover"
-                />
-                <div className="p-4 flex flex-col flex-grow">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-xs text-gray-400 font-semibold">
-                        {product.brand}
-                      </p>
-                      <h3 className="font-bold text-gray-800 mt-1">
-                        {product.name}
-                      </h3>
-                    </div>
-                    <span
-                      className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        product.stock_quantity > 0
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
+        <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
+          <table className="w-full text-sm text-left text-gray-600">
+            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3">
+                  Product Name
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Brand
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Description
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Cost
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Price
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Stock
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Status
+                </th>
+                <th scope="col" className="px-6 py-3 text-right">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map((product) => (
+                  <tr
+                    key={product.id}
+                    className="bg-white border-b hover:bg-gray-50"
+                  >
+                    <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                      {product.name}
+                    </td>
+                    <td className="px-6 py-4">{product.brand || "N/A"}</td>
+                    <td
+                      className="px-6 py-4 max-w-sm truncate"
+                      title={product.description || ""}
                     >
-                      {product.stock_quantity > 0 ? "In Stock" : "Out of Stock"}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-500 mt-2 flex-grow">
-                    {product.description || "No description provided."}
-                  </p>
-                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
-                    <p className="text-lg font-bold text-gray-900">
+                      {product.description || "No description provided."}
+                    </td>
+                    <td className="px-6 py-4 font-semibold text-blue-600">
+                      ${Number(product.cost).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 font-semibold text-green-600">
                       ${Number(product.price).toFixed(2)}
-                    </p>
-                    <div className="flex space-x-2">
+                    </td>
+                    <td className="px-6 py-4">{product.stock_quantity}</td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          product.stock_quantity > 0
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {product.stock_quantity > 0
+                          ? "In Stock"
+                          : "Out of Stock"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right flex justify-end items-center space-x-3">
                       <button
                         onClick={() => setEditingProduct(product)}
                         className="text-gray-400 hover:text-red-500"
+                        title="Edit Product"
                       >
                         <EditIcon />
                       </button>
@@ -310,24 +348,23 @@ export const ProductManagementView: React.FC = () => {
                         onClick={() => handleDelete(product.id)}
                         className="text-gray-400 hover:text-red-500"
                         disabled={deleteProductMutation.isPending}
+                        title="Delete Product"
                       >
                         <TrashIcon />
                       </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {filteredProducts.length === 0 && (
-            <div className="text-center py-10 bg-white rounded-lg shadow-sm">
-              <p className="text-gray-500">
-                No products match the current filters.
-              </p>
-            </div>
-          )}
-        </>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={8} className="text-center py-10 text-gray-500">
+                    No products match the current filters.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
 
       <div className="flex items-center justify-center space-x-2 mt-6">
