@@ -17,23 +17,30 @@ class PrescriptionService {
 
     /**
      * Creates a new prescription for a given consultation.
+     * Can be for an existing product (product_id) or a custom one (product_name_custom).
      */
     public function createPrescription(int $consultationId, string $body): string {
         $data = json_decode($body, true);
-        if (!isset($data['product_id']) || !isset($data['quantity'])) {
+
+        if (!isset($data['quantity']) || (!isset($data['product_id']) && !isset($data['product_name_custom']))) {
             http_response_code(400);
-            return json_encode(['error' => 'Bad request: product_id and quantity are required.']);
+            return json_encode(['error' => 'Bad request: quantity and either product_id or product_name_custom are required.']);
+        }
+
+        if (isset($data['product_id']) && isset($data['product_name_custom'])) {
+            http_response_code(400);
+            return json_encode(['error' => 'Bad request: Cannot provide both product_id and product_name_custom.']);
         }
 
         try {
-            // Directly create the prescription without safety checks
             $stmt = $this->conn->prepare(
-                "INSERT INTO prescriptions (consultation_id, product_id, quantity, instructions)
-                 VALUES (:consultation_id, :product_id, :quantity, :instructions)"
+                "INSERT INTO prescriptions (consultation_id, product_id, product_name_custom, quantity, instructions)
+                 VALUES (:consultation_id, :product_id, :product_name_custom, :quantity, :instructions)"
             );
             $stmt->execute([
                 ':consultation_id' => $consultationId,
-                ':product_id' => $data['product_id'],
+                ':product_id' => $data['product_id'] ?? null,
+                ':product_name_custom' => $data['product_name_custom'] ?? null,
                 ':quantity' => $data['quantity'],
                 ':instructions' => $data['instructions'] ?? null
             ]);
@@ -144,15 +151,15 @@ class PrescriptionService {
                             pr.instructions,
                             pr.status,
                             p.id as product_id,
-                            p.name as product_name,
+                            COALESCE(p.name, pr.product_name_custom) as product_name,
                             -- TO_BASE64(p.image_data) as product_image,
                             -- p.image_data_mimetype,
                             c.full_name as customer_name,
                             c.phone as customer_phone
-                         FROM prescriptions pr
-                         JOIN consultations co ON pr.consultation_id = co.id
-                         JOIN customers c ON co.customer_id = c.id
-                         JOIN products p ON pr.product_id = p.id";
+                        FROM prescriptions pr
+                        JOIN consultations co ON pr.consultation_id = co.id
+                        JOIN customers c ON co.customer_id = c.id
+                        LEFT JOIN products p ON pr.product_id = p.id";
             
             $conditions = [];
             $params = [];

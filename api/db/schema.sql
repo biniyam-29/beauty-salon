@@ -169,18 +169,20 @@ CREATE TABLE IF NOT EXISTS `visit_notes` (
 CREATE TABLE IF NOT EXISTS `prescriptions` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `consultation_id` INT UNSIGNED NOT NULL,
-  `product_id` INT UNSIGNED NOT NULL,
+  `product_id` INT UNSIGNED NULL,
+  `product_name_custom` VARCHAR(255) NULL,
   `quantity` INT UNSIGNED NOT NULL DEFAULT 1,
   `instructions` TEXT NULL,
-  `status` ENUM('prescribed', 'sold', 'cancelled') NOT NULL DEFAULT 'prescribed', -- ADD THIS
-  `checkout_by_user_id` INT UNSIGNED NULL, -- ADD THIS
-  `checkout_at` TIMESTAMP NULL, -- ADD THIS
+  `status` ENUM('prescribed', 'sold', 'cancelled') NOT NULL DEFAULT 'prescribed',
+  `checkout_by_user_id` INT UNSIGNED NULL,
+  `checkout_at` TIMESTAMP NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_pre_consultation` FOREIGN KEY (`consultation_id`) REFERENCES `consultations`(`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_pre_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_pre_checkout_user` FOREIGN KEY (`checkout_by_user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL -- ADD THIS
+  CONSTRAINT `fk_pre_checkout_user` FOREIGN KEY (`checkout_by_user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 -- -----------------------------------------------------
 -- Table `consultation_images`
