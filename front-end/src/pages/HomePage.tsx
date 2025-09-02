@@ -24,7 +24,7 @@ const HomePage: React.FC = () => {
   ) => {
     const target = e.target as HTMLImageElement;
     target.onerror = null; // Prevents an infinite loop if the placeholder image also fails to load.
-    target.src = "../assets/hero-image.png";
+    target.src = "./hero-image.png";
   };
 
   return (
