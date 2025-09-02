@@ -1,4 +1,5 @@
 import React, { useState, useRef, type SyntheticEvent, type FormEvent } from "react";
+import loginBg from "../assets/login-page-bg.png";
 
 // Define the props for the LoginPage component for type safety.
 interface LoginPageProps {
@@ -105,7 +106,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
       <div className="relative w-full h-full">
         {/* Background Image */}
         <img
-          src="src/assets/login-page-bg.png"
+          src={loginBg}
           alt="A modern and clean beauty salon interior."
           className="absolute inset-0 w-full h-full object-cover"
           onError={handleImageError}
