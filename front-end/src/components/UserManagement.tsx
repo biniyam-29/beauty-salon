@@ -348,7 +348,6 @@ type UserRole =
   | "reception"
   | "doctor"
   | "professional"
-  | "inventory-manager"
   | "super-admin";
 interface SystemUser {
   id: string;
@@ -416,7 +415,12 @@ const searchUserByPhone = async (phone: string): Promise<SystemUser[]> => {
   return (Array.isArray(data) ? data : [data]).map(formatUser);
 };
 
-const addUser = async (userData: UserPayload): Promise<SystemUser> => {
+const addUser = async (
+  userData: UserPayload
+): Promise<{
+  message: string;
+  user: SystemUser & { temporary_password: string };
+}> => {
   const token = getAuthToken();
   const response = await fetch(`${BASE_URL}/users`, {
     method: "POST",
@@ -492,8 +496,6 @@ const UserForm = ({
       "Access to patient records and treatment history for assigned patients.",
     professional:
       "Access to patient records and treatment history for assigned patients.",
-    "inventory-manager":
-      "Manages product stock, orders, and supplier information.",
     "super-admin":
       "Full access to all system settings, user management, and financial data.",
   };
@@ -554,7 +556,6 @@ const UserForm = ({
         >
           <option value="reception">Reception</option>
           <option value="doctor">Professional</option>
-          <option value="inventory-manager">Inventory Manager</option>
           <option value="super-admin">Super Admin</option>
         </select>
         <p className="mt-2 text-xs text-gray-500">
@@ -592,6 +593,12 @@ export function UserManagementView() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState<string | null>(null);
 
+  // --- NEW: State for the password dialog ---
+  const [newlyCreatedUser, setNewlyCreatedUser] = useState<
+    (SystemUser & { temporary_password: string }) | null
+  >(null);
+  const [isCopied, setIsCopied] = useState(false);
+
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const isPhoneSearch = /^\d{3,}/.test(debouncedSearchTerm);
 
@@ -599,7 +606,6 @@ export function UserManagementView() {
     "all",
     "reception",
     "doctor",
-    "inventory-manager",
     "super-admin",
   ];
 
@@ -633,9 +639,11 @@ export function UserManagementView() {
 
   const addUserMutation = useMutation({
     mutationFn: addUser,
-    onSuccess: () => {
+    // --- UPDATED: Show password dialog on success ---
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       setIsAddDialogOpen(false);
+      setNewlyCreatedUser(data.user); // Trigger the password dialog
     },
     onError: (err) => alert(`Error: ${err.message}`),
   });
@@ -686,14 +694,12 @@ export function UserManagementView() {
       reception: "bg-blue-100 text-blue-800",
       doctor: "bg-green-100 text-green-800",
       professional: "bg-green-100 text-green-800",
-      "inventory-manager": "bg-purple-100 text-purple-800",
       "super-admin": "bg-red-100 text-red-800",
     };
     const roleLabels: Record<UserRole, string> = {
       reception: "Reception",
       doctor: "Professional",
       professional: "Professional",
-      "inventory-manager": "Inventory Manager",
       "super-admin": "Super Admin",
     };
     return (
@@ -923,6 +929,61 @@ export function UserManagementView() {
                 isPending={editUserMutation.isPending}
               />
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* --- NEW: Dialog to show temporary password --- */}
+        <Dialog
+          open={!!newlyCreatedUser}
+          onOpenChange={() => setNewlyCreatedUser(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>User Created Successfully!</DialogTitle>
+              <DialogDescription>
+                An email with the temporary password has been sent to{" "}
+                <strong>{newlyCreatedUser?.email}</strong>. For your
+                convenience, the password is shown below.{" "}
+                <strong className="text-rose-600">
+                  This will only be shown once.
+                </strong>
+              </DialogDescription>
+            </DialogHeader>
+            <div className="p-4 space-y-4">
+              <label className="text-sm font-medium text-gray-700">
+                Temporary Password:
+              </label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  readOnly
+                  value={newlyCreatedUser?.temporary_password || ""}
+                  className="font-mono bg-gray-100 border-gray-300"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (newlyCreatedUser?.temporary_password) {
+                      navigator.clipboard.writeText(
+                        newlyCreatedUser.temporary_password
+                      );
+                      setIsCopied(true);
+                      setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
+                    }
+                  }}
+                >
+                  {isCopied ? "Copied!" : "Copy"}
+                </Button>
+              </div>
+            </div>
+            <div className="p-4 border-t flex justify-end">
+              <Button
+                onClick={() => setNewlyCreatedUser(null)}
+                className="bg-rose-600 hover:bg-rose-700 text-white"
+              >
+                Done
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
