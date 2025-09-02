@@ -16,7 +16,6 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   onSave,
   title,
   isPending,
-  onFileChange,
 }) => {
   const [formData, setFormData] = useState(
     product || {
@@ -47,12 +46,12 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files ? event.target.files[0] : null;
-    if (onFileChange) {
-      onFileChange(file);
-    }
-  };
+  // const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = event.target.files ? event.target.files[0] : null;
+  //   if (onFileChange) {
+  //     onFileChange(file);
+  //   }
+  // };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
