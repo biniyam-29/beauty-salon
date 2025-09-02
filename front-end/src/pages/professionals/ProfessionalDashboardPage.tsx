@@ -62,6 +62,7 @@ interface Patient {
   address?: string;
   city?: string;
   birth_date?: string;
+  age?: number;
   assigned_doctor_id?: number;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
@@ -858,6 +859,7 @@ const PatientDetailView: FC<{
                 <InfoPill label="Address" value={patient.address} />
                 <InfoPill label="City" value={patient.city} />
                 <InfoPill label="Date of Birth" value={patient.birth_date} />
+                <InfoPill label="Age" value={patient.age} />
                 <InfoPill
                   label="Emergency Contact"
                   value={
