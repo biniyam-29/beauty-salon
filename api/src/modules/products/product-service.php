@@ -28,15 +28,16 @@ class ProductService {
 
         try {
             $stmt = $this->conn->prepare(
-                "INSERT INTO products (name, brand, description, stock_quantity, price)
-                 VALUES (:name, :brand, :description, :stock_quantity, :price)"
+                "INSERT INTO products (name, brand, description, stock_quantity, price, cost)
+                 VALUES (:name, :brand, :description, :stock_quantity, :price, :cost)"
             );
             $stmt->execute([
                 ':name' => $data['name'],
                 ':brand' => $data['brand'] ?? null,
                 ':description' => $data['description'] ?? null,
                 ':stock_quantity' => $data['stock_quantity'] ?? 0,
-                ':price' => $data['price']
+                ':price' => $data['price'],
+                ':cost' => $data['cost']
             ]);
             $productId = $this->conn->lastInsertId();
 
@@ -56,7 +57,7 @@ class ProductService {
 
         try {
             $stmt = $this->conn->prepare(
-                "SELECT id, name, brand, price, stock_quantity,description, TO_BASE64(image_data) as image_data, image_data_mimetype 
+                "SELECT id, name, brand, price, cost, stock_quantity,description, TO_BASE64(image_data) as image_data, image_data_mimetype 
                  FROM products 
                  ORDER BY name ASC 
                  LIMIT :limit OFFSET :offset"
@@ -128,7 +129,7 @@ class ProductService {
             return json_encode(['error' => 'Bad request: No data provided.']);
         }
 
-        $allowedFields = ['name', 'brand', 'description', 'stock_quantity', 'price'];
+        $allowedFields = ['name', 'brand', 'description', 'stock_quantity', 'price','cost'];
         $fieldsToUpdate = [];
         $params = [];
 

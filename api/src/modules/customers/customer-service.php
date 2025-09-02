@@ -240,6 +240,15 @@ class CustomerService {
             }
             unset($customer['profile_picture_mimetype']); // Clean up the response object
 
+            if (!empty($customer['birth_date'])) {
+                $dob = new \DateTime($customer['birth_date']);
+                $today = new \DateTime();
+                $age = $today->diff($dob)->y; // Age in years
+                $customer['age'] = $age;
+            } else {
+                $customer['age'] = null;
+            }
+
             // Get profile data
             $stmt = $this->conn->prepare("SELECT * FROM customer_profile WHERE customer_id = :id");
             $stmt->execute([':id' => $id]);

@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS `products` (
   `description` TEXT NULL,
   `stock_quantity` INT UNSIGNED NOT NULL DEFAULT 0,
   `price` DECIMAL(10, 2) NOT NULL,
+  `cost` DECIMAL(10, 2) NOT NULL,
   `image_data` MEDIUMBLOB NULL,
   `image_data_mimetype` VARCHAR(20) NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
