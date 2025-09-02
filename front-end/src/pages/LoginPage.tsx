@@ -22,8 +22,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
   const handleImageError = (e: SyntheticEvent<HTMLImageElement, Event>) => {
     const target = e.target as HTMLImageElement;
     target.onerror = null; // Prevent infinite loops
-    target.src =
-      "./login-page-bg.png";
+    target.src = "./image/login-page-bg.png";
   };
 
   /**
