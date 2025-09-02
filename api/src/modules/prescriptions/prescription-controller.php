@@ -33,12 +33,10 @@ class PrescriptionController implements ControllerInterface {
 
         switch ($method) {
             case 'GET':
-                // GET /prescriptions?customer_id=X&status=Y
-                if ($status) {
-                    return $this->prescriptionService->getPrescriptionsByStatus($status);
-                }
-                http_response_code(400);
-                return json_encode(['error' => 'Bad Request: customer_id and status query parameters are required.']);
+                // GET /prescriptions?customer_id=X&status=Y (both optional)
+                $customerId = isset($_GET['customer_id']) ? (int)$_GET['customer_id'] : null;
+                $status = $_GET['status'] ?? null;
+                return $this->prescriptionService->getPrescriptions($customerId, $status);
 
             case 'PUT':
                 if (!$id) {

@@ -133,37 +133,55 @@ class PrescriptionService {
     }
 
     /**
-     * Retrieves prescriptions for a customer, filtered by status.
+     * Retrieves a filtered list of prescriptions.
+     * Filters are optional and can be combined.
      */
-    public function getPrescriptionsByStatus(string $status): string {
+    public function getPrescriptions(?int $customerId, ?string $status): string {
         try {
-            $stmt = $this->conn->prepare(
-                "SELECT 
-                    pr.id as prescription_id,
-                    pr.quantity,
-                    pr.instructions,
-                    p.id as product_id,
-                    p.name as product_name,
-                    TO_BASE64(p.image_data) as product_image,
-                    p.image_data_mimetype,
-                    c.full_name as customer_name,
-                    c.phone as customer_phone
-                 FROM prescriptions pr
-                 JOIN consultations co ON pr.consultation_id = co.id
-                 JOIN customers c ON co.customer_id = c.id
-                 JOIN products p ON pr.product_id = p.id
-                 WHERE pr.status = :status"
-            );
-            $stmt->execute([':status' => $status]);
+            $baseQuery = "SELECT 
+                            pr.id as prescription_id,
+                            pr.quantity,
+                            pr.instructions,
+                            pr.status,
+                            p.id as product_id,
+                            p.name as product_name,
+                            -- TO_BASE64(p.image_data) as product_image,
+                            -- p.image_data_mimetype,
+                            c.full_name as customer_name,
+                            c.phone as customer_phone
+                         FROM prescriptions pr
+                         JOIN consultations co ON pr.consultation_id = co.id
+                         JOIN customers c ON co.customer_id = c.id
+                         JOIN products p ON pr.product_id = p.id";
+            
+            $conditions = [];
+            $params = [];
+
+            if ($customerId) {
+                $conditions[] = "c.id = :customer_id";
+                $params[':customer_id'] = $customerId;
+            }
+
+            if ($status) {
+                $conditions[] = "pr.status = :status";
+                $params[':status'] = $status;
+            }
+
+            if (!empty($conditions)) {
+                $baseQuery .= " WHERE " . implode(" AND ", $conditions);
+            }
+
+            $stmt = $this->conn->prepare($baseQuery);
+            $stmt->execute($params);
             $prescriptions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // Format the image data into a usable data URI
-            foreach ($prescriptions as &$prescription) {
-                if ($prescription['product_image'] && $prescription['image_data_mimetype']) {
-                    $prescription['product_image'] = 'data:' . $prescription['image_data_mimetype'] . ';base64,' . $prescription['product_image'];
-                }
-                unset($prescription['image_data_mimetype']);
-            }
+            // foreach ($prescriptions as &$prescription) {
+            //     if ($prescription['product_image'] && $prescription['image_data_mimetype']) {
+            //         $prescription['product_image'] = 'data:' . $prescription['image_data_mimetype'] . ';base64,' . $prescription['product_image'];
+            //     }
+            //     unset($prescription['image_data_mimetype']);
+            // }
 
             return json_encode($prescriptions);
         } catch (Exception $e) {
