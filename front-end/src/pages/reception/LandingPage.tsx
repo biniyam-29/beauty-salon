@@ -135,7 +135,7 @@ const navLinks: NavLinkItem[] = [
     path: "/reception/reminders",
   },
   {
-    label: "Product Deduction",
+    label: "Product Prescriptions",
     icon: <PackageMinusIcon />,
     path: "/reception/product-deduction",
   },

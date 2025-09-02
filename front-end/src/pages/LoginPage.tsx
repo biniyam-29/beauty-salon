@@ -23,7 +23,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
     const target = e.target as HTMLImageElement;
     target.onerror = null; // Prevent infinite loops
     target.src =
-      "https://placehold.co/1920x1080/e2e8f0/4a5568?text=Salon+Interior";
+      "./login-page-bg.png";
   };
 
   /**
@@ -106,7 +106,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
       <div className="relative w-full h-full">
         {/* Background Image */}
         <img
-          src="https://images.fresha.com/locations/location-profile-images/759914/923355/4ed81c4e-3877-4286-8df3-93256dd468f0.jpg?class=venue-gallery-large"
+          src="./login-page-bg.png"
           alt="A modern and clean beauty salon interior."
           className="absolute inset-0 w-full h-full object-cover"
           onError={handleImageError}
