@@ -31,18 +31,23 @@ class PrescriptionService {
             http_response_code(400);
             return json_encode(['error' => 'Bad request: Cannot provide both product_id and product_name_custom.']);
         }
-
+        
+        // Determine the status based on whether the product is custom
+        $isCustomProduct = isset($data['product_name_custom']);
+        $status = $isCustomProduct ? 'sold' : 'prescribed';
+        
         try {
             $stmt = $this->conn->prepare(
-                "INSERT INTO prescriptions (consultation_id, product_id, product_name_custom, quantity, instructions)
-                 VALUES (:consultation_id, :product_id, :product_name_custom, :quantity, :instructions)"
+                "INSERT INTO prescriptions (consultation_id, product_id, product_name_custom, quantity, instructions, status)
+                 VALUES (:consultation_id, :product_id, :product_name_custom, :quantity, :instructions, :status)"
             );
             $stmt->execute([
                 ':consultation_id' => $consultationId,
                 ':product_id' => $data['product_id'] ?? null,
                 ':product_name_custom' => $data['product_name_custom'] ?? null,
                 ':quantity' => $data['quantity'],
-                ':instructions' => $data['instructions'] ?? null
+                ':instructions' => $data['instructions'] ?? null,
+                ':status' => $status
             ]);
             $prescriptionId = $this->conn->lastInsertId();
 
