@@ -689,6 +689,7 @@ export const PatientRegistrationWizard: React.FC<{
             if (wasSuccess && newlyCreatedUser) {
               onRegistrationComplete(newlyCreatedUser);
             }
+            navigate("/reception");
           }}
         />
       )}
