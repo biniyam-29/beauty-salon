@@ -100,10 +100,6 @@ interface Prescription {
   customer_name: string;
   customer_phone: string;
 }
-interface PrescriptionItem extends Product {
-  quantity: number;
-  instructions: string;
-}
 
 // --- API Functions ---
 const API_BASE_URL = "https://beauty-api.biniyammarkos.com";
@@ -200,16 +196,25 @@ const fetchProducts = async (page: number = 1): Promise<Product[]> => {
 
 const addPrescriptionToConsultation = async (payload: {
   consultationId: number;
-  productId: number;
+  productId?: number;
+  product_name_custom?: string;
   quantity: number;
   instructions: string;
 }) => {
   const token = getAuthToken();
   const body = {
-    product_id: payload.productId,
     quantity: payload.quantity,
     instructions: payload.instructions,
+    ...(payload.productId && { product_id: payload.productId }),
+    ...(payload.product_name_custom && {
+      product_name_custom: payload.product_name_custom,
+    }),
   };
+
+  if (body.product_id && body.product_name_custom) {
+    throw new Error("Cannot provide both product_id and product_name_custom.");
+  }
+
   const response = await fetch(
     `${API_BASE_URL}/consultations/${payload.consultationId}/prescriptions`,
     {
@@ -487,20 +492,32 @@ const AddConsultationModal: FC<{
   );
 };
 
+interface SelectedPrescriptionItem {
+  tempId: number | string;
+  productId?: number;
+  name: string;
+  brand?: string;
+  quantity: number;
+  instructions: string;
+  isCustom: boolean;
+}
 const PrescriptionModal: FC<{
   consultationId: number;
   patientName: string;
   onClose: () => void;
 }> = ({ consultationId, patientName, onClose }) => {
-  const [selectedProducts, setSelectedProducts] = useState<PrescriptionItem[]>(
-    []
-  );
+  const [selectedProducts, setSelectedProducts] = useState<
+    SelectedPrescriptionItem[]
+  >([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [customProductName, setCustomProductName] = useState("");
   const queryClient = useQueryClient();
+
   const { data: allProducts, isLoading: isLoadingProducts } = useQuery({
     queryKey: ["products"],
     queryFn: () => fetchProducts(),
   });
+
   const addPrescriptionMutation = useMutation({
     mutationFn: addPrescriptionToConsultation,
     onSuccess: () => {
@@ -509,37 +526,74 @@ const PrescriptionModal: FC<{
     onError: (error: Error) =>
       toast.error(error.message || "Failed to add prescription item."),
   });
+
   const handleSelectProduct = (product: Product) => {
-    if (!selectedProducts.find((p) => p.id === product.id)) {
-      setSelectedProducts([
-        ...selectedProducts,
-        { ...product, quantity: 1, instructions: "" },
-      ]);
+    if (!selectedProducts.find((p) => p.productId === product.id)) {
+      const newItem: SelectedPrescriptionItem = {
+        tempId: product.id,
+        productId: product.id,
+        name: product.name,
+        brand: product.brand,
+        quantity: 1,
+        instructions: "",
+        isCustom: false,
+      };
+      setSelectedProducts([...selectedProducts, newItem]);
+    } else {
+      toast.info("Product already selected.");
     }
   };
+
+  const handleAddCustomProduct = () => {
+    if (!customProductName.trim()) return;
+    if (
+      selectedProducts.find(
+        (p) => p.name.toLowerCase() === customProductName.trim().toLowerCase()
+      )
+    ) {
+      toast.warning("This product is already in the list.");
+      return;
+    }
+    const newCustomProduct: SelectedPrescriptionItem = {
+      tempId: `custom-${Date.now()}`,
+      name: customProductName.trim(),
+      quantity: 1,
+      instructions: "",
+      isCustom: true,
+    };
+    setSelectedProducts([...selectedProducts, newCustomProduct]);
+    setCustomProductName("");
+  };
+
   const handleUpdatePrescriptionItem = (
-    productId: number,
+    tempId: number | string,
     field: "quantity" | "instructions",
     value: string | number
   ) => {
     setSelectedProducts(
       selectedProducts.map((p) =>
-        p.id === productId ? { ...p, [field]: value } : p
+        p.tempId === tempId ? { ...p, [field]: value } : p
       )
     );
   };
-  const handleRemoveProduct = (productId: number) => {
-    setSelectedProducts(selectedProducts.filter((p) => p.id !== productId));
+
+  const handleRemoveProduct = (tempId: number | string) => {
+    setSelectedProducts(selectedProducts.filter((p) => p.tempId !== tempId));
   };
+
   const handleSavePrescription = () => {
-    const prescriptionPromises = selectedProducts.map((p) =>
-      addPrescriptionMutation.mutateAsync({
+    const prescriptionPromises = selectedProducts.map((p) => {
+      const payload = {
         consultationId,
-        productId: p.id,
         quantity: p.quantity,
         instructions: p.instructions,
-      })
-    );
+        ...(p.isCustom
+          ? { product_name_custom: p.name }
+          : { productId: p.productId }),
+      };
+      return addPrescriptionMutation.mutateAsync(payload);
+    });
+
     toast.promise(Promise.all(prescriptionPromises), {
       loading: "Saving prescription...",
       success: () => {
@@ -549,11 +603,13 @@ const PrescriptionModal: FC<{
       error: "Could not save the full prescription.",
     });
   };
+
   const filteredProducts = allProducts?.filter(
     (p) =>
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.brand.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-4xl h-[90vh] flex flex-col">
@@ -570,7 +626,7 @@ const PrescriptionModal: FC<{
         </div>
         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-hidden">
           <div className="flex flex-col overflow-hidden">
-            <div className="relative mb-4">
+            <div className="relative mb-2">
               <Search
                 size={18}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -583,6 +639,23 @@ const PrescriptionModal: FC<{
                 className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 pl-10 focus:ring-2 focus:ring-rose-300 focus:outline-none"
               />
             </div>
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                placeholder="Or add a custom product name..."
+                value={customProductName}
+                onChange={(e) => setCustomProductName(e.target.value)}
+                className="flex-1 bg-gray-50 border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-rose-300 focus:outline-none"
+              />
+              <Button
+                type="button"
+                onClick={handleAddCustomProduct}
+                disabled={!customProductName.trim()}
+                className="px-4"
+              >
+                Add
+              </Button>
+            </div>
             <div className="flex-1 overflow-y-auto space-y-2 pr-2">
               {isLoadingProducts && <p>Loading products...</p>}
               {filteredProducts?.map((p) => (
@@ -590,14 +663,7 @@ const PrescriptionModal: FC<{
                   key={p.id}
                   className="flex items-center justify-between p-2 border rounded-lg"
                 >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={
-                        p.image_data || `https://i.pravatar.cc/150?u=${p.id}`
-                      }
-                      alt={p.name}
-                      className="w-10 h-10 rounded-md object-cover"
-                    />
+                  <div className="flex items-center">
                     <div>
                       <p className="font-semibold text-gray-700">{p.name}</p>
                       <p className="text-xs text-gray-500">{p.brand}</p>
@@ -624,14 +690,19 @@ const PrescriptionModal: FC<{
                 </p>
               ) : (
                 selectedProducts.map((p) => (
-                  <div key={p.id} className="bg-white p-3 rounded-lg border">
+                  <div
+                    key={p.tempId}
+                    className="bg-white p-3 rounded-lg border"
+                  >
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="font-semibold text-gray-700">{p.name}</p>
-                        <p className="text-xs text-gray-500">{p.brand}</p>
+                        {p.brand && (
+                          <p className="text-xs text-gray-500">{p.brand}</p>
+                        )}
                       </div>
                       <button
-                        onClick={() => handleRemoveProduct(p.id)}
+                        onClick={() => handleRemoveProduct(p.tempId)}
                         className="p-1 text-gray-400 hover:text-red-500"
                       >
                         <X size={16} />
@@ -645,9 +716,9 @@ const PrescriptionModal: FC<{
                         value={p.quantity}
                         onChange={(e) =>
                           handleUpdatePrescriptionItem(
-                            p.id,
+                            p.tempId,
                             "quantity",
-                            parseInt(e.target.value)
+                            parseInt(e.target.value) || 1
                           )
                         }
                         className="w-full border rounded-md p-1 col-span-4"
@@ -661,7 +732,7 @@ const PrescriptionModal: FC<{
                         value={p.instructions}
                         onChange={(e) =>
                           handleUpdatePrescriptionItem(
-                            p.id,
+                            p.tempId,
                             "instructions",
                             e.target.value
                           )
@@ -699,11 +770,9 @@ const PrescriptionCard: FC<{ prescription: Prescription }> = ({
   prescription,
 }) => (
   <div className="py-4 flex items-center gap-4">
-    <img
-      src={prescription.product_image || `https://via.placeholder.com/64`}
-      alt={prescription.product_name}
-      className="w-16 h-16 rounded-md object-cover bg-gray-100"
-    />
+    <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-rose-100/60 rounded-lg">
+      <Pill className="w-6 h-6 text-rose-600" />
+    </div>
     <div>
       <h4 className="font-semibold text-gray-800">
         {prescription.product_name} (Qty: {prescription.quantity})
