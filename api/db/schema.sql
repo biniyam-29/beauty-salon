@@ -149,6 +149,19 @@ CREATE TABLE IF NOT EXISTS `consultations` (
   CONSTRAINT `fk_con_user` FOREIGN KEY (`doctor_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS `images` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `consultation_id` INT UNSIGNED NOT NULL,
+  `image_url` VARCHAR(255) NOT NULL,
+  `description` TEXT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_img_consultation`
+    FOREIGN KEY (`consultation_id`)
+    REFERENCES `consultations`(`id`)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- -----------------------------------------------------
 -- Table `visit_notes` (UPDATED)
 -- -----------------------------------------------------
