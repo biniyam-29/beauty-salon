@@ -46,7 +46,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
 
     try {
       const response = await fetch(
-        "http://beauty-api.biniyammarkos.com/auth/login",
+        "https://beauty-api.biniyammarkos.com/auth/login",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
