@@ -8,7 +8,7 @@ use src\config\Database;
 use PDO;
 use Exception;
 
-class ImageService {
+class ImageServices {
     private PDO $conn;
 
     public function __construct() {
