@@ -289,3 +289,17 @@ CREATE TABLE IF NOT EXISTS `password_reset` (
   PRIMARY KEY (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- -----------------------------------------------------
+-- Table `phone_bookings` (Temporary storage for phone appointments)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `phone_bookings` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `reception_id` INT UNSIGNED NOT NULL,
+  `customer_name` VARCHAR(255) NOT NULL,
+  `phone` VARCHAR(20) NOT NULL,
+  `appointment_time` DATETIME NOT NULL,
+  `call_received_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_pb_reception` FOREIGN KEY (`reception_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+

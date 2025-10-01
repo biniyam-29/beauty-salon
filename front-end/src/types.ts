@@ -103,3 +103,14 @@ export interface Product {
   image_data_mimetype?: string;
 }
 
+export type PhoneBookingData = {
+  id?: number;
+  receptionId: number;
+  customerName: string;
+  phone: string;
+  appointmentTime: string;
+  callReceivedAt?: string;
+  createdAt?: string; // add this for sorting/display
+};
+
+

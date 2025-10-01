@@ -30,8 +30,8 @@ require_once __DIR__ . '/src/modules/images/image-controller.php';
 require_once __DIR__ . '/src/modules/reminders/reminder-controller.php';
 require_once __DIR__ . '/src/modules/checkout/checkout-controller.php';
 require_once __DIR__ . '/src/modules/visit_notes/visitnote-controller.php';
-require_once __DIR__ . '/src/modules/profile/profile-controller.php'; 
-// Add other controllers as you create them...
+require_once __DIR__ . '/src/modules/profile/profile-controller.php';
+require_once __DIR__ . '/src/modules/phone/phone-controller.php'; // ✅ added phone controller
 
 use src\modules\auth\AuthController;
 use src\modules\lookups\LookupController;
@@ -45,7 +45,7 @@ use src\modules\reminders\ReminderController;
 use src\modules\checkout\CheckoutController;
 use src\modules\notes\VisitNoteController;
 use src\modules\profile\ProfileController;
-
+use src\modules\phone\PhoneController; // ✅ added
 
 // --- Basic Routing ---
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -98,6 +98,9 @@ switch ($module) {
         break;
     case 'profile':
         $controller = new ProfileController();
+        break;
+    case 'phonebooking': // ✅ added phone module
+        $controller = new PhoneController();
         break;
     default:
         http_response_code(404);
