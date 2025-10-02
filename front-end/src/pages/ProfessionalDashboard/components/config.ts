@@ -7,7 +7,7 @@ export function getAuthToken(): string | null {
   return null;
 }
 
-export function authHeaders() {
+export function authHeaders(): Record<string, string> {
   const token = getAuthToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }

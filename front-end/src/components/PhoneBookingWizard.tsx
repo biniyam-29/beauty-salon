@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
@@ -164,7 +164,7 @@ export const PhoneBookingWizard: React.FC<{
   receptionId: number;
   onBookingComplete: (booking: PhoneBookingData) => void;
 }> = ({ receptionId, onBookingComplete }) => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [currentStep, setCurrentStep] = useState(0);

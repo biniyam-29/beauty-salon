@@ -9,7 +9,8 @@ import {
 } from "react-router-dom";
 // Make sure to install and import jwt-decode
 import { jwtDecode } from "jwt-decode";
-import type { PatientData } from "./types";
+// Remove this import since we're using the wizard's type
+// import type { PatientData } from "./types";
 import { CustomerListPage } from "./pages/reception/CustomerListPage";
 import LandingPage from "./pages/reception/LandingPage";
 import { PatientRegistrationWizard } from "./components/PatientRegistrationWizard";
@@ -34,7 +35,8 @@ const RegistrationPage: React.FC = () => {
   const navigate = useNavigate();
   const phone = location.state?.phone || "";
 
-  const handleRegistrationComplete = (newUser: PatientData) => {
+  // Use the PatientData type from the wizard component
+  const handleRegistrationComplete = (newUser: Parameters<typeof PatientRegistrationWizard>[0]['onRegistrationComplete'] extends (newUser: infer T) => void ? T : never) => {
     if (newUser.id) {
       navigate(`/reception/profile/${newUser.id}`, {
         state: { fromRegistration: true },
