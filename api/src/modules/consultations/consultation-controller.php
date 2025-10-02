@@ -56,7 +56,7 @@ class ConsultationController implements ControllerInterface {
         switch ($method) {
             case 'POST':
                 if ($id && $subResource === 'prescriptions') {
-                    return $this->prescriptionService->createPrescription($id, $body, $user->id);
+                    return $this->prescriptionService->createPrescription($id, $body);
                 }
 
                 if ($id && $subResource === 'images') {
