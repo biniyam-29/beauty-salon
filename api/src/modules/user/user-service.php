@@ -151,6 +151,62 @@ class UserService {
             $totalStmt->execute();
             $totalUsers = $totalStmt->fetchColumn();
 
+            // If requesting doctors, enrich each doctor with counts (not lists)
+            if ($role === 'doctor' && !empty($users)) {
+                // Prepare count statements
+                $assignedCountStmt = $this->conn->prepare(
+                    "SELECT COUNT(*) AS cnt
+                     FROM customers 
+                     WHERE assigned_doctor_id = :doctorId"
+                );
+
+                $untreatedCountStmt = $this->conn->prepare(
+                    "SELECT COUNT(*) AS cnt
+                     FROM customers c
+                     LEFT JOIN consultations co
+                       ON co.customer_id = c.id
+                      AND co.doctor_id = :doctorId
+                     WHERE c.assigned_doctor_id = :doctorId
+                       AND co.id IS NULL"
+                );
+
+                $todaysFollowupsCountStmt = $this->conn->prepare(
+                    "SELECT COUNT(*) AS cnt
+                     FROM (
+                         SELECT co.customer_id, MAX(co.follow_up_date) AS last_followup
+                         FROM consultations co
+                         JOIN customers cu ON cu.id = co.customer_id
+                         WHERE cu.assigned_doctor_id = :doctorId
+                           AND co.doctor_id = :doctorId
+                           AND co.follow_up_date IS NOT NULL
+                         GROUP BY co.customer_id
+                     ) t
+                     WHERE t.last_followup = CURDATE()"
+                );
+                
+
+                foreach ($users as &$user) {
+                    $doctorId = (int)$user['id'];
+
+                    $assignedCountStmt->bindValue(':doctorId', $doctorId, PDO::PARAM_INT);
+                    $assignedCountStmt->execute();
+                    $assignedCount = (int)$assignedCountStmt->fetchColumn();
+
+                    $untreatedCountStmt->bindValue(':doctorId', $doctorId, PDO::PARAM_INT);
+                    $untreatedCountStmt->execute();
+                    $untreatedCount = (int)$untreatedCountStmt->fetchColumn();
+
+                    $todaysFollowupsCountStmt->bindValue(':doctorId', $doctorId, PDO::PARAM_INT);
+                    $todaysFollowupsCountStmt->execute();
+                    $todaysFollowupsCount = (int)$todaysFollowupsCountStmt->fetchColumn();
+
+                    $user['assigned_patients_count'] = $assignedCount;
+                    $user['untreated_assigned_patients_count'] = $untreatedCount;
+                    $user['todays_followups_count'] = $todaysFollowupsCount;
+                }
+                unset($user);
+            }
+
             return json_encode([
                 'users' => $users,
                 'totalPages' => ceil($totalUsers / $limit),
