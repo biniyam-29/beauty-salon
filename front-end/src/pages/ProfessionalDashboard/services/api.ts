@@ -101,26 +101,34 @@ export const addConsultation = async (payload: {
   return response.json();
 };
 
-export const uploadConsultationImage = async (payload: {
+export const uploadConsultationImages = async (payload: {
   consultationId: number;
-  imageFile: File;
-  description?: string;
+  imageFiles: File[];
+  descriptions?: string[];
 }): Promise<any> => {
-  const { consultationId, imageFile, description } = payload;
+  const { consultationId, imageFiles, descriptions } = payload;
   const token = getAuthToken();
   const formData = new FormData();
-  formData.append("file", imageFile);
-  if (description) {
-    formData.append("description", description);
-  }
+  
+  // Append all files to FormData
+  imageFiles.forEach((file, index) => {
+    formData.append('file[]', file);
+    
+    // Add description if provided for this file
+    if (descriptions && descriptions[index]) {
+      formData.append(`descriptions[]`, descriptions[index]);
+    }
+  });
+
   const response = await fetch(`${API_BASE_URL}/consultations/${consultationId}/images`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
   });
+  
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || "Failed to upload image.");
+    throw new Error(errorData.message || "Failed to upload images.");
   }
   return response.json();
 };
