@@ -9,6 +9,12 @@ import {
   PartyPopper,
   AlertTriangle,
   HelpCircle,
+  User,
+  Mail,
+  Phone,
+  Users,
+  Clock,
+  Stethoscope,
 } from "lucide-react";
 
 // --- Consolidated Type Definitions ---
@@ -57,7 +63,13 @@ type PatientData = {
 type ProfessionalData = {
   id: number;
   name: string;
-  skills: string[];
+  email: string;
+  role: string;
+  phone: string;
+  assigned_patients_count: number;
+  untreated_assigned_patients_count: number;
+  todays_followups_count: number;
+  skills?: string[];
 };
 
 type LookupItem = {
@@ -458,18 +470,6 @@ const PersonalInfoStep: React.FC<StepProps> = ({ formData, updateFormData }) => 
         <option value="Other">Other</option>
       </select>
     </div>
-
-    <div className="md:col-span-2">
-      <Label htmlFor="initialNote" helperText="Any special considerations or notes for our team">
-        Initial Note
-      </Label>
-      <Textarea
-        id="initialNote"
-        placeholder="Any special notes about the patient..."
-        value={formData.initialNote}
-        onChange={(e) => updateFormData({ initialNote: e.target.value })}
-      />
-    </div>
   </div>
 );
 
@@ -732,14 +732,14 @@ const AssignmentStep: React.FC<StepProps> = ({
         </div>
       </div>
     ) : (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {professionals.map((prof) => (
           <label
             key={prof.id}
             className={cn(
-              "flex items-start gap-3 border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:border-rose-300",
+              "flex items-start gap-4 border-2 rounded-xl p-5 cursor-pointer transition-all duration-200 hover:border-rose-300 hover:shadow-md",
               formData.assignedProfessionalId === String(prof.id)
-                ? "border-rose-500 bg-rose-50"
+                ? "border-rose-500 bg-rose-50 shadow-sm"
                 : "border-gray-200 bg-white"
             )}
           >
@@ -754,12 +754,59 @@ const AssignmentStep: React.FC<StepProps> = ({
               className="mt-1 text-rose-600 focus:ring-rose-500"
             />
             <div className="flex-1">
-              <div className="font-medium text-gray-800">{prof.name}</div>
-              {prof.skills && prof.skills.length > 0 && (
-                <div className="text-sm text-gray-600 mt-1">
-                  Specialties: {prof.skills.join(", ")}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center">
+                    <User size={20} className="text-rose-600" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-lg text-gray-800">{prof.name}</div>
+                    <div className="text-sm text-gray-600 flex items-center gap-1">
+                      <Stethoscope size={14} />
+                      {prof.role || "Doctor"}
+                    </div>
+                  </div>
                 </div>
-              )}
+                {formData.assignedProfessionalId === String(prof.id) && (
+                  <div className="bg-rose-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                    Selected
+                  </div>
+                )}
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail size={16} className="text-gray-400" />
+                  <span className="text-gray-700">{prof.email}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone size={16} className="text-gray-400" />
+                  <span className="text-gray-700">{prof.phone || "Not provided"}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Users size={16} className="text-gray-400" />
+                  <span className="text-gray-700">
+                    {prof.assigned_patients_count} total patients
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Clock size={16} className="text-gray-400" />
+                  <span className="text-gray-700">
+                    {prof.todays_followups_count} today's follow-ups
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap gap-2 mt-3">
+                <div className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
+                  {prof.untreated_assigned_patients_count} untreated patients
+                </div>
+                {prof.skills && prof.skills.length > 0 && (
+                  <div className="bg-green-50 text-green-700 px-2 py-1 rounded text-xs">
+                    {prof.skills.length} specialties
+                  </div>
+                )}
+              </div>
             </div>
           </label>
         ))}
@@ -768,7 +815,7 @@ const AssignmentStep: React.FC<StepProps> = ({
   </div>
 );
 
-const ConsentStep: React.FC<StepProps> = ({ formData }) => (
+const ConsentStep: React.FC<StepProps> = ({ formData, updateFormData }) => (
   <div className="space-y-6">
     <div>
       <h3 className="text-lg font-bold text-gray-800 mb-2">Review Your Information</h3>
@@ -819,12 +866,19 @@ const ConsentStep: React.FC<StepProps> = ({ formData }) => (
         </div>
       </div>
 
-      {formData.initialNote && (
-        <div className="border-t pt-4">
-          <h4 className="font-semibold text-gray-700 mb-2">Additional Notes</h4>
-          <p className="text-sm text-gray-600">{formData.initialNote}</p>
-        </div>
-      )}
+      <div className="border-t pt-4">
+        <h4 className="font-semibold text-gray-700 mb-3">Final Notes</h4>
+        <Label htmlFor="initialNote" helperText="Any final thoughts, concerns, or additional information you'd like to share after completing all steps">
+          Initial Note
+        </Label>
+        <Textarea
+          id="initialNote"
+          placeholder="Any special notes about the patient, how they're feeling after discussing their health history, or additional concerns..."
+          value={formData.initialNote}
+          onChange={(e) => updateFormData({ initialNote: e.target.value })}
+          rows={4}
+        />
+      </div>
     </div>
 
     <div className="bg-rose-50 border border-rose-200 rounded-lg p-4">
@@ -902,7 +956,7 @@ export const PatientRegistrationWizard: React.FC<{
     { name: "Personal Info", component: PersonalInfoStep },
     { name: "Health History", component: HealthHistoryStep },
     { name: "Assign Professional", component: AssignmentStep },
-    { name: "Consent", component: ConsentStep },
+    { name: "Consent & Review", component: ConsentStep },
   ];
 
   const lookupsQuery = useQuery({
