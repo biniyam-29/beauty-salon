@@ -143,6 +143,7 @@ CREATE TABLE IF NOT EXISTS `consultations` (
   `previous_treatment_feedback` TEXT NULL,
   `doctor_notes` TEXT NULL,
   `follow_up_date` DATE NULL,
+  `status` ENUM('pending', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_con_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE RESTRICT,
