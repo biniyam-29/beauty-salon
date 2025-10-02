@@ -14,7 +14,7 @@ class ImageController implements ControllerInterface {
     private ImageService $imageService;
 
     public function __construct() {
-        $this->imageService = new ImageServices();
+        $this->imageService = new ImageService();
     }
 
     public function handleRequest(array $paths, string $method, ?string $body) {

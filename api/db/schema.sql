@@ -196,21 +196,6 @@ CREATE TABLE IF NOT EXISTS `prescriptions` (
   CONSTRAINT `fk_pre_checkout_user` FOREIGN KEY (`checkout_by_user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
--- -----------------------------------------------------
--- Table `consultation_images`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consultation_images` (
-  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `consultation_id` INT UNSIGNED NOT NULL,
-  `image_data` MEDIUMBLOB NOT NULL,
-  `image_data_mimetype` VARCHAR(20) NULL,
-  `description` VARCHAR(255) NULL,
-  `uploaded_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  CONSTRAINT `fk_ci_consultation` FOREIGN KEY (`consultation_id`) REFERENCES `consultations`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 -- -----------------------------------------------------
 -- Table `reminders`
 -- -----------------------------------------------------

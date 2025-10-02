@@ -59,15 +59,60 @@ class ConsultationController implements ControllerInterface {
                     return $this->prescriptionService->createPrescription($id, $body);
                 }
 
-                if ($id && $subResource === 'images') {
-                    if (!isset($_FILES['file'])) {
-                        http_response_code(400);
-                        return json_encode(['error' => 'No file uploaded. Field name should be "file".']);
-                    }
-                    $file = $_FILES['file'];
-                    $description = $_POST['description'] ?? null;
-                    return $this->imageService->uploadImage((int)$id, $file, $description);
+              if ($id && $subResource === 'images') {
+                // Check if the 'file' input exists and is an array (which it will be for multiple files)
+                if (!isset($_FILES['file']['name']) || !is_array($_FILES['file']['name'])) {
+                    http_response_code(400);
+                    // Updated error message to guide the front-end developer
+                    return json_encode(['error' => 'No files uploaded. The input field must be named "file[]" and be an array.']);
                 }
+
+                $files = $_FILES['file'];
+                $fileCount = count($files['name']);
+                $description = $_POST['description'] ?? null;
+                $uploadResults = [];
+
+                // Loop through each uploaded file
+                for ($i = 0; $i < $fileCount; $i++) {
+                    // Skip empty file inputs that can be sent by the browser
+                    if ($files['error'][$i] === UPLOAD_ERR_NO_FILE) {
+                        continue;
+                    }
+
+                    // Check for other upload errors
+                    if ($files['error'][$i] !== UPLOAD_ERR_OK) {
+                        $uploadResults[] = [
+                            'fileName' => $files['name'][$i],
+                            'success' => false,
+                            'error' => 'Upload error code: ' . $files['error'][$i]
+                        ];
+                        continue;
+                    }
+
+                    $singleFile = [
+                        'name' => $files['name'][$i],
+                        'type' => $files['type'][$i],
+                        'tmp_name' => $files['tmp_name'][$i],
+                        'error' => $files['error'][$i],
+                        'size' => $files['size'][$i],
+                    ];
+                    
+                    // Call the image service for each file and collect the results
+                    $resultJson = $this->imageService->uploadImage((int)$id, $singleFile, $description);
+                    $uploadResults[] = json_decode($resultJson, true);
+                }
+                
+                if (empty($uploadResults)) {
+                     http_response_code(400);
+                     return json_encode(['error' => 'No valid files were processed.']);
+                }
+
+                // Return a summary of all upload operations
+                return json_encode([
+                    'message' => 'Batch upload process finished.',
+                    'results' => $uploadResults
+                ]);
+            }
 
                 return $this->consultationService->createConsultation($body);
 

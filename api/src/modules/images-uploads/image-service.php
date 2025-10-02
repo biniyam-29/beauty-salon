@@ -112,4 +112,21 @@ class ImageService {
             return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
         }
     }
+
+    public function deleteImage(int $id): string {
+        try {
+            $stmt = $this->conn->prepare("DELETE FROM images WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+
+            if ($stmt->rowCount() === 0) {
+                 http_response_code(404);
+                 return json_encode(['error' => 'Image not found.']);
+            }
+
+            return json_encode(['message' => 'Image deleted successfully.']);
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+        }
+    }
 }

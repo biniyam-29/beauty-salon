@@ -101,7 +101,7 @@ class ImageServices {
      */
     public function deleteImage(int $id): string {
         try {
-            $stmt = $this->conn->prepare("DELETE FROM consultation_images WHERE id = :id");
+            $stmt = $this->conn->prepare("DELETE FROM images WHERE id = :id");
             $stmt->execute([':id' => $id]);
 
             if ($stmt->rowCount() === 0) {
