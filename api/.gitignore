@@ -2,3 +2,4 @@
 setup-database.php
 test-login.php
 .env
+/uploads
