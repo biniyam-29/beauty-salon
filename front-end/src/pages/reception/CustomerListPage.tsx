@@ -13,7 +13,7 @@ import {
   CheckCircle2,
   XCircle,
   MessageSquare,
-  ClipboardCheck,
+  // ClipboardCheck,
   Settings,
   ClipboardList,
 } from "lucide-react";
@@ -41,18 +41,19 @@ interface CustomerProfile {
   updated_at: string;
 }
 
-interface Consent {
-  id: number;
-  name: string;
-  status: "given" | "revoked" | string;
-  date: string;
-}
+// interface Consent {
+//   id: number;
+//   name: string;
+//   status: "given" | "revoked" | string;
+//   date: string;
+// }
 
 interface Note {
   id: number;
-  content: string;
-  author: string;
+  note_text: string; 
+  author_name: string;
   created_at: string;
+  status: string;
 }
 
 interface SkinConcern {
@@ -83,7 +84,7 @@ interface Customer {
   profile?: CustomerProfile;
   skin_concerns?: SkinConcern[];
   health_conditions?: HealthCondition[];
-  consents?: Consent[];
+  // consents?: Consent[];
   notes?: Note[];
 }
 
@@ -577,17 +578,14 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
               )}
             </DetailSection>
 
-            <DetailSection
-              title="Client Notes"
-              icon={<MessageSquare size={20} />}
-            >
+            <DetailSection title="Client Notes" icon={<MessageSquare size={20} />}>
               <div className="space-y-4">
                 {(customer.notes?.length ?? 0) > 0 ? (
                   customer.notes?.map((note) => (
                     <div key={note.id} className="p-3 bg-rose-50/70 rounded-lg">
-                      <p className="text-gray-800">{note.content}</p>
+                      <p className="text-gray-800">{note.note_text}</p> {/* Changed from note.content */}
                       <p className="text-xs text-gray-500 mt-2">
-                        - {note.author} on {formatDateTime(note.created_at)}
+                        - {note.author_name} on {formatDateTime(note.created_at)} {/* Changed from note.author */}
                       </p>
                     </div>
                   ))
@@ -599,7 +597,7 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
               </div>
             </DetailSection>
 
-            <DetailSection title="Consents" icon={<ClipboardCheck size={20} />}>
+            {/* <DetailSection title="Consents" icon={<ClipboardCheck size={20} />}>
               <div className="flex flex-wrap gap-3">
                 {(customer.consents?.length ?? 0) > 0 ? (
                   customer.consents?.map((consent) => (
@@ -625,7 +623,7 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
                   <p className="text-gray-500">No consent forms found.</p>
                 )}
               </div>
-            </DetailSection>
+            </DetailSection> */}
 
             <DetailSection
               title="Administrative Details"
