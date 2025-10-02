@@ -84,10 +84,20 @@ class ConsultationService {
                 http_response_code(404);
                 return json_encode(['error' => 'Consultation not found.']);
             }
+
+            $imageStmt = $this->conn->prepare(
+                "SELECT id, image_url, description, created_at 
+                 FROM images 
+                 WHERE consultation_id = :consultation_id 
+                 ORDER BY created_at ASC"
+            );
+            $imageStmt->execute([':consultation_id' => $id]);
+            $images = $imageStmt->fetchAll(PDO::FETCH_ASSOC);
             
             // Decode JSON fields for easier use on the front-end
             $consultation['previous_treatment_feedback'] = json_decode($consultation['previous_treatment_feedback']);
             $consultation['treatment_goals_today'] = json_decode($consultation['treatment_goals_today']);
+            $consultation['images'] = $images;
 
             return json_encode($consultation);
         } catch (Exception $e) {
