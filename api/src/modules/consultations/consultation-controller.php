@@ -48,10 +48,10 @@ class ConsultationController implements ControllerInterface {
             }
         }
 
-        if (!RoleGuard::roleGuard('doctor') && !RoleGuard::roleGuard('super-admin')) {
-            http_response_code(403);
-            return json_encode(['message' => 'Forbidden']);
-        }
+        // if (!RoleGuard::roleGuard('doctor') && !RoleGuard::roleGuard('super-admin')) {
+        //     http_response_code(403);
+        //     return json_encode(['message' => 'Forbidden']);
+        // }
 
         switch ($method) {
             case 'POST':
