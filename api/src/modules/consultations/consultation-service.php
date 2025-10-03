@@ -28,13 +28,13 @@ class ConsultationService {
 
         try {
             // First, verify the consultation exists
-            $checkStmt = $this->conn->prepare("SELECT id FROM consultations WHERE id = :id");
+            $checkStmt = $this->conn->prepare("SELECT id FROM customers WHERE id = :id");
             $checkStmt->execute([':id' => $consultationId]);
             $consultation = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$consultation) {
                 http_response_code(404);
-                return json_encode(['error' => 'Consultation not found.']);
+                return json_encode(['error' => 'customer not found.']);
             }
 
             // Verify the doctor exists and has the correct role
@@ -51,7 +51,7 @@ class ConsultationService {
 
             // Update the consultation with the assigned doctor
             $stmt = $this->conn->prepare(
-                "UPDATE consultations SET doctor_id = :doctor_id WHERE id = :consultation_id"
+                "UPDATE customers SET assigned_doctor_id = :doctor_id WHERE id = :consultation_id"
             );
             $stmt->execute([
                 ':doctor_id' => $data['doctor_id'],
