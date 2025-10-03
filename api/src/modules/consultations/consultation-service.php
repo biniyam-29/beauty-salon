@@ -51,7 +51,7 @@ class ConsultationService {
 
             // Update the consultation with the assigned doctor
             $stmt = $this->conn->prepare(
-                "UPDATE consultations SET doctor_id = :doctor_id, updated_at = NOW() WHERE id = :consultation_id"
+                "UPDATE consultations SET doctor_id = :doctor_id WHERE id = :consultation_id"
             );
             $stmt->execute([
                 ':doctor_id' => $data['doctor_id'],
