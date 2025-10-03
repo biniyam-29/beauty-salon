@@ -1,6 +1,6 @@
 import React, { useState, useMemo, type FC } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   User,
   Heart,
@@ -228,9 +228,10 @@ const fetchProfessionals = async (): Promise<Professional[]> => {
   return data.users || [];
 };
 
+// Updated function with proper error handling
 const assignProfessionalToConsultation = async (consultationId: number, doctorId: number): Promise<void> => {
   const token = getAuthToken();
-  const response = await fetch(`${BASE_URL}/consultations/${consultationId}`, {
+  const response = await fetch(`${BASE_URL}/consultations/${consultationId}/assign-professional`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -238,17 +239,42 @@ const assignProfessionalToConsultation = async (consultationId: number, doctorId
     },
     body: JSON.stringify({ doctor_id: doctorId }),
   });
-  if (!response.ok) throw new Error("Failed to assign professional");
+  
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to assign professional');
+  }
+  
+  return response.json();
+};
+
+// Simple toast notification function
+const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  // Create toast element
+  const toast = document.createElement('div');
+  toast.className = `fixed top-4 right-4 p-4 rounded-lg text-white ${
+    type === 'success' ? 'bg-green-500' : 'bg-red-500'
+  } z-50 shadow-lg`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  // Remove toast after 3 seconds
+  setTimeout(() => {
+    if (document.body.contains(toast)) {
+      document.body.removeChild(toast);
+    }
+  }, 3000);
 };
 
 // --- Professional Assignment Modal ---
 const ProfessionalAssignmentModal: FC<{
   isOpen: boolean;
   onClose: () => void;
-  onAssign: (professionalId: number) => void;
+  onAssign: (professionalId: number) => Promise<void>;
   customerName: string;
 }> = ({ isOpen, onClose, onAssign, customerName }) => {
   const [selectedProfessional, setSelectedProfessional] = useState<number | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
 
   const { data: professionals, isLoading, isError } = useQuery({
     queryKey: ["professionals"],
@@ -256,11 +282,15 @@ const ProfessionalAssignmentModal: FC<{
     enabled: isOpen,
   });
 
-  const handleAssign = () => {
+  const handleAssign = async () => {
     if (selectedProfessional) {
-      onAssign(selectedProfessional);
-      onClose();
-      setSelectedProfessional(null);
+      setIsAssigning(true);
+      try {
+        await onAssign(selectedProfessional);
+        setSelectedProfessional(null);
+      } finally {
+        setIsAssigning(false);
+      }
     }
   };
 
@@ -278,6 +308,7 @@ const ProfessionalAssignmentModal: FC<{
           <button
             onClick={onClose}
             className="text-rose-500 hover:text-rose-700 font-semibold text-lg p-1"
+            disabled={isAssigning}
           >
             <X size={24} />
           </button>
@@ -304,8 +335,8 @@ const ProfessionalAssignmentModal: FC<{
                     selectedProfessional === professional.id
                       ? "border-rose-500 bg-rose-50/50"
                       : "border-gray-200 hover:border-rose-300 hover:bg-rose-50/30"
-                  }`}
-                  onClick={() => setSelectedProfessional(professional.id)}
+                  } ${isAssigning ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={() => !isAssigning && setSelectedProfessional(professional.id)}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
@@ -371,20 +402,28 @@ const ProfessionalAssignmentModal: FC<{
         <div className="mt-6 flex justify-end gap-3 border-t border-rose-200 pt-4">
           <button
             onClick={onClose}
-            className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+            disabled={isAssigning}
+            className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleAssign}
-            disabled={!selectedProfessional}
+            disabled={!selectedProfessional || isAssigning}
             className={`px-5 py-2 text-white rounded-lg transition font-medium ${
-              selectedProfessional
+              selectedProfessional && !isAssigning
                 ? "bg-rose-600 hover:bg-rose-700"
                 : "bg-gray-400 cursor-not-allowed"
             }`}
           >
-            Assign Professional
+            {isAssigning ? (
+              <>
+                <Loader2 size={16} className="animate-spin mr-2" />
+                Assigning...
+              </>
+            ) : (
+              'Assign Professional'
+            )}
           </button>
         </div>
       </div>
@@ -790,6 +829,7 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
   const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
   const [assignmentConsultationId, setAssignmentConsultationId] = useState<number | null>(null);
+  const queryClient = useQueryClient();
 
   const {
     data: customer,
@@ -824,11 +864,15 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
     
     try {
       await assignProfessionalToConsultation(assignmentConsultationId, professionalId);
-      // You might want to add a toast notification here
-      console.log("Professional assigned successfully");
+      showToast('Professional assigned successfully!', 'success');
+      
+      // Refresh the consultation data
+      queryClient.invalidateQueries({ queryKey: ['consultations'] });
+      queryClient.invalidateQueries({ queryKey: ['consultationDetail'] });
+      
     } catch (error) {
-      console.error("Failed to assign professional:", error);
-      // You might want to add an error toast here
+      console.error('Failed to assign professional:', error);
+      showToast(error instanceof Error ? error.message : 'Failed to assign professional', 'error');
     }
   };
 
@@ -1408,7 +1452,7 @@ const DetailSkeleton = () => (
   </div>
 );
 
-// --- Main Page Component (Unchanged) ---
+// --- Main Page Component ---
 export const CustomerListPage: FC = () => {
   const navigate = useNavigate();
   const [selectedCustomerId, setSelectedCustomerId] = useState<
