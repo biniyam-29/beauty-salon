@@ -7,7 +7,7 @@ interface LookupItem {
   id: number;
   name: string;
 }
-type LookupType = "skin-concerns" | "health-conditions";
+type LookupType = "skin-concerns" | "health-conditions" | "skin-care-history";
 
 // --- API Functions ---
 const API_BASE_URL = "https://beauty-api.biniyammarkos.com";
@@ -215,8 +215,20 @@ export const LookupsManagementView: React.FC = () => {
     }
   };
 
-  const itemTypeName =
-    activeList === "skin-concerns" ? "Skin Concern" : "Health Condition";
+  const getItemTypeName = (type: LookupType): string => {
+    switch (type) {
+      case "skin-concerns":
+        return "Skin Concern";
+      case "health-conditions":
+        return "Health Condition";
+      case "skin-care-history":
+        return "Skin Care History";
+      default:
+        return "Item";
+    }
+  };
+
+  const itemTypeName = getItemTypeName(activeList);
 
   return (
     <div className="space-y-6">
@@ -245,6 +257,17 @@ export const LookupsManagementView: React.FC = () => {
               )}
             >
               Health Conditions
+            </button>
+            <button
+              onClick={() => setActiveList("skin-care-history")}
+              className={cn(
+                "px-4 py-1.5 text-sm font-semibold rounded-md transition-colors",
+                activeList === "skin-care-history"
+                  ? "bg-white shadow text-rose-700"
+                  : "text-gray-600 hover:text-rose-700"
+              )}
+            >
+              Skin Care History
             </button>
           </div>
           <Button

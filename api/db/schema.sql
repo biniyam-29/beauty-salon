@@ -68,6 +68,14 @@ CREATE TABLE IF NOT EXISTS `skin_concerns` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Table `skin_care_history`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `skin_care_history` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(100) NOT NULL UNIQUE,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- -----------------------------------------------------
 -- Table `health_conditions`
 -- -----------------------------------------------------

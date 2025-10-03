@@ -143,7 +143,7 @@ class LookupService {
      * @return bool True if the table is valid, false otherwise.
      */
     private function isValidTable(string $tableName): bool {
-        $allowedTables = ['skin_concerns', 'health_conditions'];
+        $allowedTables = ['skin_concerns', 'health_conditions', 'skin_care_history'];
         return in_array($tableName, $allowedTables);
     }
 }
