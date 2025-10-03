@@ -21,8 +21,9 @@ import {
   Mail,
   MapPin,
   AlertCircle,
-  PlusCircle,
   ZoomIn,
+  Users,
+  Loader2,
 } from "lucide-react";
 
 // --- Type Definitions ---
@@ -132,6 +133,17 @@ interface Prescription {
   customer_phone: string;
 }
 
+interface Professional {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  phone: string;
+  assigned_patients_count: number;
+  untreated_assigned_patients_count: number;
+  todays_followups_count: number;
+}
+
 // --- API Fetching Functions ---
 const BASE_URL = "https://beauty-api.biniyammarkos.com";
 const getAuthToken = () => {
@@ -206,6 +218,180 @@ const fetchPrescriptions = async (): Promise<Prescription[]> => {
   return response.json();
 };
 
+const fetchProfessionals = async (): Promise<Professional[]> => {
+  const token = getAuthToken();
+  const response = await fetch(`${BASE_URL}/users/role/doctor`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error("Failed to fetch professionals.");
+  const data = await response.json();
+  return data.users || [];
+};
+
+const assignProfessionalToConsultation = async (consultationId: number, doctorId: number): Promise<void> => {
+  const token = getAuthToken();
+  const response = await fetch(`${BASE_URL}/consultations/${consultationId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ doctor_id: doctorId }),
+  });
+  if (!response.ok) throw new Error("Failed to assign professional");
+};
+
+// --- Professional Assignment Modal ---
+const ProfessionalAssignmentModal: FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onAssign: (professionalId: number) => void;
+  customerName: string;
+}> = ({ isOpen, onClose, onAssign, customerName }) => {
+  const [selectedProfessional, setSelectedProfessional] = useState<number | null>(null);
+
+  const { data: professionals, isLoading, isError } = useQuery({
+    queryKey: ["professionals"],
+    queryFn: fetchProfessionals,
+    enabled: isOpen,
+  });
+
+  const handleAssign = () => {
+    if (selectedProfessional) {
+      onAssign(selectedProfessional);
+      onClose();
+      setSelectedProfessional(null);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
+      <div className="bg-white p-6 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-rose-100">
+        {/* Header */}
+        <div className="flex justify-between items-center border-b border-rose-200 pb-3 mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-rose-700">Assign a Professional</h2>
+            <p className="text-gray-600 mt-1">Assigning professional for {customerName}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-rose-500 hover:text-rose-700 font-semibold text-lg p-1"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        {/* Content */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <Loader2 size={48} className="text-rose-500 animate-spin mb-4" />
+            <p className="text-gray-600">Loading professionals...</p>
+          </div>
+        ) : isError ? (
+          <div className="text-center py-12 text-red-500">
+            <AlertCircle size={48} className="mx-auto mb-4" />
+            <p>Failed to load professionals. Please try again.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {professionals?.map((professional) => (
+                <div
+                  key={professional.id}
+                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    selectedProfessional === professional.id
+                      ? "border-rose-500 bg-rose-50/50"
+                      : "border-gray-200 hover:border-rose-300 hover:bg-rose-50/30"
+                  }`}
+                  onClick={() => setSelectedProfessional(professional.id)}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <AvatarPlaceholder
+                        name={professional.name}
+                        className="w-12 h-12 text-lg"
+                      />
+                      <div>
+                        <h3 className="font-bold text-gray-800">{professional.name}</h3>
+                        <p className="text-sm text-gray-500">{professional.role}</p>
+                      </div>
+                    </div>
+                    {selectedProfessional === professional.id && (
+                      <CheckCircle2 size={20} className="text-rose-500 flex-shrink-0" />
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Mail size={16} />
+                      <span>{professional.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Phone size={16} />
+                      <span>{professional.phone}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 mt-4 pt-4 border-t border-gray-200">
+                    <div className="text-center flex-1">
+                      <div className="bg-blue-100 text-blue-800 rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-1">
+                        <span className="text-sm font-bold">{professional.assigned_patients_count}</span>
+                      </div>
+                      <p className="text-xs text-gray-500">Assigned</p>
+                    </div>
+                    <div className="text-center flex-1">
+                      <div className="bg-amber-100 text-amber-800 rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-1">
+                        <span className="text-sm font-bold">{professional.untreated_assigned_patients_count}</span>
+                      </div>
+                      <p className="text-xs text-gray-500">Untreated</p>
+                    </div>
+                    <div className="text-center flex-1">
+                      <div className="bg-green-100 text-green-800 rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-1">
+                        <span className="text-sm font-bold">{professional.todays_followups_count}</span>
+                      </div>
+                      <p className="text-xs text-gray-500">Today's Follow-ups</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {professionals?.length === 0 && (
+              <div className="text-center py-12 text-gray-500">
+                <Users size={48} className="mx-auto mb-4" />
+                <p>No professionals available at the moment.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="mt-6 flex justify-end gap-3 border-t border-rose-200 pt-4">
+          <button
+            onClick={onClose}
+            className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleAssign}
+            disabled={!selectedProfessional}
+            className={`px-5 py-2 text-white rounded-lg transition font-medium ${
+              selectedProfessional
+                ? "bg-rose-600 hover:bg-rose-700"
+                : "bg-gray-400 cursor-not-allowed"
+            }`}
+          >
+            Assign Professional
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Consultation Detail Components ---
 const ImageGallery: FC<{ images: ConsultationImage[] }> = ({ images }) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -260,8 +446,9 @@ const ImageGallery: FC<{ images: ConsultationImage[] }> = ({ images }) => {
 
 const ConsultationDetailModal: FC<{ 
   consultation: Consultation; 
-  onClose: () => void 
-}> = ({ consultation, onClose }) => {
+  onClose: () => void;
+  onAssignProfessional: (consultationId: number) => void;
+}> = ({ consultation, onClose, onAssignProfessional }) => {
   const { data: fullConsultation, isLoading } = useQuery({
     queryKey: ["consultationDetail", consultation.id],
     queryFn: () => fetchConsultationDetail(consultation.id),
@@ -276,12 +463,21 @@ const ConsultationDetailModal: FC<{
         {/* Header */}
         <div className="flex justify-between items-center border-b border-rose-200 pb-3 mb-4">
           <h2 className="text-2xl font-bold text-rose-700">Consultation Detail</h2>
-          <button
-            onClick={onClose}
-            className="text-rose-500 hover:text-rose-700 font-semibold text-lg p-1"
-          >
-            <X size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onAssignProfessional(consultation.id)}
+              className="flex items-center gap-2 px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition font-medium text-sm"
+            >
+              <Users size={16} />
+              Assign Professional
+            </button>
+            <button
+              onClick={onClose}
+              className="text-rose-500 hover:text-rose-700 font-semibold text-lg p-1"
+            >
+              <X size={24} />
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -330,7 +526,7 @@ const ConsultationDetailModal: FC<{
             </div>
 
             {/* Treatment Goals */}
-            {consultationData.treatment_goals_today?.length > 0 && (
+            {consultationData.treatment_goals_today && consultationData.treatment_goals_today.length > 0 && (
               <div className="bg-white border border-rose-100 rounded-lg p-4 shadow-sm">
                 <h3 className="text-rose-700 font-semibold mb-2">Treatment Goals</h3>
                 <ul className="list-disc list-inside text-gray-700 space-y-1">
@@ -342,7 +538,7 @@ const ConsultationDetailModal: FC<{
             )}
 
             {/* Previous Feedback */}
-            {consultationData.previous_treatment_feedback?.length > 0 && (
+            {consultationData.previous_treatment_feedback && consultationData.previous_treatment_feedback.length > 0 && (
               <div className="bg-white border border-rose-100 rounded-lg p-4 shadow-sm">
                 <h3 className="text-rose-700 font-semibold mb-2">Previous Feedback</h3>
                 <ul className="list-disc list-inside text-gray-700 space-y-1">
@@ -498,14 +694,18 @@ const InfoPill: FC<{ label: string; value?: string | number | null }> = ({
     </div>
   ) : null;
 
-const ContactInfo: FC<{ label: string; value?: string | number | null; icon: React.ReactElement }> = ({
+const ContactInfo: FC<{ 
+  label: string; 
+  value?: string | number | null; 
+  icon?: React.ReactElement 
+}> = ({
   label,
   value,
   icon
 }) =>
   value ? (
     <div className="flex items-center gap-3 p-3 bg-rose-50/70 rounded-lg">
-      <div className="text-rose-500 flex-shrink-0">{icon}</div>
+      {icon && <div className="text-rose-500 flex-shrink-0">{icon}</div>}
       <div>
         <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
           {label}
@@ -588,6 +788,8 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
 }) => {
   const [activeTab, setActiveTab] = useState("profile");
   const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [assignmentConsultationId, setAssignmentConsultationId] = useState<number | null>(null);
 
   const {
     data: customer,
@@ -616,6 +818,24 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
     queryKey: ["prescriptions"],
     queryFn: fetchPrescriptions,
   });
+
+  const handleAssignProfessional = async (professionalId: number) => {
+    if (!assignmentConsultationId) return;
+    
+    try {
+      await assignProfessionalToConsultation(assignmentConsultationId, professionalId);
+      // You might want to add a toast notification here
+      console.log("Professional assigned successfully");
+    } catch (error) {
+      console.error("Failed to assign professional:", error);
+      // You might want to add an error toast here
+    }
+  };
+
+  const handleOpenAssignmentModal = (consultationId: number) => {
+    setAssignmentConsultationId(consultationId);
+    setShowAssignmentModal(true);
+  };
 
   const lifestyleFactors = useMemo(() => {
     if (!customer?.profile) return [];
@@ -719,31 +939,42 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
             className="w-24 h-24 text-4xl border-4 border-white shadow-lg"
           />
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-800">
-              {customer.full_name}
-            </h1>
-            <div className="flex flex-wrap gap-4 mt-3">
-              <ContactInfo 
-                label="Phone" 
-                value={customer.phone} 
-                icon={<Phone size={16} />}
-              />
-              <ContactInfo 
-                label="Email" 
-                value={customer.email} 
-                icon={<Mail size={16} />}
-              />
-              {customer.age !== undefined && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-blue-50/70 rounded-lg">
-                  <Calendar size={16} className="text-blue-500" />
-                  <div>
-                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
-                      Age
-                    </p>
-                    <p className="text-gray-700 font-semibold">{customer.age}</p>
-                  </div>
+            <div className="flex items-start justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-800">
+                  {customer.full_name}
+                </h1>
+                <div className="flex flex-wrap gap-4 mt-3">
+                  <ContactInfo 
+                    label="Phone" 
+                    value={customer.phone} 
+                    icon={<Phone size={16} />}
+                  />
+                  <ContactInfo 
+                    label="Email" 
+                    value={customer.email} 
+                    icon={<Mail size={16} />}
+                  />
+                  {customer.age !== undefined && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-blue-50/70 rounded-lg">
+                      <Calendar size={16} className="text-blue-500" />
+                      <div>
+                        <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                          Age
+                        </p>
+                        <p className="text-gray-700 font-semibold">{customer.age}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
+              <button
+                onClick={() => handleOpenAssignmentModal(customer.id as number)}
+                className="flex items-center gap-2 px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition font-medium"
+              >
+                <Users size={16} />
+                Assign a Professional
+              </button>
             </div>
           </div>
         </div>
@@ -1126,8 +1357,20 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
         <ConsultationDetailModal
           consultation={selectedConsultation}
           onClose={() => setSelectedConsultation(null)}
+          onAssignProfessional={handleOpenAssignmentModal}
         />
       )}
+
+      {/* Professional Assignment Modal */}
+      <ProfessionalAssignmentModal
+        isOpen={showAssignmentModal}
+        onClose={() => {
+          setShowAssignmentModal(false);
+          setAssignmentConsultationId(null);
+        }}
+        onAssign={handleAssignProfessional}
+        customerName={customer.full_name}
+      />
     </div>
   );
 };

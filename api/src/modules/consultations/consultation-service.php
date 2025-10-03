@@ -121,7 +121,8 @@ class ConsultationService {
             'previous_treatment_feedback',
             'treatment_goals_today',
             'doctor_notes',
-            'follow_up_date'
+            'follow_up_date',
+            'doctor_id'
         ];
         
         $fieldsToUpdate = [];
