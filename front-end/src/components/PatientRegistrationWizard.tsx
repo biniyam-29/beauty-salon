@@ -47,9 +47,25 @@ type PatientData = {
   otherMedication: string;
   alcoholOrSmoke: boolean;
   
+  // New Questionnaire Fields (No Duplicates)
+  firstFacialExperience: boolean;
+  previousTreatmentLikes: string;
+  treatmentGoals: string;
+  vitaminADerivatives: string;
+  recentBotoxFillers: boolean;
+  takenAcneMedication: boolean;
+  otherConditions: string;
+  hasAllergies: boolean;
+  allergiesDetails: string;
+  takesSupplements: boolean;
+  supplementsDetails: string;
+  prescriptionMeds: string;
+  drinksOrSmokes: boolean;
+  
   // Lookups
   skinConcerns: string[];
   healthConditions: string[];
+  skinCareHistory: string[];
   
   // Assignment
   assignedProfessionalId: string;
@@ -89,19 +105,22 @@ const getAuthToken = () => {
 const fetchLookups = async (): Promise<{
   concerns: LookupItem[];
   conditions: LookupItem[];
+  skinCareHistory: LookupItem[];
 }> => {
   const token = getAuthToken();
   const headers = { Authorization: `Bearer ${token}` };
-  const [concernsRes, conditionsRes] = await Promise.all([
+  const [concernsRes, conditionsRes, skinCareHistoryRes] = await Promise.all([
     fetch(`${API_BASE_URL}/lookups/skin-concerns`, { headers }),
     fetch(`${API_BASE_URL}/lookups/health-conditions`, { headers }),
+    fetch(`${API_BASE_URL}/lookups/skin-care-history`, { headers }),
   ]);
-  if (!concernsRes.ok || !conditionsRes.ok) {
+  if (!concernsRes.ok || !conditionsRes.ok || !skinCareHistoryRes.ok) {
     throw new Error("Failed to fetch lookup data");
   }
   const concerns = await concernsRes.json();
   const conditions = await conditionsRes.json();
-  return { concerns, conditions };
+  const skinCareHistory = await skinCareHistoryRes.json();
+  return { concerns, conditions, skinCareHistory };
 };
 
 const fetchProfessionals = async (): Promise<ProfessionalData[]> => {
@@ -256,40 +275,40 @@ const Checkbox: React.FC<{
     </label>
   </div>
 );
-const Switch: React.FC<{
-  id: string;
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
-  label: string;
-  helperText?: string;
-}> = ({ id, checked, onCheckedChange, label, helperText }) => (
-  <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-white">
-    <div className="flex-1">
-      <label htmlFor={id} className="text-sm font-medium text-gray-800 cursor-pointer">
-        {label}
-      </label>
-      {helperText && <p className="text-xs text-gray-500 mt-1">{helperText}</p>}
-    </div>
-    <button
-      type="button"
-      id={id}
-      onClick={() => onCheckedChange(!checked)}
-      className={cn(
-        "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2",
-        checked ? "bg-rose-600" : "bg-gray-200"
-      )}
-      role="switch"
-      aria-checked={checked}
-    >
-      <span
-        className={cn(
-          "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-          checked ? "translate-x-5" : "translate-x-0"
-        )}
-      />
-    </button>
-  </div>
-);
+// const Switch: React.FC<{
+//   id: string;
+//   checked: boolean;
+//   onCheckedChange: (checked: boolean) => void;
+//   label: string;
+//   helperText?: string;
+// }> = ({ id, checked, onCheckedChange, label, helperText }) => (
+//   <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-white">
+//     <div className="flex-1">
+//       <label htmlFor={id} className="text-sm font-medium text-gray-800 cursor-pointer">
+//         {label}
+//       </label>
+//       {helperText && <p className="text-xs text-gray-500 mt-1">{helperText}</p>}
+//     </div>
+//     <button
+//       type="button"
+//       id={id}
+//       onClick={() => onCheckedChange(!checked)}
+//       className={cn(
+//         "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2",
+//         checked ? "bg-rose-600" : "bg-gray-200"
+//       )}
+//       role="switch"
+//       aria-checked={checked}
+//     >
+//       <span
+//         className={cn(
+//           "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+//           checked ? "translate-x-5" : "translate-x-0"
+//         )}
+//       />
+//     </button>
+//   </div>
+// );
 const Progress: React.FC<{ value: number }> = ({ value }) => (
   <div className="w-full bg-rose-100 rounded-full h-1.5">
     <div
@@ -348,7 +367,7 @@ const StatusModal: React.FC<StatusModalProps> = ({
 type StepProps = {
   formData: PatientData;
   updateFormData: (updates: Partial<PatientData>) => void;
-  lookups: { concerns: LookupItem[]; conditions: LookupItem[] };
+  lookups: { concerns: LookupItem[]; conditions: LookupItem[]; skinCareHistory: LookupItem[] };
   professionals: ProfessionalData[];
   isLoading: boolean;
 };
@@ -573,87 +592,6 @@ const HealthHistoryStep: React.FC<StepProps> = ({
         </div>
       </div>
 
-      {/* Habits & Medical Conditions */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-bold text-gray-800">Habits & Medical Information</h3>
-        
-        <div className="space-y-3">
-          <Switch
-            id="bruisesEasily"
-            label="I bruise easily"
-            checked={formData.bruisesEasily}
-            onCheckedChange={(checked) => updateFormData({ bruisesEasily: checked })}
-            helperText="Important for treatment planning and safety"
-          />
-          
-          <Switch
-            id="usedRetinoids"
-            label="I use retinoids or acids"
-            checked={formData.usedRetinoids}
-            onCheckedChange={(checked) => updateFormData({ usedRetinoids: checked })}
-            helperText="e.g., Retin-A, Accutane, glycolic acid"
-          />
-          
-          <Switch
-            id="recentDermalFillers"
-            label="I had dermal fillers recently"
-            checked={formData.recentDermalFillers}
-            onCheckedChange={(checked) => updateFormData({ recentDermalFillers: checked })}
-            helperText="Within the last 6 months"
-          />
-          
-          <Switch
-            id="alcoholOrSmoke"
-            label="I drink alcohol or smoke"
-            checked={formData.alcoholOrSmoke}
-            onCheckedChange={(checked) => updateFormData({ alcoholOrSmoke: checked })}
-            helperText="Affects skin healing and treatment outcomes"
-          />
-        </div>
-
-        <div className="space-y-4">
-          <Label htmlFor="acneMedicationDetails" helperText="List any previous acne medications and when you used them">
-            Previous Acne Medication History
-          </Label>
-          <Textarea
-            id="acneMedicationDetails"
-            placeholder="e.g., Accutane for 6 months in 2022, topical retinoids currently"
-            value={formData.acneMedicationDetails}
-            onChange={(e) => updateFormData({ acneMedicationDetails: e.target.value })}
-          />
-
-          <Label htmlFor="allergies" helperText="Any known allergies to medications, foods, or products">
-            Known Allergies
-          </Label>
-          <Textarea
-            id="allergies"
-            placeholder="e.g., allergic to penicillin, shellfish, or specific skincare ingredients"
-            value={formData.allergies}
-            onChange={(e) => updateFormData({ allergies: e.target.value })}
-          />
-
-          <Label htmlFor="supplements" helperText="List any dietary supplements you're currently taking">
-            Dietary Supplements
-          </Label>
-          <Textarea
-            id="supplements"
-            placeholder="e.g., Vitamin C, Iron, Omega-3, Probiotics"
-            value={formData.supplements}
-            onChange={(e) => updateFormData({ supplements: e.target.value })}
-          />
-
-          <Label htmlFor="otherMedication" helperText="Any other prescription or over-the-counter medications">
-            Other Medications
-          </Label>
-          <Textarea
-            id="otherMedication"
-            placeholder="e.g., blood pressure medication, birth control, antidepressants"
-            value={formData.otherMedication}
-            onChange={(e) => updateFormData({ otherMedication: e.target.value })}
-          />
-        </div>
-      </div>
-
       {/* Lookups */}
       <div className="space-y-4">
         <h3 className="text-lg font-bold text-gray-800">Conditions & Concerns</h3>
@@ -706,6 +644,294 @@ const HealthHistoryStep: React.FC<StepProps> = ({
               ))}
             </div>
           )}
+        </div>
+
+        {/* New Skin Care History Lookup */}
+        <div>
+          <Label helperText="Select your skin care history and previous treatments">
+            Skin Care History
+          </Label>
+          {isLoading ? (
+            <div className="flex items-center gap-2 text-gray-500">
+              <Loader2 size={16} className="animate-spin" />
+              Loading skin care history...
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {lookups.skinCareHistory.map((c) => (
+                <Checkbox
+                  key={c.id}
+                  id={`skin-care-history-${c.id}`}
+                  checked={formData.skinCareHistory.includes(c.name)}
+                  onCheckedChange={() => toggleArrayItem("skinCareHistory", c.name)}
+                >
+                  {c.name}
+                </Checkbox>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// New Questionnaire Step Component (No Duplicates)
+const QuestionnaireStep: React.FC<StepProps> = ({
+  formData,
+  updateFormData,
+}) => {
+  return (
+    <div className="space-y-8">
+      <div className="space-y-6">
+        <h3 className="text-lg font-bold text-gray-800">Treatment Experience & Goals</h3>
+        
+        <div className="space-y-4">
+          <Label helperText="Is this your first time receiving a facial treatment?">
+            Is this your first facial experience?
+          </Label>
+          <div className="flex gap-4">
+            <Checkbox
+              id="firstFacial-yes"
+              checked={formData.firstFacialExperience === true}
+              onCheckedChange={(checked) => updateFormData({ firstFacialExperience: checked })}
+            >
+              Yes
+            </Checkbox>
+            <Checkbox
+              id="firstFacial-no"
+              checked={formData.firstFacialExperience === false}
+              onCheckedChange={(checked) => updateFormData({ firstFacialExperience: !checked })}
+            >
+              No
+            </Checkbox>
+          </div>
+        </div>
+
+        {formData.firstFacialExperience === false && (
+          <div>
+            <Label htmlFor="previousTreatmentLikes" helperText="What did you enjoy about previous treatments?">
+              If no, tell us what you liked about previous treatment
+            </Label>
+            <Textarea
+              id="previousTreatmentLikes"
+              placeholder="e.g., I enjoyed the relaxing atmosphere, the deep cleansing felt great, the results lasted for weeks..."
+              value={formData.previousTreatmentLikes}
+              onChange={(e) => updateFormData({ previousTreatmentLikes: e.target.value })}
+              rows={3}
+            />
+          </div>
+        )}
+
+        <div>
+          <Label htmlFor="treatmentGoals" helperText="What are your main objectives for today's treatment?">
+            What do you want to achieve from your facial treatment today?
+          </Label>
+          <Textarea
+            id="treatmentGoals"
+            placeholder="e.g., Deep cleansing, hydration, anti-aging, acne treatment, relaxation..."
+            value={formData.treatmentGoals}
+            onChange={(e) => updateFormData({ treatmentGoals: e.target.value })}
+            rows={3}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        <h3 className="text-lg font-bold text-gray-800">Current Products & Treatments</h3>
+        
+        <div>
+          <Label htmlFor="vitaminADerivatives" helperText="Please list all vitamin A derivatives and acids you currently use or have used recently">
+            Do you / have you used retine-a, renova, adapalene, accutane, differen, glycolic acid, lactic acid, mandelic acid, retinol, or other vitamin A derivatives?
+          </Label>
+          <Textarea
+            id="vitaminADerivatives"
+            placeholder="e.g., I currently use retinol serum nightly, used Accutane 2 years ago for 6 months, occasionally use glycolic acid toner..."
+            value={formData.vitaminADerivatives}
+            onChange={(e) => updateFormData({ vitaminADerivatives: e.target.value })}
+            rows={4}
+          />
+        </div>
+
+        <div className="space-y-4">
+          <Label helperText="Have you received any injectable treatments in the last two weeks?">
+            Have you received any botox, juvederm, or other dermal fillers in the last two weeks?
+          </Label>
+          <div className="flex gap-4">
+            <Checkbox
+              id="recentBotoxFillers-yes"
+              checked={formData.recentBotoxFillers === true}
+              onCheckedChange={(checked) => updateFormData({ recentBotoxFillers: checked })}
+            >
+              Yes
+            </Checkbox>
+            <Checkbox
+              id="recentBotoxFillers-no"
+              checked={formData.recentBotoxFillers === false}
+              onCheckedChange={(checked) => updateFormData({ recentBotoxFillers: !checked })}
+            >
+              No
+            </Checkbox>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        <h3 className="text-lg font-bold text-gray-800">Medical History Details</h3>
+        
+        <div className="space-y-4">
+          <Label helperText="Have you ever taken prescription acne medication?">
+            Have you taken any acne medication before?
+          </Label>
+          <div className="flex gap-4">
+            <Checkbox
+              id="takenAcneMedication-yes"
+              checked={formData.takenAcneMedication === true}
+              onCheckedChange={(checked) => updateFormData({ takenAcneMedication: checked })}
+            >
+              Yes
+            </Checkbox>
+            <Checkbox
+              id="takenAcneMedication-no"
+              checked={formData.takenAcneMedication === false}
+              onCheckedChange={(checked) => updateFormData({ takenAcneMedication: !checked })}
+            >
+              No
+            </Checkbox>
+          </div>
+        </div>
+
+        {formData.takenAcneMedication && (
+          <div>
+            <Label htmlFor="acneMedicationDetails" helperText="Please specify when and which drugs were used">
+              If yes, please share when and which drugs were used
+            </Label>
+            <Textarea
+              id="acneMedicationDetails"
+              placeholder="e.g., Accutane from Jan-June 2022, topical clindamycin in 2023, currently using spironolactone..."
+              value={formData.acneMedicationDetails}
+              onChange={(e) => updateFormData({ acneMedicationDetails: e.target.value })}
+              rows={3}
+            />
+          </div>
+        )}
+
+        <div>
+          <Label htmlFor="otherConditions" helperText="Any other medical conditions we should know about?">
+            Any other conditions?
+          </Label>
+          <Textarea
+            id="otherConditions"
+            placeholder="e.g., PCOS, thyroid issues, autoimmune conditions, recent surgeries..."
+            value={formData.otherConditions}
+            onChange={(e) => updateFormData({ otherConditions: e.target.value })}
+            rows={3}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        <h3 className="text-lg font-bold text-gray-800">Allergies & Supplements</h3>
+        
+        <div className="space-y-4">
+          <Label helperText="Do you have any known allergies?">
+            Any known allergies?
+          </Label>
+          <div className="flex gap-4 mb-4">
+            <Checkbox
+              id="hasAllergies-yes"
+              checked={formData.hasAllergies === true}
+              onCheckedChange={(checked) => updateFormData({ hasAllergies: checked })}
+            >
+              Yes
+            </Checkbox>
+            <Checkbox
+              id="hasAllergies-no"
+              checked={formData.hasAllergies === false}
+              onCheckedChange={(checked) => updateFormData({ hasAllergies: !checked })}
+            >
+              No
+            </Checkbox>
+          </div>
+          {formData.hasAllergies && (
+            <Textarea
+              id="allergiesDetails"
+              placeholder="e.g., allergic to nuts, penicillin, shellfish, specific skincare ingredients like fragrance or preservatives..."
+              value={formData.allergiesDetails}
+              onChange={(e) => updateFormData({ allergiesDetails: e.target.value })}
+              rows={3}
+            />
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <Label helperText="Do you take any dietary or health supplements?">
+            Do you take any dietary/health supplements?
+          </Label>
+          <div className="flex gap-4 mb-4">
+            <Checkbox
+              id="takesSupplements-yes"
+              checked={formData.takesSupplements === true}
+              onCheckedChange={(checked) => updateFormData({ takesSupplements: checked })}
+            >
+              Yes
+            </Checkbox>
+            <Checkbox
+              id="takesSupplements-no"
+              checked={formData.takesSupplements === false}
+              onCheckedChange={(checked) => updateFormData({ takesSupplements: !checked })}
+            >
+              No
+            </Checkbox>
+          </div>
+          {formData.takesSupplements && (
+            <Textarea
+              id="supplementsDetails"
+              placeholder="e.g., Vitamin D 2000IU daily, Omega-3, Probiotics, Iron supplement, Collagen peptides..."
+              value={formData.supplementsDetails}
+              onChange={(e) => updateFormData({ supplementsDetails: e.target.value })}
+              rows={3}
+            />
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        <h3 className="text-lg font-bold text-gray-800">Medications & Lifestyle</h3>
+        
+        <div>
+          <Label htmlFor="prescriptionMeds" helperText="List all current prescription and over-the-counter medications">
+            Are you currently on any prescription/over-the-counter medication?
+          </Label>
+          <Textarea
+            id="prescriptionMeds"
+            placeholder="e.g., Birth control pills, blood pressure medication, antidepressants, occasional ibuprofen..."
+            value={formData.prescriptionMeds}
+            onChange={(e) => updateFormData({ prescriptionMeds: e.target.value })}
+            rows={3}
+          />
+        </div>
+
+        <div className="space-y-4">
+          <Label helperText="Do you regularly consume alcohol or use tobacco products?">
+            Do you drink alcohol or smoke?
+          </Label>
+          <div className="flex gap-4">
+            <Checkbox
+              id="drinksOrSmokes-yes"
+              checked={formData.drinksOrSmokes === true}
+              onCheckedChange={(checked) => updateFormData({ drinksOrSmokes: checked })}
+            >
+              Yes
+            </Checkbox>
+            <Checkbox
+              id="drinksOrSmokes-no"
+              checked={formData.drinksOrSmokes === false}
+              onCheckedChange={(checked) => updateFormData({ drinksOrSmokes: !checked })}
+            >
+              No
+            </Checkbox>
+          </div>
         </div>
       </div>
     </div>
@@ -862,6 +1088,24 @@ const ConsentStep: React.FC<StepProps> = ({ formData, updateFormData }) => (
             <p><span className="font-medium">Alcohol/Smoke:</span> {formData.alcoholOrSmoke ? "Yes" : "No"}</p>
             <p><span className="font-medium">Skin Concerns:</span> {formData.skinConcerns.length > 0 ? formData.skinConcerns.join(", ") : "None selected"}</p>
             <p><span className="font-medium">Health Conditions:</span> {formData.healthConditions.length > 0 ? formData.healthConditions.join(", ") : "None selected"}</p>
+            <p><span className="font-medium">Skin Care History:</span> {formData.skinCareHistory.length > 0 ? formData.skinCareHistory.join(", ") : "None selected"}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t pt-4">
+        <h4 className="font-semibold text-gray-700 mb-3">Questionnaire Responses</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div className="space-y-2">
+            <p><span className="font-medium">First Facial:</span> {formData.firstFacialExperience === true ? "Yes" : formData.firstFacialExperience === false ? "No" : "Not specified"}</p>
+            <p><span className="font-medium">Recent Botox/Fillers:</span> {formData.recentBotoxFillers ? "Yes" : "No"}</p>
+            <p><span className="font-medium">Taken Acne Meds:</span> {formData.takenAcneMedication ? "Yes" : "No"}</p>
+            <p><span className="font-medium">Has Allergies:</span> {formData.hasAllergies ? "Yes" : "No"}</p>
+          </div>
+          <div className="space-y-2">
+            <p><span className="font-medium">Takes Supplements:</span> {formData.takesSupplements ? "Yes" : "No"}</p>
+            <p><span className="font-medium">Drinks/Smokes:</span> {formData.drinksOrSmokes ? "Yes" : "No"}</p>
+            <p><span className="font-medium">Treatment Goals:</span> {formData.treatmentGoals || "Not specified"}</p>
           </div>
         </div>
       </div>
@@ -926,11 +1170,27 @@ const initialData: PatientData = {
   otherMedication: "",
   alcoholOrSmoke: false,
 
-  // Step 2 - Lookups
+  // Step 3 - Questionnaire (No Duplicates)
+  firstFacialExperience: undefined as any,
+  previousTreatmentLikes: "",
+  treatmentGoals: "",
+  vitaminADerivatives: "",
+  recentBotoxFillers: false,
+  takenAcneMedication: false,
+  otherConditions: "",
+  hasAllergies: undefined as any,
+  allergiesDetails: "",
+  takesSupplements: undefined as any,
+  supplementsDetails: "",
+  prescriptionMeds: "",
+  drinksOrSmokes: false,
+
+  // Lookups
   skinConcerns: [],
   healthConditions: [],
+  skinCareHistory: [],
 
-  // Step 3 - Assignment
+  // Step 4 - Assignment
   assignedProfessionalId: "",
 };
 
@@ -955,6 +1215,7 @@ export const PatientRegistrationWizard: React.FC<{
   const steps = [
     { name: "Personal Info", component: PersonalInfoStep },
     { name: "Health History", component: HealthHistoryStep },
+    { name: "Questionnaire", component: QuestionnaireStep },
     { name: "Assign Professional", component: AssignmentStep },
     { name: "Consent & Review", component: ConsentStep },
   ];
@@ -1004,44 +1265,66 @@ export const PatientRegistrationWizard: React.FC<{
         (acc, c) => ({ ...acc, [c.name]: c.id }),
         {} as Record<string, number>
       ) || {};
+    const skinCareHistoryMap =
+      lookupsQuery.data?.skinCareHistory.reduce(
+        (acc, c) => ({ ...acc, [c.name]: c.id }),
+        {} as Record<string, number>
+      ) || {};
 
-  const apiPayload = {
-    full_name: formData.name,
-    phone: formData.phone,
-    email: formData.email,
-    address: formData.address,
-    city: formData.city,
-    birth_date: formData.dateOfBirth,
-    assigned_doctor_id: formData.assignedProfessionalId
-      ? parseInt(formData.assignedProfessionalId, 10)
-      : null,
-    emergency_contact_name: formData.emergencyContactName,
-    emergency_contact_phone: formData.emergencyContactPhone,
-    how_heard: formData.howHeard,
-    initial_note: formData.initialNote,
-    profile: {
-      skin_type: formData.skinType,
-      skin_feel: formData.skinFeel,
-      sun_exposure: formData.sunExposure,
-      foundation_type: formData.foundationType,
-      healing_profile: formData.healingProfile,
-      bruises_easily: formData.bruisesEasily ? 1 : 0,
-      used_products: formData.usedProducts,
-      uses_retinoids_acids: formData.usedRetinoids ? 1 : 0,
-      recent_dermal_fillers: formData.recentDermalFillers ? 1 : 0,
-      previous_acne_medication: formData.acneMedicationDetails,
-      known_allergies_details: formData.allergies,
-      dietary_supplements: formData.supplements,
-      other_medication: formData.otherMedication,
-      drinks_smokes: formData.alcoholOrSmoke ? 1 : 0,
-    },
-    skin_concerns: formData.skinConcerns
-      .map((name: string) => skinConcernsMap[name])
-      .filter(Boolean),
-    health_conditions: formData.healthConditions
-      .map((name: string) => healthConditionsMap[name])
-      .filter(Boolean),
-  };
+    const apiPayload = {
+      full_name: formData.name,
+      phone: formData.phone,
+      email: formData.email,
+      address: formData.address,
+      city: formData.city,
+      birth_date: formData.dateOfBirth,
+      assigned_doctor_id: formData.assignedProfessionalId
+        ? parseInt(formData.assignedProfessionalId, 10)
+        : null,
+      emergency_contact_name: formData.emergencyContactName,
+      emergency_contact_phone: formData.emergencyContactPhone,
+      how_heard: formData.howHeard,
+      initial_note: formData.initialNote,
+      profile: {
+        skin_type: formData.skinType,
+        skin_feel: formData.skinFeel,
+        sun_exposure: formData.sunExposure,
+        foundation_type: formData.foundationType,
+        healing_profile: formData.healingProfile,
+        bruises_easily: formData.bruisesEasily ? 1 : 0,
+        used_products: formData.usedProducts,
+        uses_retinoids_acids: formData.usedRetinoids ? 1 : 0,
+        recent_dermal_fillers: formData.recentDermalFillers ? 1 : 0,
+        previous_acne_medication: formData.acneMedicationDetails,
+        known_allergies_details: formData.allergies,
+        dietary_supplements: formData.supplements,
+        other_medication: formData.otherMedication,
+        drinks_smokes: formData.alcoholOrSmoke ? 1 : 0,
+        // New questionnaire fields (no duplicates)
+        first_facial_experience: formData.firstFacialExperience ? 1 : 0,
+        previous_treatment_likes: formData.previousTreatmentLikes,
+        treatment_goals: formData.treatmentGoals,
+        vitamin_a_derivatives: formData.vitaminADerivatives,
+        recent_botox_fillers: formData.recentBotoxFillers ? 1 : 0,
+        taken_acne_medication: formData.takenAcneMedication ? 1 : 0,
+        other_conditions: formData.otherConditions,
+        has_allergies: formData.hasAllergies ? 1 : 0,
+        allergies_details: formData.allergiesDetails,
+        takes_supplements: formData.takesSupplements ? 1 : 0,
+        supplements_details: formData.supplementsDetails,
+        prescription_meds: formData.prescriptionMeds,
+        drinks_or_smokes: formData.drinksOrSmokes ? 1 : 0,
+      },
+      skin_concerns: formData.skinConcerns
+        .map((name: string) => skinConcernsMap[name])
+        .filter(Boolean),
+      health_conditions: formData.healthConditions
+        .map((name: string) => healthConditionsMap[name])
+        .filter(Boolean),
+      skin_care_history: formData.skinCareHistory
+        .map((name: string) => skinCareHistoryMap[name])
+        .filter(Boolean),
+    };
 
     registrationMutation.mutate(apiPayload);
   };
@@ -1137,7 +1420,7 @@ export const PatientRegistrationWizard: React.FC<{
                   formData={formData}
                   updateFormData={updateFormData}
                   lookups={
-                    lookupsQuery.data || { concerns: [], conditions: [] }
+                    lookupsQuery.data || { concerns: [], conditions: [], skinCareHistory: [] }
                   }
                   professionals={professionalsQuery.data || []}
                   isLoading={

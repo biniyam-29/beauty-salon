@@ -16,6 +16,11 @@ import {
   // ClipboardCheck,
   Settings,
   ClipboardList,
+  Calendar,
+  Phone,
+  Mail,
+  MapPin,
+  AlertCircle,
 } from "lucide-react";
 
 // --- Type Definitions ---
@@ -39,14 +44,21 @@ interface CustomerProfile {
   smokes?: number;
   drinks?: number;
   updated_at: string;
+  // New fields from questionnaire
+  first_facial_experience?: number;
+  previous_treatment_likes?: string;
+  treatment_goals?: string;
+  vitamin_a_derivatives?: string;
+  recent_botox_fillers?: number;
+  taken_acne_medication?: number;
+  has_allergies?: number;
+  allergies_details?: string;
+  takes_supplements?: number;
+  supplements_details?: string;
+  prescription_meds?: string;
+  drinks_or_smokes?: number;
 }
 
-// interface Consent {
-//   id: number;
-//   name: string;
-//   status: "given" | "revoked" | string;
-//   date: string;
-// }
 
 interface Note {
   id: number;
@@ -81,10 +93,10 @@ interface Customer {
   how_heard?: string | null;
   created_at: string;
   updated_at: string;
+  age?: number;
   profile?: CustomerProfile;
   skin_concerns?: SkinConcern[];
   health_conditions?: HealthCondition[];
-  // consents?: Consent[];
   notes?: Note[];
 }
 
@@ -225,6 +237,23 @@ const InfoPill: FC<{ label: string; value?: string | number | null }> = ({
     </div>
   ) : null;
 
+const ContactInfo: FC<{ label: string; value?: string | number | null; icon: React.ReactElement }> = ({
+  label,
+  value,
+  icon
+}) =>
+  value ? (
+    <div className="flex items-center gap-3 p-3 bg-rose-50/70 rounded-lg">
+      <div className="text-rose-500 flex-shrink-0">{icon}</div>
+      <div>
+        <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+          {label}
+        </p>
+        <p className="text-gray-700 font-semibold">{String(value)}</p>
+      </div>
+    </div>
+  ) : null;
+
 const Tag: FC<{ children: React.ReactNode }> = ({ children }) => (
   <span className="bg-rose-100/60 text-rose-800 text-sm font-medium px-3 py-1.5 rounded-full">
     {children}
@@ -242,6 +271,21 @@ const FactItem: FC<{ label: string; value: boolean | number | undefined }> = ({
       <XCircle size={20} className="text-red-500 flex-shrink-0" />
     )}
     <span className="text-gray-700">{label}</span>
+  </div>
+);
+
+const BooleanDisplay: FC<{ value?: number | null; trueText?: string; falseText?: string }> = ({
+  value,
+  trueText = "Yes",
+  falseText = "No"
+}) => (
+  <div className="flex items-center gap-2">
+    {value ? (
+      <CheckCircle2 size={16} className="text-green-600" />
+    ) : (
+      <XCircle size={16} className="text-red-500" />
+    )}
+    <span className="text-gray-700">{value ? trueText : falseText}</span>
   </div>
 );
 
@@ -335,6 +379,36 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
         label: "Recent Dermal Fillers",
         value: customer.profile.recent_dermal_fillers,
       },
+      {
+        key: "first_facial_experience",
+        label: "First Facial Experience",
+        value: customer.profile.first_facial_experience,
+      },
+      {
+        key: "recent_botox_fillers",
+        label: "Recent Botox/Fillers",
+        value: customer.profile.recent_botox_fillers,
+      },
+      {
+        key: "taken_acne_medication",
+        label: "Taken Acne Medication",
+        value: customer.profile.taken_acne_medication,
+      },
+      {
+        key: "has_allergies",
+        label: "Has Allergies",
+        value: customer.profile.has_allergies,
+      },
+      {
+        key: "takes_supplements",
+        label: "Takes Supplements",
+        value: customer.profile.takes_supplements,
+      },
+      {
+        key: "drinks_or_smokes",
+        label: "Drinks or Smokes",
+        value: customer.profile.drinks_or_smokes,
+      },
     ].filter((factor) => factor.value === 1);
   }, [customer]);
 
@@ -382,14 +456,33 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
             name={customer.full_name}
             className="w-24 h-24 text-4xl border-4 border-white shadow-lg"
           />
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-bold text-gray-800">
               {customer.full_name}
             </h1>
-            <p className="text-gray-500 mt-1">
-              {customer.email || "No email provided"}
-            </p>
-            <p className="text-gray-500">{customer.phone}</p>
+            <div className="flex flex-wrap gap-4 mt-3">
+              <ContactInfo 
+                label="Phone" 
+                value={customer.phone} 
+                icon={<Phone size={16} />}
+              />
+              <ContactInfo 
+                label="Email" 
+                value={customer.email} 
+                icon={<Mail size={16} />}
+              />
+              {customer.age !== undefined && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-blue-50/70 rounded-lg">
+                  <Calendar size={16} className="text-blue-500" />
+                  <div>
+                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                      Age
+                    </p>
+                    <p className="text-gray-700 font-semibold">{customer.age}</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <div className="mt-6 flex border-b border-rose-200/60">
@@ -427,27 +520,71 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
       </div>
 
       <div className="p-8">
-        {/* --- PROFILE TAB CONTENT (RESTORED) --- */}
+        {/* --- PROFILE TAB CONTENT (ENHANCED) --- */}
         {activeTab === "profile" && (
           <>
             <DetailSection
-              title="Personal Information"
+              title="Contact Information"
               icon={<User size={20} />}
             >
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                <InfoPill label="Address" value={customer.address} />
-                <InfoPill label="City" value={customer.city} />
-                <InfoPill label="Date of Birth" value={customer.birth_date} />
-                <InfoPill
-                  label="Emergency Contact"
-                  value={
-                    customer.emergency_contact_name &&
-                    customer.emergency_contact_phone
-                      ? `${customer.emergency_contact_name} (${customer.emergency_contact_phone})`
-                      : customer.emergency_contact_name
-                  }
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <ContactInfo 
+                  label="Primary Phone" 
+                  value={customer.phone} 
+                  icon={<Phone size={18} />}
                 />
-                <InfoPill label="How they heard" value={customer.how_heard} />
+                <ContactInfo 
+                  label="Email Address" 
+                  value={customer.email} 
+                  icon={<Mail size={18} />}
+                />
+                <ContactInfo 
+                  label="Address" 
+                  value={customer.address} 
+                  icon={<MapPin size={18} />}
+                />
+                <ContactInfo 
+                  label="City" 
+                  value={customer.city} 
+                  icon={<MapPin size={18} />}
+                />
+                <ContactInfo 
+                  label="Date of Birth" 
+                  value={customer.birth_date} 
+                  icon={<Calendar size={18} />}
+                />
+                {customer.age !== undefined && (
+                  <ContactInfo 
+                    label="Age" 
+                    value={customer.age} 
+                    icon={<User size={18} />}
+                  />
+                )}
+              </div>
+            </DetailSection>
+
+            <DetailSection
+              title="Emergency Contact"
+              icon={<AlertCircle size={20} />}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ContactInfo 
+                  label="Emergency Contact Name" 
+                  value={customer.emergency_contact_name} 
+                  icon={<User size={18} />}
+                />
+                <ContactInfo 
+                  label="Emergency Contact Phone" 
+                  value={customer.emergency_contact_phone} 
+                  icon={<Phone size={18} />}
+                />
+                <div className="md:col-span-2">
+                  <ContactInfo 
+                    label="How They Heard About Us" 
+                    value={customer.how_heard} 
+                    icon={<AlertCircle size={18} />}
+                  />
+                </div>
               </div>
             </DetailSection>
 
@@ -459,7 +596,7 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
                 />
                 <InfoPill
                   label="Skin Feel"
-                  value={skinFeel.length > 0 ? skinFeel.join(", ") : null}
+                  value={skinFeel.length > 0 ? skinFeel.join(", ") : "Not specified"}
                 />
                 <InfoPill
                   label="Sun Exposure"
@@ -468,6 +605,10 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
                 <InfoPill
                   label="Foundation Type"
                   value={customer.profile?.foundation_type}
+                />
+                <InfoPill
+                  label="Healing Profile"
+                  value={customer.profile?.healing_profile}
                 />
               </div>
               {usedProducts.length > 0 && (
@@ -484,6 +625,43 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
               )}
             </DetailSection>
 
+            {/* New Questionnaire Section */}
+            <DetailSection
+              title="Treatment Experience & Goals"
+              icon={<Calendar size={20} />}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-2">
+                    First Facial Experience
+                  </p>
+                  <BooleanDisplay 
+                    value={customer.profile?.first_facial_experience}
+                    trueText="Yes, first facial"
+                    falseText="No, previous experience"
+                  />
+                </div>
+                {customer.profile?.first_facial_experience === 0 && (
+                  <InfoPill
+                    label="Previous Treatment Likes"
+                    value={customer.profile?.previous_treatment_likes}
+                  />
+                )}
+                <div className="md:col-span-2">
+                  <InfoPill
+                    label="Treatment Goals"
+                    value={customer.profile?.treatment_goals}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <InfoPill
+                    label="Vitamin A Derivatives Usage"
+                    value={customer.profile?.vitamin_a_derivatives}
+                  />
+                </div>
+              </div>
+            </DetailSection>
+
             <DetailSection
               title="Medications & Allergies"
               icon={<Pill size={20} />}
@@ -494,12 +672,24 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
                   value={customer.profile?.known_allergies_details}
                 />
                 <InfoPill
+                  label="Allergies Details"
+                  value={customer.profile?.allergies_details}
+                />
+                <InfoPill
                   label="Current Prescriptions"
                   value={customer.profile?.current_prescription}
                 />
                 <InfoPill
+                  label="Prescription Medications"
+                  value={customer.profile?.prescription_meds}
+                />
+                <InfoPill
                   label="Dietary Supplements"
                   value={customer.profile?.dietary_supplements}
+                />
+                <InfoPill
+                  label="Supplements Details"
+                  value={customer.profile?.supplements_details}
                 />
                 <InfoPill
                   label="Previous Acne Medication"
@@ -552,12 +742,6 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
                     value={customer.profile?.other_conditions}
                   />
                 </div>
-                <div className="md:col-span-2">
-                  <InfoPill
-                    label="Healing Profile"
-                    value={customer.profile?.healing_profile}
-                  />
-                </div>
               </div>
 
               {lifestyleFactors.length > 0 && (
@@ -582,11 +766,16 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
               <div className="space-y-4">
                 {(customer.notes?.length ?? 0) > 0 ? (
                   customer.notes?.map((note) => (
-                    <div key={note.id} className="p-3 bg-rose-50/70 rounded-lg">
-                      <p className="text-gray-800">{note.note_text}</p> {/* Changed from note.content */}
-                      <p className="text-xs text-gray-500 mt-2">
-                        - {note.author_name} on {formatDateTime(note.created_at)} {/* Changed from note.author */}
-                      </p>
+                    <div key={note.id} className="p-4 bg-rose-50/70 rounded-lg border border-rose-100/60">
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="font-semibold text-gray-800">{note.author_name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500">
+                            {formatDateTime(note.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-gray-800 whitespace-pre-wrap">{note.note_text}</p>
                     </div>
                   ))
                 ) : (
@@ -596,34 +785,6 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
                 )}
               </div>
             </DetailSection>
-
-            {/* <DetailSection title="Consents" icon={<ClipboardCheck size={20} />}>
-              <div className="flex flex-wrap gap-3">
-                {(customer.consents?.length ?? 0) > 0 ? (
-                  customer.consents?.map((consent) => (
-                    <div
-                      key={consent.id}
-                      className="flex items-center gap-2 bg-rose-100/60 text-rose-800 text-sm font-medium px-3 py-1.5 rounded-full"
-                    >
-                      <CheckCircle2
-                        size={16}
-                        className={
-                          consent.status === "given"
-                            ? "text-green-600"
-                            : "text-gray-400"
-                        }
-                      />
-                      <span>
-                        {consent.name} ({consent.status} on{" "}
-                        {new Date(consent.date).toLocaleDateString()})
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500">No consent forms found.</p>
-                )}
-              </div>
-            </DetailSection> */}
 
             <DetailSection
               title="Administrative Details"
