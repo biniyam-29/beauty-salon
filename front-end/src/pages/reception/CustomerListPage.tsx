@@ -828,7 +828,7 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
   const [activeTab, setActiveTab] = useState("profile");
   const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
-  const [assignmentConsultationId, setAssignmentConsultationId] = useState<number | null>(null);
+  const [assignmentCustomerId, setAssignmentCustomerId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const {
@@ -860,10 +860,10 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
   });
 
   const handleAssignProfessional = async (professionalId: number) => {
-    if (!assignmentConsultationId) return;
+    if (!assignmentCustomerId) return;
     
     try {
-      await assignProfessionalToConsultation(assignmentConsultationId, professionalId);
+      await assignProfessionalToConsultation(assignmentCustomerId, professionalId);
       showToast('Professional assigned successfully!', 'success');
       
       // Refresh the consultation data
@@ -876,8 +876,8 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
     }
   };
 
-  const handleOpenAssignmentModal = (consultationId: number) => {
-    setAssignmentConsultationId(consultationId);
+  const handleOpenAssignmentModal = (customerId: number) => {
+    setAssignmentCustomerId(customerId);
     setShowAssignmentModal(true);
   };
 
@@ -1410,7 +1410,7 @@ const CustomerDetailView: FC<{ customerId: number | string }> = ({
         isOpen={showAssignmentModal}
         onClose={() => {
           setShowAssignmentModal(false);
-          setAssignmentConsultationId(null);
+          setAssignmentCustomerId(null);
         }}
         onAssign={handleAssignProfessional}
         customerName={customer.full_name}
