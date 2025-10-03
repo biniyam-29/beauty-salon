@@ -39,6 +39,15 @@ class ConsultationController implements ControllerInterface {
         $id = $paths[1] ?? null;
         $subResource = $paths[2] ?? null;
 
+        // Handle professional assignment
+        if ($method === 'PUT' && $id && $subResource === 'assign-professional') {
+            if (!RoleGuard::roleGuard('super-admin') && !RoleGuard::roleGuard('admin')) {
+                http_response_code(403);
+                return json_encode(['message' => 'Forbidden: Only admins can assign professionals.']);
+            }
+            return $this->consultationService->assignProfessional($id, $body);
+        }
+
         if ($method === 'GET' && $id === 'follow-ups' && $subResource === 'today') {
             if (RoleGuard::roleGuard('reception') || RoleGuard::roleGuard('super-admin')) {
                 return $this->consultationService->getTodaysFollowUps();

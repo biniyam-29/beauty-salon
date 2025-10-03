@@ -16,6 +16,65 @@ class ConsultationService {
     }
 
     /**
+     * Assigns a professional (doctor) to a consultation
+     */
+    public function assignProfessional(int $consultationId, string $body): string {
+        $data = json_decode($body, true);
+
+        if (!isset($data['doctor_id'])) {
+            http_response_code(400);
+            return json_encode(['error' => 'Bad request: doctor_id is required.']);
+        }
+
+        try {
+            // First, verify the consultation exists
+            $checkStmt = $this->conn->prepare("SELECT id FROM consultations WHERE id = :id");
+            $checkStmt->execute([':id' => $consultationId]);
+            $consultation = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$consultation) {
+                http_response_code(404);
+                return json_encode(['error' => 'Consultation not found.']);
+            }
+
+            // Verify the doctor exists and has the correct role
+            $doctorStmt = $this->conn->prepare(
+                "SELECT id FROM users WHERE id = :doctor_id AND role IN ('doctor', 'super-admin', 'admin') AND is_active = 1"
+            );
+            $doctorStmt->execute([':doctor_id' => $data['doctor_id']]);
+            $doctor = $doctorStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$doctor) {
+                http_response_code(404);
+                return json_encode(['error' => 'Doctor not found or not active.']);
+            }
+
+            // Update the consultation with the assigned doctor
+            $stmt = $this->conn->prepare(
+                "UPDATE consultations SET doctor_id = :doctor_id, updated_at = NOW() WHERE id = :consultation_id"
+            );
+            $stmt->execute([
+                ':doctor_id' => $data['doctor_id'],
+                ':consultation_id' => $consultationId
+            ]);
+
+            if ($stmt->rowCount() === 0) {
+                http_response_code(500);
+                return json_encode(['error' => 'Failed to assign professional.']);
+            }
+
+            return json_encode([
+                'message' => 'Professional assigned successfully.',
+                'consultation_id' => $consultationId,
+                'doctor_id' => $data['doctor_id']
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
      * Creates a new consultation record for a customer.
      */
     public function createConsultation(string $body): string {
