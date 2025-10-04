@@ -3,13 +3,10 @@ namespace src\modules\phone;
 
 header("Content-Type: application/json");
 require_once __DIR__ . '/../../config/Database.php';
-require_once __DIR__ . '/../../utils/Validation.php';
 
 use src\config\Database;
-use src\utils\Validation;
 use PDO;
 use Exception;
-use DateTime;
 
 class PhoneService {
     private PDO $conn;
@@ -344,7 +341,7 @@ class PhoneService {
         if (!$isUpdate || array_key_exists('customer_phone', $data)) {
             if (empty(trim($data['customer_phone'] ?? ''))) {
                 $errors['customer_phone'] = 'Customer phone is required.';
-            } elseif (!Validation::validatePhone($data['customer_phone'])) {
+            } elseif (!$this->validatePhone($data['customer_phone'])) {
                 $errors['customer_phone'] = 'Invalid phone number format.';
             }
         }
@@ -360,7 +357,7 @@ class PhoneService {
         if (!$isUpdate || array_key_exists('booking_date', $data)) {
             if (empty($data['booking_date'] ?? '')) {
                 $errors['booking_date'] = 'Booking date is required.';
-            } elseif (!Validation::validateDate($data['booking_date'])) {
+            } elseif (!$this->validateDate($data['booking_date'])) {
                 $errors['booking_date'] = 'Invalid date format. Use YYYY-MM-DD.';
             }
         }
@@ -368,7 +365,7 @@ class PhoneService {
         if (!$isUpdate || array_key_exists('booking_time', $data)) {
             if (empty($data['booking_time'] ?? '')) {
                 $errors['booking_time'] = 'Booking time is required.';
-            } elseif (!Validation::validateTime($data['booking_time'])) {
+            } elseif (!$this->validateTime($data['booking_time'])) {
                 $errors['booking_time'] = 'Invalid time format. Use HH:MM:SS.';
             }
         }
@@ -381,6 +378,29 @@ class PhoneService {
         }
 
         return $errors;
+    }
+
+    /**
+     * Validate phone number format
+     */
+    private function validatePhone(string $phone): bool {
+        // Basic phone validation - allows international formats
+        $cleaned = preg_replace('/\s+/', '', $phone);
+        return preg_match('/^[\+]?[1-9][\d]{0,15}$/', $cleaned) === 1;
+    }
+
+    /**
+     * Validate date format (YYYY-MM-DD)
+     */
+    private function validateDate(string $date): bool {
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) === 1;
+    }
+
+    /**
+     * Validate time format (HH:MM:SS)
+     */
+    private function validateTime(string $time): bool {
+        return preg_match('/^\d{2}:\d{2}:\d{2}$/', $time) === 1;
     }
 
     /**
