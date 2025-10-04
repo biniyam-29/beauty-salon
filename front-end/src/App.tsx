@@ -20,6 +20,7 @@ import { RemindersPage } from "./pages/reception/RemindersPage";
 import AssignedPatientsPage from "./pages/admin/AdminDashboardPage";
 import HomePage from "./pages/HomePage";
 import PrescriptionFulfillmentPage from "./pages/reception/ProductDeductionPage";
+import PhoneBookingPage from "./pages/reception/PhoneBookingPage";
 
 // --- Font Import Component ---
 const FontLink = () => (
@@ -146,6 +147,15 @@ const AppRoutes: React.FC = () => {
             <GradientLayout>
               <PrescriptionFulfillmentPage />
             </GradientLayout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/reception/phone-book"
+        element={
+          <RequireAuth role="reception">
+            <PhoneBookingPage />
           </RequireAuth>
         }
       />

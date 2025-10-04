@@ -99,7 +99,7 @@ switch ($module) {
     case 'profile':
         $controller = new ProfileController();
         break;
-    case 'phonebooking': // ✅ added phone module
+    case 'phone-bookings': // ✅ added phone module
         $controller = new PhoneController();
         break;
     default:
