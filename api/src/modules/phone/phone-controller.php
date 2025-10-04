@@ -23,10 +23,10 @@ class PhoneController implements ControllerInterface {
         //     return json_encode(['message' => 'Unauthorized']);
         // }
 
-        if (!RoleGuard::roleGuard('reception') && !RoleGuard::roleGuard('super-admin') && !RoleGuard::roleGuard('admin')) {
-             http_response_code(403);
-             return json_encode(['message' => 'Forbidden: You do not have permission to access phone bookings.']);
-        }
+        // if (!RoleGuard::roleGuard('reception') && !RoleGuard::roleGuard('super-admin') && !RoleGuard::roleGuard('admin')) {
+        //      http_response_code(403);
+        //      return json_encode(['message' => 'Forbidden: You do not have permission to access phone bookings.']);
+        // }
 
         $id = $paths[1] ?? null;
 
