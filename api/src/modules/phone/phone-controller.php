@@ -18,10 +18,10 @@ class PhoneController implements ControllerInterface {
     }
 
     public function handleRequest(array $paths, string $method, ?string $body) {
-        if (!AuthGuard::authenticate()) {
-            http_response_code(401);
-            return json_encode(['message' => 'Unauthorized']);
-        }
+        // if (!AuthGuard::authenticate()) {
+        //     http_response_code(401);
+        //     return json_encode(['message' => 'Unauthorized']);
+        // }
 
         if (!RoleGuard::roleGuard('reception') && !RoleGuard::roleGuard('super-admin') && !RoleGuard::roleGuard('admin')) {
              http_response_code(403);
