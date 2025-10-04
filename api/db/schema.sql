@@ -287,26 +287,19 @@ CREATE TABLE IF NOT EXISTS `password_reset` (
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `phone_bookings` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `reception_id` INT UNSIGNED NOT NULL COMMENT 'Receptionist who took the phone booking',
-  `customer_name` VARCHAR(255) NOT NULL COMMENT 'Customer name as provided during phone call',
-  `customer_phone` VARCHAR(20) NOT NULL COMMENT 'Customer phone number for the booking',
-  `service_name` VARCHAR(100) NOT NULL COMMENT 'Type of service booked (e.g., haircut, facial, nails, etc.)',
-  `booking_date` DATE NOT NULL COMMENT 'Scheduled date of the booking',
-  `booking_time` TIME NOT NULL COMMENT 'Scheduled time of the booking',
-  `notes` TEXT NULL COMMENT 'Optional remarks, special requests, or additional details',
-  `status` ENUM('scheduled', 'completed', 'cancelled', 'no_show') NOT NULL DEFAULT 'scheduled' COMMENT 'Current status of the booking',
-  `is_expired` BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Flag indicating if booking date has passed',
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp',
+  `reception_id` INT UNSIGNED NOT NULL,
+  `customer_name` VARCHAR(255) NOT NULL,
+  `customer_phone` VARCHAR(20) NOT NULL,
+  `service_name` VARCHAR(100) NOT NULL,
+  `booking_date` DATE NOT NULL,
+  `booking_time` TIME NOT NULL,
+  `notes` TEXT NULL,
+  `status`ENUM('scheduled', 'completed', 'cancelled', 'no_show') NOT NULL DEFAULT 'scheduled',
+  `is_expired` BOOLEAN NOT NULL DEFAULT FALSE,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   
   PRIMARY KEY (`id`),
-  
-  -- Foreign key constraints
-    
-  CONSTRAINT `fk_pb_reception` 
-    FOREIGN KEY (`reception_id`) 
-    REFERENCES `users`(`id`) 
-    ON DELETE SET NULL 
-    ON UPDATE CASCADE,
   
   -- Indexes for performance
   INDEX `idx_phone_bookings_date` (`booking_date`),
@@ -315,6 +308,7 @@ CREATE TABLE IF NOT EXISTS `phone_bookings` (
   INDEX `idx_phone_bookings_phone` (`customer_phone`),
   INDEX `idx_phone_bookings_date_time` (`booking_date`, `booking_time`),
   INDEX `idx_phone_bookings_expired` (`is_expired`),
-  INDEX `idx_phone_bookings_created` (`created_at`)
+  INDEX `idx_phone_bookings_created` (`created_at`),
+  INDEX `idx_phone_bookings_updated` (`updated_at`)
   
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

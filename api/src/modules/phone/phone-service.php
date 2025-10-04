@@ -73,7 +73,7 @@ class PhoneService {
         $sort_order = $_GET['sort_order'] ?? 'DESC';
 
         // Validate sort parameters
-        $allowed_sorts = ['booking_date', 'booking_time', 'created_at', 'customer_name'];
+        $allowed_sorts = ['booking_date', 'booking_time', 'created_at', 'customer_name', 'updated_at'];
         $sort_by = in_array($sort_by, $allowed_sorts) ? $sort_by : 'booking_date';
         $sort_order = strtoupper($sort_order) === 'ASC' ? 'ASC' : 'DESC';
 
@@ -143,17 +143,42 @@ class PhoneService {
                 throw new Exception('Unable to determine receptionist ID.');
             }
 
-            // Check if customer exists by phone
-            $customer_id = $this->findCustomerByPhone($data['customer_phone']);
+            // Verify the receptionist exists and has correct role
+            $userStmt = $this->conn->prepare(
+                "SELECT id, role FROM users WHERE id = :user_id AND role IN ('reception', 'super-admin', 'admin') AND is_active = 1"
+            );
+            $userStmt->execute([':user_id' => $reception_id]);
+            $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$user) {
+                throw new Exception('Invalid receptionist ID or insufficient permissions.');
+            }
+
+            // Check if booking already exists for same customer, date, and time
+            $existingStmt = $this->conn->prepare(
+                "SELECT id FROM phone_bookings 
+                 WHERE customer_phone = :customer_phone 
+                 AND booking_date = :booking_date 
+                 AND booking_time = :booking_time 
+                 AND status != 'cancelled'"
+            );
+            $existingStmt->execute([
+                ':customer_phone' => $data['customer_phone'],
+                ':booking_date' => $data['booking_date'],
+                ':booking_time' => $data['booking_time']
+            ]);
+            
+            if ($existingStmt->fetch()) {
+                throw new Exception('A booking already exists for this customer at the selected date and time.');
+            }
 
             $stmt = $this->conn->prepare(
                 "INSERT INTO phone_bookings 
-                (customer_id, reception_id, customer_name, customer_phone, service_name, booking_date, booking_time, notes, status, is_expired) 
-                VALUES (:customer_id, :reception_id, :customer_name, :customer_phone, :service_name, :booking_date, :booking_time, :notes, 'scheduled', FALSE)"
+                (reception_id, customer_name, customer_phone, service_name, booking_date, booking_time, notes, status, is_expired) 
+                VALUES (:reception_id, :customer_name, :customer_phone, :service_name, :booking_date, :booking_time, :notes, 'scheduled', FALSE)"
             );
 
             $stmt->execute([
-                ':customer_id' => $customer_id,
                 ':reception_id' => $reception_id,
                 ':customer_name' => $data['customer_name'],
                 ':customer_phone' => $data['customer_phone'],
@@ -333,13 +358,17 @@ class PhoneService {
         }
 
         if (!$isUpdate || array_key_exists('booking_date', $data)) {
-            if (!empty($data['booking_date']) && !Validation::validateDate($data['booking_date'])) {
+            if (empty($data['booking_date'] ?? '')) {
+                $errors['booking_date'] = 'Booking date is required.';
+            } elseif (!Validation::validateDate($data['booking_date'])) {
                 $errors['booking_date'] = 'Invalid date format. Use YYYY-MM-DD.';
             }
         }
 
         if (!$isUpdate || array_key_exists('booking_time', $data)) {
-            if (!empty($data['booking_time']) && !Validation::validateTime($data['booking_time'])) {
+            if (empty($data['booking_time'] ?? '')) {
+                $errors['booking_time'] = 'Booking time is required.';
+            } elseif (!Validation::validateTime($data['booking_time'])) {
                 $errors['booking_time'] = 'Invalid time format. Use HH:MM:SS.';
             }
         }
@@ -352,17 +381,6 @@ class PhoneService {
         }
 
         return $errors;
-    }
-
-    /**
-     * Find customer by phone number
-     */
-    private function findCustomerByPhone(string $phone): ?int {
-        $stmt = $this->conn->prepare("SELECT id FROM customers WHERE phone = :phone");
-        $stmt->execute([':phone' => $phone]);
-        $customer = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        return $customer ? $customer['id'] : null;
     }
 
     /**
