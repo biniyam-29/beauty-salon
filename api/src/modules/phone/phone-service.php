@@ -3,16 +3,20 @@ namespace src\modules\phone;
 
 header("Content-Type: application/json");
 require_once __DIR__ . '/../../config/Database.php';
+require_once __DIR__ . '/../auth/guards/auth-guard.php';
 
 use src\config\Database;
+use src\modules\auth\guards\AuthGuard;
 use PDO;
 use Exception;
 
 class PhoneService {
     private PDO $conn;
+    private ?array $currentUser;
 
     public function __construct() {
         $this->conn = Database::connect();
+        $this->currentUser = AuthGuard::authenticate('guard');
     }
 
     /**
@@ -115,7 +119,19 @@ class PhoneService {
      * Create a new phone booking
      */
     public function createPhoneBooking(string $body): string {
+        // Check authentication first
+        if (!$this->currentUser) {
+            http_response_code(401);
+            return json_encode(['error' => 'Unauthorized']);
+        }
+
         $data = json_decode($body, true);
+
+        // Check if JSON decoding failed
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            http_response_code(400);
+            return json_encode(['error' => 'Invalid JSON data: ' . json_last_error_msg()]);
+        }
 
         // Validate required fields
         $validationErrors = $this->validateBookingData($data);
@@ -134,11 +150,8 @@ class PhoneService {
         try {
             $this->conn->beginTransaction();
 
-            // Get current user ID from session
-            $reception_id = $_SESSION['user_id'] ?? null;
-            if (!$reception_id) {
-                throw new Exception('Unable to determine receptionist ID.');
-            }
+            // Use the authenticated user's ID
+            $reception_id = $this->currentUser['id'];
 
             // Verify the receptionist exists and has correct role
             $userStmt = $this->conn->prepare(
@@ -177,12 +190,12 @@ class PhoneService {
 
             $stmt->execute([
                 ':reception_id' => $reception_id,
-                ':customer_name' => $data['customer_name'],
-                ':customer_phone' => $data['customer_phone'],
-                ':service_name' => $data['service_name'],
+                ':customer_name' => trim($data['customer_name']),
+                ':customer_phone' => trim($data['customer_phone']),
+                ':service_name' => trim($data['service_name']),
                 ':booking_date' => $data['booking_date'],
                 ':booking_time' => $data['booking_time'],
-                ':notes' => $data['notes'] ?? null
+                ':notes' => isset($data['notes']) ? trim($data['notes']) : null
             ]);
 
             $bookingId = $this->conn->lastInsertId();
@@ -192,6 +205,7 @@ class PhoneService {
 
             $this->conn->commit();
 
+            http_response_code(201);
             return json_encode([
                 'message' => 'Phone booking created successfully.',
                 'booking_id' => $bookingId
@@ -208,7 +222,19 @@ class PhoneService {
      * Update an existing phone booking
      */
     public function updatePhoneBooking(string $id, string $body): string {
+        // Check authentication first
+        if (!$this->currentUser) {
+            http_response_code(401);
+            return json_encode(['error' => 'Unauthorized']);
+        }
+
         $data = json_decode($body, true);
+
+        // Check if JSON decoding failed
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            http_response_code(400);
+            return json_encode(['error' => 'Invalid JSON data: ' . json_last_error_msg()]);
+        }
 
         // Validate the booking exists
         $existingBooking = $this->getBookingRecord($id);
@@ -239,7 +265,7 @@ class PhoneService {
             foreach ($allowedFields as $field) {
                 if (array_key_exists($field, $data)) {
                     $updates[] = "{$field} = :{$field}";
-                    $params[":{$field}"] = $data[$field];
+                    $params[":{$field}"] = $field === 'notes' ? ($data[$field] ? trim($data[$field]) : null) : trim($data[$field]);
                 }
             }
 
@@ -288,6 +314,12 @@ class PhoneService {
      * Delete a phone booking
      */
     public function deletePhoneBooking(string $id): string {
+        // Check authentication first
+        if (!$this->currentUser) {
+            http_response_code(401);
+            return json_encode(['error' => 'Unauthorized']);
+        }
+
         // Validate the booking exists
         $existingBooking = $this->getBookingRecord($id);
         if (!$existingBooking) {
@@ -333,7 +365,7 @@ class PhoneService {
         if (!$isUpdate || array_key_exists('customer_name', $data)) {
             if (empty(trim($data['customer_name'] ?? ''))) {
                 $errors['customer_name'] = 'Customer name is required.';
-            } elseif (strlen($data['customer_name']) > 255) {
+            } elseif (strlen(trim($data['customer_name'])) > 255) {
                 $errors['customer_name'] = 'Customer name must not exceed 255 characters.';
             }
         }
@@ -349,7 +381,7 @@ class PhoneService {
         if (!$isUpdate || array_key_exists('service_name', $data)) {
             if (empty(trim($data['service_name'] ?? ''))) {
                 $errors['service_name'] = 'Service name is required.';
-            } elseif (strlen($data['service_name']) > 100) {
+            } elseif (strlen(trim($data['service_name'])) > 100) {
                 $errors['service_name'] = 'Service name must not exceed 100 characters.';
             }
         }
@@ -436,14 +468,13 @@ class PhoneService {
      */
     private function logAction(string $action, string $details): void {
         try {
-            $user_id = $_SESSION['user_id'] ?? null;
-            if ($user_id) {
+            if ($this->currentUser && isset($this->currentUser['id'])) {
                 $stmt = $this->conn->prepare(
                     "INSERT INTO audit_log (user_id, action, details) 
                      VALUES (:user_id, :action, :details)"
                 );
                 $stmt->execute([
-                    ':user_id' => $user_id,
+                    ':user_id' => $this->currentUser['id'],
                     ':action' => $action,
                     ':details' => $details
                 ]);

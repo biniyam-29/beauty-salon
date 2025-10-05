@@ -18,15 +18,8 @@ class PhoneController implements ControllerInterface {
     }
 
     public function handleRequest(array $paths, string $method, ?string $body) {
-        // if (!AuthGuard::authenticate()) {
-        //     http_response_code(401);
-        //     return json_encode(['message' => 'Unauthorized']);
-        // }
-
-        // if (!RoleGuard::roleGuard('reception') && !RoleGuard::roleGuard('super-admin') && !RoleGuard::roleGuard('admin')) {
-        //      http_response_code(403);
-        //      return json_encode(['message' => 'Forbidden: You do not have permission to access phone bookings.']);
-        // }
+        // Authentication is now handled in the PhoneService constructor
+        // No need for additional auth checks here
 
         $id = $paths[1] ?? null;
 
