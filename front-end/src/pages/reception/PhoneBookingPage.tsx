@@ -15,7 +15,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit3,
-  Loader
+  Loader,
+  X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -100,7 +101,7 @@ const PhoneBookingPage: React.FC = () => {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`${API_BASE_URL}/phone-bookings`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -297,7 +298,7 @@ const PhoneBookingPage: React.FC = () => {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('auth_token');
       const url = editingBooking 
         ? `${API_BASE_URL}/phone-bookings/${editingBooking.id}`
         : `${API_BASE_URL}/phone-bookings`;
@@ -313,13 +314,22 @@ const PhoneBookingPage: React.FC = () => {
         body: JSON.stringify(formData)
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save booking');
+        // Handle validation errors from backend
+        if (response.status === 400 && result.details) {
+          // Convert backend validation errors to frontend format
+          const backendErrors: Record<string, string> = {};
+          Object.keys(result.details).forEach(key => {
+            backendErrors[key] = result.details[key];
+          });
+          setErrors(backendErrors);
+          throw new Error('Please fix the validation errors below');
+        }
+        throw new Error(result.error || 'Failed to save booking');
       }
 
-      await response.json();
-      
       toast.success(editingBooking ? 'Booking updated successfully!' : 'Booking saved successfully!');
       
       // Reset form and refresh bookings
@@ -329,7 +339,11 @@ const PhoneBookingPage: React.FC = () => {
     } catch (error) {
       console.error('Error saving booking:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to save booking';
-      toast.error(errorMessage);
+      
+      // Only show toast if it's not a validation error (validation errors are shown in form)
+      if (!errorMessage.includes('validation errors')) {
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -350,6 +364,17 @@ const PhoneBookingPage: React.FC = () => {
     setEditingBooking(null);
     setErrors({});
   };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setFilterService('all');
+    setFilterDate('');
+    setFilterStatus('all');
+    toast.success('Filters cleared');
+  };
+
+  // Check if any filter is active
+  const isFilterActive = filterService !== 'all' || filterDate !== '' || filterStatus !== 'all';
 
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -392,7 +417,7 @@ const PhoneBookingPage: React.FC = () => {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`${API_BASE_URL}/phone-bookings/${bookingToRemove.id}`, {
         method: 'DELETE',
         headers: {
@@ -427,7 +452,7 @@ const PhoneBookingPage: React.FC = () => {
   // Update booking status
   const updateBookingStatus = async (bookingId: number, newStatus: PhoneBooking['status']) => {
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`${API_BASE_URL}/phone-bookings/${bookingId}`, {
         method: 'PUT',
         headers: {
@@ -863,6 +888,22 @@ const PhoneBookingPage: React.FC = () => {
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm"
               />
 
+              {/* Clear Filters Button - NEW */}
+              {isFilterActive && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={clearFilters}
+                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm flex items-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  Clear Filters
+                </motion.button>
+              )}
+
               <button
                 onClick={fetchBookings}
                 disabled={loading}
@@ -892,8 +933,19 @@ const PhoneBookingPage: React.FC = () => {
                     <Calendar className="w-16 h-16 mx-auto" />
                   </div>
                   <p className="text-gray-500 text-lg">
-                    No bookings found — register one now!
+                    {isFilterActive 
+                      ? 'No bookings match your filters. Try changing your filters or clear them to see all bookings.' 
+                      : 'No bookings found — register one now!'
+                    }
                   </p>
+                  {isFilterActive && (
+                    <button
+                      onClick={clearFilters}
+                      className="mt-4 px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
                 </motion.div>
               ) : (
                 filteredBookings.map((booking, index) => (

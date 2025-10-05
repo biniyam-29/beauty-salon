@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LogOut, Sparkles, Clock, Menu, X } from "lucide-react";
+import { LogOut, Sparkles, Clock, Menu, X, Phone } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 // --- Custom SVG Icons for a Unique Salon Vibe ---
@@ -119,6 +119,11 @@ const fetchTodaysSchedule = async (): Promise<Appointment[]> => {
 
 // --- Data for the Page ---
 const navLinks: NavLinkItem[] = [
+  {
+    label: "Note a Phone Call",
+    icon: <Phone />,
+    path: "/reception/phone-book",
+  },
   {
     label: "New Client",
     icon: <ClientPlusIcon />,
