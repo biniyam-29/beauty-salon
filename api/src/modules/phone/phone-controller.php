@@ -12,14 +12,28 @@ use src\modules\auth\guards\RoleGuard;
 
 class PhoneController implements ControllerInterface {
     private PhoneService $phoneService;
+    private ?array $currentUser;
 
     public function __construct() {
         $this->phoneService = new PhoneService();
+        $this->currentUser = AuthGuard::authenticate('guard');
     }
 
     public function handleRequest(array $paths, string $method, ?string $body) {
-        // Authentication is now handled in the PhoneService constructor
-        // No need for additional auth checks here
+        // Check authentication for all methods except possibly GET
+        if (!$this->currentUser) {
+            http_response_code(401);
+            return json_encode(['error' => 'Unauthorized']);
+        }
+
+        // Check role permissions for write operations
+        if ($method !== 'GET') {
+            $allowedRoles = ['reception', 'super-admin', 'admin'];
+            if (!in_array($this->currentUser['role'] ?? '', $allowedRoles)) {
+                http_response_code(403);
+                return json_encode(['error' => 'Forbidden: You do not have permission to access phone bookings.']);
+            }
+        }
 
         $id = $paths[1] ?? null;
 
@@ -32,7 +46,7 @@ class PhoneController implements ControllerInterface {
                     http_response_code(400);
                     return json_encode(['error' => 'Bad Request: Body is required.']);
                 }
-                return $this->phoneService->createPhoneBooking($body);
+                return $this->phoneService->createPhoneBooking($body, $this->currentUser);
 
             case 'PUT':
                 if (!$id) {
@@ -43,14 +57,14 @@ class PhoneController implements ControllerInterface {
                     http_response_code(400);
                     return json_encode(['error' => 'Bad Request: Body is required for update.']);
                 }
-                return $this->phoneService->updatePhoneBooking($id, $body);
+                return $this->phoneService->updatePhoneBooking($id, $body, $this->currentUser);
 
             case 'DELETE':
                 if (!$id) {
                     http_response_code(400);
                     return json_encode(['error' => 'Bad Request: Booking ID is required for delete.']);
                 }
-                return $this->phoneService->deletePhoneBooking($id);
+                return $this->phoneService->deletePhoneBooking($id, $this->currentUser);
 
             default:
                 http_response_code(405);

@@ -3,20 +3,16 @@ namespace src\modules\phone;
 
 header("Content-Type: application/json");
 require_once __DIR__ . '/../../config/Database.php';
-require_once __DIR__ . '/../auth/guards/auth-guard.php';
 
 use src\config\Database;
-use src\modules\auth\guards\AuthGuard;
 use PDO;
 use Exception;
 
 class PhoneService {
     private PDO $conn;
-    private ?array $currentUser;
 
     public function __construct() {
         $this->conn = Database::connect();
-        $this->currentUser = AuthGuard::authenticate('guard');
     }
 
     /**
@@ -118,13 +114,7 @@ class PhoneService {
     /**
      * Create a new phone booking
      */
-    public function createPhoneBooking(string $body): string {
-        // Check authentication first
-        if (!$this->currentUser) {
-            http_response_code(401);
-            return json_encode(['error' => 'Unauthorized']);
-        }
-
+    public function createPhoneBooking(string $body, array $currentUser): string {
         $data = json_decode($body, true);
 
         // Check if JSON decoding failed
@@ -151,7 +141,7 @@ class PhoneService {
             $this->conn->beginTransaction();
 
             // Use the authenticated user's ID
-            $reception_id = $this->currentUser['id'];
+            $reception_id = $currentUser['id'];
 
             // Verify the receptionist exists and has correct role
             $userStmt = $this->conn->prepare(
@@ -201,7 +191,7 @@ class PhoneService {
             $bookingId = $this->conn->lastInsertId();
 
             // Log the action
-            $this->logAction('CREATE', "Created phone booking #{$bookingId} for {$data['customer_name']}");
+            $this->logAction('CREATE', "Created phone booking #{$bookingId} for {$data['customer_name']}", $currentUser);
 
             $this->conn->commit();
 
@@ -221,13 +211,7 @@ class PhoneService {
     /**
      * Update an existing phone booking
      */
-    public function updatePhoneBooking(string $id, string $body): string {
-        // Check authentication first
-        if (!$this->currentUser) {
-            http_response_code(401);
-            return json_encode(['error' => 'Unauthorized']);
-        }
-
+    public function updatePhoneBooking(string $id, string $body, array $currentUser): string {
         $data = json_decode($body, true);
 
         // Check if JSON decoding failed
@@ -297,7 +281,7 @@ class PhoneService {
             }
 
             // Log the action
-            $this->logAction('UPDATE', "Updated phone booking #{$id}");
+            $this->logAction('UPDATE', "Updated phone booking #{$id}", $currentUser);
 
             $this->conn->commit();
 
@@ -313,13 +297,7 @@ class PhoneService {
     /**
      * Delete a phone booking
      */
-    public function deletePhoneBooking(string $id): string {
-        // Check authentication first
-        if (!$this->currentUser) {
-            http_response_code(401);
-            return json_encode(['error' => 'Unauthorized']);
-        }
-
+    public function deletePhoneBooking(string $id, array $currentUser): string {
         // Validate the booking exists
         $existingBooking = $this->getBookingRecord($id);
         if (!$existingBooking) {
@@ -343,7 +321,7 @@ class PhoneService {
             if ($existingBooking['is_expired']) {
                 $logMessage .= " (EXPIRED BOOKING)";
             }
-            $this->logAction('DELETE', $logMessage);
+            $this->logAction('DELETE', $logMessage, $currentUser);
 
             $this->conn->commit();
 
@@ -466,15 +444,15 @@ class PhoneService {
     /**
      * Log actions to audit log
      */
-    private function logAction(string $action, string $details): void {
+    private function logAction(string $action, string $details, array $currentUser): void {
         try {
-            if ($this->currentUser && isset($this->currentUser['id'])) {
+            if (isset($currentUser['id'])) {
                 $stmt = $this->conn->prepare(
                     "INSERT INTO audit_log (user_id, action, details) 
                      VALUES (:user_id, :action, :details)"
                 );
                 $stmt->execute([
-                    ':user_id' => $this->currentUser['id'],
+                    ':user_id' => $currentUser['id'],
                     ':action' => $action,
                     ':details' => $details
                 ]);
