@@ -16,11 +16,13 @@ class PhoneController implements ControllerInterface {
 
     public function __construct() {
         $this->phoneService = new PhoneService();
-        $this->currentUser = AuthGuard::authenticate('guard');
+        $userObject = AuthGuard::authenticate('guard');
+        // Convert stdClass to array
+        $this->currentUser = $userObject ? (array)$userObject : null;
     }
 
     public function handleRequest(array $paths, string $method, ?string $body) {
-        // Check authentication for all methods except possibly GET
+        // Check authentication for all methods
         if (!$this->currentUser) {
             http_response_code(401);
             return json_encode(['error' => 'Unauthorized']);
