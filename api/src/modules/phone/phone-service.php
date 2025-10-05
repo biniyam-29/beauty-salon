@@ -123,6 +123,9 @@ class PhoneService {
             return json_encode(['error' => 'Invalid JSON data: ' . json_last_error_msg()]);
         }
 
+        // ✅ FIXED: Normalize time format BEFORE validation
+        $data = $this->normalizeTimeFormat($data);
+
         // Validate required fields
         $validationErrors = $this->validateBookingData($data);
         if (!empty($validationErrors)) {
@@ -219,6 +222,9 @@ class PhoneService {
             http_response_code(400);
             return json_encode(['error' => 'Invalid JSON data: ' . json_last_error_msg()]);
         }
+
+        // ✅ FIXED: Normalize time format BEFORE validation
+        $data = $this->normalizeTimeFormat($data);
 
         // Validate the booking exists
         $existingBooking = $this->getBookingRecord($id);
@@ -376,7 +382,7 @@ class PhoneService {
             if (empty($data['booking_time'] ?? '')) {
                 $errors['booking_time'] = 'Booking time is required.';
             } elseif (!$this->validateTime($data['booking_time'])) {
-                $errors['booking_time'] = 'Invalid time format. Use HH:MM:SS.';
+                $errors['booking_time'] = 'Invalid time format. Use HH:MM:SS or HH:MM.';
             }
         }
 
@@ -388,6 +394,16 @@ class PhoneService {
         }
 
         return $errors;
+    }
+
+    /**
+     * Normalize time format from HH:MM to HH:MM:SS
+     */
+    private function normalizeTimeFormat(array $data): array {
+        if (isset($data['booking_time']) && preg_match('/^\d{2}:\d{2}$/', $data['booking_time'])) {
+            $data['booking_time'] = $data['booking_time'] . ':00';
+        }
+        return $data;
     }
 
     /**
@@ -407,10 +423,10 @@ class PhoneService {
     }
 
     /**
-     * Validate time format (HH:MM:SS)
+     * Validate time format (HH:MM:SS or HH:MM)
      */
     private function validateTime(string $time): bool {
-        return preg_match('/^\d{2}:\d{2}:\d{2}$/', $time) === 1;
+        return preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $time) === 1;
     }
 
     /**
