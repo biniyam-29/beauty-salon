@@ -84,8 +84,13 @@ class CustomerService {
                 ':current_prescription' => $profile['current_prescription'] ?? null,
                 ':other_conditions' => $profile['other_conditions'] ?? null,
                 ':other_medication' => $profile['other_medication'] ?? null,
-                ':smokes' => $profile['smokes'] ?? 0,
-                ':drinks' => $profile['drinks'] ?? 0
+                ':drinks_or_smokes' => $profile['smdrinks_or_smokesokes'] ?? 0,
+                ':skin_care_history' => $profile['skin_care_history'] ?? null,
+                ':previous_treatment_likes' => $profile['previous_treatment_likes'] ?? null,
+                ':vitamin_a_derivatives' => $profile['vitamin_a_derivatives'] ?? null,
+                ':recent_botox_fillers' => $profile['recent_botox_fillers'] ?? 0,
+                ':supplements_details' => $profile['supplements_details'] ?? null,
+                ':prescription_meds' => $profile['prescription_meds'] ?? null
             ]);
 
             // 3. Insert into `customer_skin_concerns`
