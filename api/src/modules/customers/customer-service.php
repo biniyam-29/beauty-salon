@@ -64,8 +64,55 @@ class CustomerService {
             // 2. Insert into `customer_profile` table
             $profile = $data['profile'] ?? [];
             $stmt = $this->conn->prepare(
-                "INSERT INTO customer_profile (customer_id, skin_type, skin_feel, sun_exposure, foundation_type, healing_profile, bruises_easily, used_products, uses_retinoids_acids, recent_dermal_fillers, previous_acne_medication, known_allergies_details, dietary_supplements, current_prescription, other_conditions, other_medication, smokes, drinks)
-                 VALUES (:customer_id, :skin_type, :skin_feel, :sun_exposure, :foundation_type, :healing_profile, :bruises_easily, :used_products, :uses_retinoids_acids, :recent_dermal_fillers, :previous_acne_medication, :known_allergies_details, :dietary_supplements, :current_prescription, :other_conditions, :other_medication, :smokes, :drinks)"
+                "INSERT INTO customer_profile (
+                    customer_id,
+                    skin_type,
+                    skin_feel,
+                    sun_exposure,
+                    foundation_type,
+                    healing_profile,
+                    bruises_easily,
+                    used_products,
+                    uses_retinoids_acids,
+                    recent_dermal_fillers,
+                    previous_acne_medication,
+                    known_allergies_details,
+                    dietary_supplements,
+                    current_prescription,
+                    other_conditions,
+                    other_medication,
+                    drinks_or_smokes,
+                    skin_care_history,
+                    previous_treatment_likes,
+                    vitamin_a_derivatives,
+                    recent_botox_fillers,
+                    supplements_details,
+                    prescription_meds
+                ) VALUES (
+                    :customer_id,
+                    :skin_type,
+                    :skin_feel,
+                    :sun_exposure,
+                    :foundation_type,
+                    :healing_profile,
+                    :bruises_easily,
+                    :used_products,
+                    :uses_retinoids_acids,
+                    :recent_dermal_fillers,
+                    :previous_acne_medication,
+                    :known_allergies_details,
+                    :dietary_supplements,
+                    :current_prescription,
+                    :other_conditions,
+                    :other_medication,
+                    :drinks_or_smokes,
+                    :skin_care_history,
+                    :previous_treatment_likes,
+                    :vitamin_a_derivatives,
+                    :recent_botox_fillers,
+                    :supplements_details,
+                    :prescription_meds
+                )"
             );
             $stmt->execute([
                 ':customer_id' => $customerId,
@@ -84,7 +131,7 @@ class CustomerService {
                 ':current_prescription' => $profile['current_prescription'] ?? null,
                 ':other_conditions' => $profile['other_conditions'] ?? null,
                 ':other_medication' => $profile['other_medication'] ?? null,
-                ':drinks_or_smokes' => $profile['smdrinks_or_smokesokes'] ?? 0,
+                ':drinks_or_smokes' => $profile['drinks_or_smokes'] ?? 0,
                 ':skin_care_history' => $profile['skin_care_history'] ?? null,
                 ':previous_treatment_likes' => $profile['previous_treatment_likes'] ?? null,
                 ':vitamin_a_derivatives' => $profile['vitamin_a_derivatives'] ?? null,
