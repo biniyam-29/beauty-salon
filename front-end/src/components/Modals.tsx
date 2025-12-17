@@ -222,7 +222,7 @@ export const UserModal: React.FC<UserModalProps> = ({
 
     try {
       const response = await fetch(
-        "https://beauty-api.biniyammarkos.com/users",
+        "https://api.in2skincare.com/users",
         {
           method: "POST",
           headers: {

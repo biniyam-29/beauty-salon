@@ -26,7 +26,7 @@ const TrashIcon = () => (
 );
 
 // --- API Functions ---
-const BASE_URL = "https://beauty-api.biniyammarkos.com";
+const BASE_URL = "https://api.in2skincare.com";
 
 const getAuthToken = () => {
   const token = localStorage.getItem("auth_token");

@@ -1,6 +1,6 @@
 import type { Patient, Consultation, Prescription, Product, Image } from "../types";
 
-const API_BASE_URL = "https://beauty-api.biniyammarkos.com";
+const API_BASE_URL = "https://api.in2skincare.com";
 
 const getAuthToken = () => {
   const token = localStorage.getItem("auth_token");

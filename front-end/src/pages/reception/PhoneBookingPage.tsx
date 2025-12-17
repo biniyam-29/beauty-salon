@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE_URL = "https://beauty-api.biniyammarkos.com";
+const API_BASE_URL = "https://api.in2skincare.com";
 
 // Type definitions
 interface PhoneBooking {

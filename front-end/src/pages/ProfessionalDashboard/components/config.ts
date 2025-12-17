@@ -1,4 +1,4 @@
-export const baseUrl = "https://beauty-api.biniyammarkos.com";
+export const baseUrl = "https://api.in2skincare.com";
 
 export function getAuthToken(): string | null {
   if (typeof window !== "undefined") {
