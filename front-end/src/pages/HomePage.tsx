@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import HomeBg from "../assets/hero-image.png";
 
 // The main App component, also defined as a React.FC for type safety.
 const HomePage: React.FC = () => {
@@ -24,7 +25,7 @@ const HomePage: React.FC = () => {
   ) => {
     const target = e.target as HTMLImageElement;
     target.onerror = null; // Prevents an infinite loop if the placeholder image also fails to load.
-    target.src = "./hero-image.png";
+    target.src = `${HomeBg}`;
   };
 
   return (
