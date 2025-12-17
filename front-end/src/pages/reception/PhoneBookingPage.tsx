@@ -984,10 +984,19 @@ const PhoneBookingPage: React.FC = () => {
 
 // Booking Card Component
 const BookingCard: React.FC<BookingCardProps> = ({ booking, index, onEdit, onRemove, onStatusUpdate }) => {
-  const isPast = new Date(`${booking.booking_date}T${booking.booking_time}`) < new Date();
-  const isExpired = booking.is_expired;
-  
-  const getStatusColor = (status: PhoneBooking['status']): string => {
+   const [year, month, day] = booking.booking_date.split('-').map(Number);
+const [hour, minute] = booking.booking_time.split(':').map(Number);
+
+const bookingDateTime = new Date(year, month - 1, day, hour, minute);
+
+const now = new Date();
+now.setSeconds(0, 0);
+
+const isPast = bookingDateTime.getTime() < now.getTime();
+const isReallyPast = booking.status === 'scheduled' && isPast;
+
+
+  const getStatusColor = (status: PhoneBooking['status']) => {
     switch (status) {
       case 'scheduled': return 'bg-blue-100 text-blue-800';
       case 'completed': return 'bg-green-100 text-green-800';
@@ -1004,7 +1013,7 @@ const BookingCard: React.FC<BookingCardProps> = ({ booking, index, onEdit, onRem
       exit={{ opacity: 0, x: -100 }}
       transition={{ duration: 0.3, delay: index * 0.1 }}
       className={`p-4 rounded-xl border-2 transition-all duration-300 ${
-        isExpired || isPast
+        isReallyPast
           ? 'border-rose-200 bg-rose-50 opacity-70' 
           : 'border-gray-100 bg-white hover:shadow-md hover:border-rose-100'
       }`}
@@ -1013,14 +1022,14 @@ const BookingCard: React.FC<BookingCardProps> = ({ booking, index, onEdit, onRem
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
             <h3 className={`font-semibold text-lg ${
-              isExpired || isPast ? 'text-rose-700 line-through' : 'text-gray-900'
+              isReallyPast ? 'text-rose-700 line-through' : 'text-gray-900'
             }`}>
               {booking.customer_name}
             </h3>
             <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(booking.status)}`}>
               {booking.status.replace('_', ' ')}
             </span>
-            {(isExpired || isPast) && booking.status === 'scheduled' && (
+            {(isReallyPast) && booking.status === 'scheduled' && (
               <CheckCircle2 className="w-5 h-5 text-rose-500" />
             )}
           </div>
@@ -1032,13 +1041,13 @@ const BookingCard: React.FC<BookingCardProps> = ({ booking, index, onEdit, onRem
             </div>
             <div className="flex items-center gap-2">
               <Scissors className="w-4 h-4" />
-              <span className={`${isExpired || isPast ? 'text-rose-600' : ''} font-medium`}>
+              <span className={`${isReallyPast ? 'text-rose-600' : ''} font-medium`}>
                 {booking.service_name}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              <span className={isExpired || isPast ? 'text-rose-600' : ''}>
+              <span className={isReallyPast ? 'text-rose-600' : ''}>
                 {new Date(`${booking.booking_date}T${booking.booking_time}`).toLocaleString()}
               </span>
             </div>
@@ -1051,7 +1060,7 @@ const BookingCard: React.FC<BookingCardProps> = ({ booking, index, onEdit, onRem
           </div>
 
           {/* Status Actions */}
-          {booking.status === 'scheduled' && !isExpired && (
+          {booking.status === 'scheduled' && !isReallyPast && (
             <div className="flex gap-2 mt-3">
               <button
                 onClick={() => onStatusUpdate(booking.id, 'completed')}
