@@ -27,6 +27,7 @@ export interface PatientProfile {
   smokes: 0 | 1;
   drinks: 0 | 1;
   updated_at: string;
+  notes?: any
 }
 
 export interface Patient {
@@ -45,9 +46,10 @@ export interface Patient {
   profile_picture: string | null;
   created_at: string;
   updated_at: string;
-  profile: PatientProfile;
+  profile: any;
   skin_concerns: { id: number; name: string }[];
   health_conditions: { id: number; name: string }[];
+  notes?: any;
 }
 
 export interface Consultation {
@@ -103,4 +105,13 @@ export interface Consultation {
   doctor_notes: string;
   doctor_name: string;
   images?: Image[]; // Add this optional property
+}
+
+export interface Note{
+  id: number;
+  note_text: string;
+  status: string;
+  created_at: string;
+  author_name: string;
+        
 }
