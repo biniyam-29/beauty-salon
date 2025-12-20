@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Product } from "../types";
-import { SearchIcon, EditIcon } from "./Icons";
+import type { Product } from "../../lib/types/types";
+import { SearchIcon, EditIcon } from "../Icons";
 import { ProductModal } from "./Modals";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
 // --- Helper Components ---

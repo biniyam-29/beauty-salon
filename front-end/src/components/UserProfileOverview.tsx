@@ -1,6 +1,6 @@
 // FILE: src/components/UserProfileOverview.tsx
 import React from "react";
-import type { User } from "../types";
+import type { User } from "../lib/types/types";
 
 interface UserProfileOverviewProps {
   activeUser: User | null;

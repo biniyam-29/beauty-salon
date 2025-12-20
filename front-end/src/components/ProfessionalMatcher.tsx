@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import type { PatientData, ProfessionalData } from "../types";
+import type { PatientData, ProfessionalData } from "../lib/types/types";
 import { dbUrl } from "../config";
 
 // =================================================================================

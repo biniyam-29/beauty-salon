@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { PatientData } from "../../types";
+import type { PatientData } from "../../lib/types/types";
 import { dbUrl } from "../../config";
 import {
   Card,

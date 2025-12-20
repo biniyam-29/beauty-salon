@@ -1,18 +1,15 @@
 import React, { useState, useRef, type SyntheticEvent, type FormEvent } from "react";
-import loginBg from "../assets/login-page-bg.png";
+import loginBg from "../../assets/login-page-bg.png";
+import { useLogin } from "../../hooks/use-auth";
 
-// Define the props for the LoginPage component for type safety.
 interface LoginPageProps {
   navigate: (path: string) => void;
   onLoginSuccess: () => void;
 }
 
-// The LoginPage component handles the authentication logic.
 const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-
-  // Type the refs to specify they will hold HTMLInputElement objects.
+  const { mutate: login, isPending: isLoading } = useLogin();
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
@@ -30,9 +27,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
    * Handles the form submission and API call.
    * @param {FormEvent<HTMLFormElement>} e - The form submission event.
    */
-  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
+  const handleLogin = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
 
     const email = emailRef.current?.value;
@@ -40,65 +36,39 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
 
     if (!email || !password) {
       setError("Please enter both email and password.");
-      setIsLoading(false);
       return;
     }
 
-    try {
-      const response = await fetch(
-        "https://api.in2skincare.com/auth/login",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
+    login(
+      { email, password },
+      {
+        onSuccess: (data) => {
+          onLoginSuccess();
+          
+          switch (data.role) {
+            case "reception":
+              navigate("/reception");
+              break;
+            case "super-admin":
+              navigate("/admin/dashboard");
+              break;
+            case "doctor":
+              navigate("/professional");
+              break;
+            default:
+              setError("Unknown user role");
+              break;
+          }
+        },
+        onError: (err) => {
+          if (err instanceof Error) {
+            setError(err.message);
+          } else {
+            setError("An unexpected error occurred.");
+          }
         }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        // Ensure errorData.message is a string, provide a fallback.
-        const message =
-          typeof errorData.message === "string"
-            ? errorData.message
-            : `Login failed with status: ${response.status}`;
-        throw new Error(message);
       }
-
-      const data = await response.json();
-
-      if (data && typeof data.token === "string") {
-        localStorage.setItem("auth_token", data.token);
-        localStorage.setItem("role", data.payload.role);
-        localStorage.setItem("user", JSON.stringify(data.payload));
-        onLoginSuccess(); // Notify parent (App.tsx) of success
-        switch (data.payload.role) {
-          case "reception":
-            navigate("/reception");
-            break;
-          case "super-admin":
-            navigate("/admin/dashboard");
-            break;
-          case "doctor":
-            navigate("/professional");
-            break;
-
-          default:
-            break;
-        }
-         // Redirect to the protected page
-      } else {
-        throw new Error("Token not found in response.");
-      }
-    } catch (err) {
-      // Type guard to ensure 'err' is an instance of Error.
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unexpected error occurred.");
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    );
   };
 
   return (
@@ -131,6 +101,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
                   className="peer w-full px-4 py-3 rounded-md bg-white/80 text-gray-800 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all"
                   placeholder="Email Address"
                   required
+                  disabled={isLoading}
                 />
                 <label
                   htmlFor="email"
@@ -148,6 +119,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
                   className="peer w-full px-4 py-3 rounded-md bg-white/80 text-gray-800 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all"
                   placeholder="Password"
                   required
+                  disabled={isLoading}
                 />
                 <label
                   htmlFor="password"
@@ -159,7 +131,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full bg-pink-700 text-white font-sans font-semibold py-3 px-8 rounded-lg hover:bg-pink-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                className="w-full bg-pink-700 text-white font-sans font-semibold py-3 px-8 rounded-lg hover:bg-pink-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isLoading}
               >
                 {isLoading ? "Logging in..." : "Log In"}

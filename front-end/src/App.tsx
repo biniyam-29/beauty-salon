@@ -14,7 +14,7 @@ import { jwtDecode } from "jwt-decode";
 import { CustomerListPage } from "./pages/reception/CustomerListPage";
 import LandingPage from "./pages/reception/LandingPage";
 import { PatientRegistrationWizard } from "./components/PatientRegistrationWizard";
-import LoginPage from "./pages/LoginPage";
+import LoginPage from "./pages/auth/LoginPage";
 import ProfessionalDashboardPage from "./pages/ProfessionalDashboard/index";
 import { RemindersPage } from "./pages/reception/RemindersPage";
 import AssignedPatientsPage from "./pages/admin/AdminDashboardPage";
