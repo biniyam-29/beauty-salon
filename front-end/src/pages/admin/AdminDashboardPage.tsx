@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import type { User } from "../../lib/types/types";
 import { Sidebar } from "../../components/admin/sidebar";
-import { UserManagementView } from "../../components/admin/UserManagement";
-import { ProductManagementView } from "../../components/admin/ProductManagement";
-import { UserModal } from "../../components/admin/Modals";
+import  UserManagementView from "../../components/admin/user/UserManagement";
+import  ProductManagementView  from "../../components/admin/product/ProductManagement";
+import { UserModal } from "../../components/admin/user/Modals";
 import { useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
-import { LookupsManagementView } from "../../components/admin/LookupsManagementView";
+import  LookupsManagementView  from "../../components/admin/lookups/LookupsManagementView";
 
 const AdminDashboard: React.FC = () => {
   const [activeUser, setActiveUser] = useState<User | null>(null);

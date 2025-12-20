@@ -1,6 +1,6 @@
 import React, { useState, useRef, type SyntheticEvent, type FormEvent } from "react";
 import loginBg from "../../assets/login-page-bg.png";
-import { useLogin } from "../../hooks/use-auth";
+import { useLogin } from "../../hooks/UseAuth";
 
 interface LoginPageProps {
   navigate: (path: string) => void;

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import type { User } from "../../lib/types/types";
-import type { Product } from "../../lib/types/product";
+import type { User } from "../../../lib/types/types";
+import type { Product } from "../../../lib/types/product";
 
 interface ProductModalProps {
   product?: Product | null;

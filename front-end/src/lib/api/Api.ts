@@ -183,11 +183,11 @@ export class BaseApiClient {
     }
   }
 
-  private clearTokens(): void {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token');
-    }
-  }
+  // private clearTokens(): void {
+  //   if (typeof window !== 'undefined') {
+  //     localStorage.removeItem('auth_token');
+  //   }
+  // }
 
   public async get<T>(endpoint: string, options?: RequestInit): Promise<T> {
     return this.request<T>(endpoint, { method: 'GET', ...options });
