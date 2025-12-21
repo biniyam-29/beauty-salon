@@ -10,6 +10,7 @@ interface ServiceModalProps {
   title: string;
   isPending?: boolean;
   isOpen: boolean;
+  error?: string | null; // Add error prop
 }
 
 export const ServiceModal: React.FC<ServiceModalProps> = ({
@@ -19,6 +20,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
   title,
   isPending = false,
   isOpen,
+  error,
 }) => {
   const [formData, setFormData] = useState<CreateServiceDto>({
     name: '',
@@ -26,6 +28,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
     price: 0,
   });
   const [localLoading, setLocalLoading] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (service) {
@@ -41,6 +44,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
         price: 0,
       });
     }
+    setValidationError(null);
   }, [service, isOpen]);
 
   const handleChange = (
@@ -50,18 +54,32 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
     const newValue =
       e.target.type === 'number' ? parseFloat(value) || 0 : value;
     setFormData((prev) => ({ ...prev, [name]: newValue }));
+    
+    // Clear validation error when user types
+    if (validationError) {
+      setValidationError(null);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Clear previous errors
+    setValidationError(null);
+    
+    // Validate required fields
     if (!formData.name.trim()) {
-      alert('Service name is required');
+      setValidationError('Service name is required');
       return;
     }
 
     if (formData.price < 0) {
-      alert('Price cannot be negative');
+      setValidationError('Price cannot be negative');
+      return;
+    }
+
+    if (formData.price === 0) {
+      setValidationError('Price must be greater than 0');
       return;
     }
 
@@ -71,9 +89,11 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
         ? { ...formData, id: service.id } as UpdateServiceDto
         : formData;
       
+      console.log('Saving service data:', saveData);
       await onSave(saveData);
-    } catch (error) {
-      console.error('Save failed:', error);
+    } catch (error: any) {
+      console.error('Save failed with error:', error);
+      setValidationError(error.message || 'Failed to save service');
     } finally {
       setLocalLoading(false);
     }
@@ -100,6 +120,15 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
+            {/* Show error messages */}
+            {(validationError || error) && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm">
+                  {validationError || error}
+                </p>
+              </div>
+            )}
+            
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Service Name *
@@ -145,13 +174,22 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
                   value={formData.price}
                   onChange={handleChange}
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-300 focus:border-transparent transition-all"
-                  placeholder="0.00"
+                  placeholder="0"
                   min="0"
-                  step="0.01"
+                  step="1"
                   required
                   disabled={isSaving}
-                />
+                  onKeyDown={(e) => {
+                    // Prevent decimal input
+                    if (e.key === '.' || e.key === ',') {
+                      e.preventDefault();
+                    }
+                  }}
+/>
               </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Price must be a whole number (no decimals)
+              </p>
             </div>
 
             {/* Show read-only fields when editing */}

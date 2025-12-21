@@ -43,11 +43,13 @@ export const useCreateService = () => {
 
   return useMutation({
     mutationFn: async (serviceData: CreateServiceDto) => {
-      // Convert price to integer (as per DB schema)
+      // Ensure price is integer
       const dataToSend = {
         ...serviceData,
-        price: Math.round(serviceData.price) // Convert to integer
+        price: Math.round(Number(serviceData.price)) || 0
       };
+      
+      console.log('Creating service with data:', dataToSend);
       
       const response = await apiClient.post<{ 
         message: string; 
@@ -59,6 +61,9 @@ export const useCreateService = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] });
     },
+    onError: (error: any) => {
+      console.error('Create service error:', error);
+    }
   });
 };
 
@@ -70,11 +75,13 @@ export const useUpdateService = () => {
     mutationFn: async (serviceData: UpdateServiceDto) => {
       const { id, ...data } = serviceData;
       
-      // Convert price to integer if provided
-      const dataToSend = data.price ? {
-        ...data,
-        price: Math.round(data.price)
-      } : data;
+      // Ensure price is integer if provided
+      const dataToSend = { ...data };
+      if (dataToSend.price !== undefined) {
+        dataToSend.price = Math.round(Number(dataToSend.price)) || 0;
+      }
+      
+      console.log('Updating service with data:', { id, data: dataToSend });
       
       const response = await apiClient.put<{ 
         message: string; 
@@ -86,6 +93,9 @@ export const useUpdateService = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] });
     },
+    onError: (error: any) => {
+      console.error('Update service error:', error);
+    }
   });
 };
 

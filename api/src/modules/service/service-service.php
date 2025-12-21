@@ -51,129 +51,6 @@ class ServiceService {
     }
 
     /**
-     * Creates a new service record.
-     * @param string|null $body The raw JSON request body.
-     * @return string JSON encoded success or error message.
-     */
-    public function create(?string $body): string {
-        $data = json_decode($body);
-        
-        // Validate required fields
-        if (!isset($data->name) || empty(trim($data->name))) {
-            http_response_code(400);
-            return json_encode(['error' => 'Bad request: name is required.']);
-        }
-        
-        if (!isset($data->price) || !is_numeric($data->price) || $data->price < 0) {
-            http_response_code(400);
-            return json_encode(['error' => 'Bad request: price must be a positive number.']);
-        }
-
-        try {
-            $stmt = $this->conn->prepare("INSERT INTO `service` (name, description, price) VALUES (:name, :description, :price)");
-            $stmt->bindValue(':name', trim($data->name), PDO::PARAM_STR);
-            $stmt->bindValue(':description', isset($data->description) ? trim($data->description) : null, PDO::PARAM_STR);
-            $stmt->bindValue(':price', $data->price, PDO::PARAM_INT);
-            $stmt->execute();
-            
-            $id = $this->conn->lastInsertId();
-            
-            // Fetch the created service to return complete data
-            $stmt = $this->conn->prepare("SELECT * FROM `service` WHERE id = :id");
-            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-            $stmt->execute();
-            $service = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            return json_encode([
-                'message' => 'Service created successfully.',
-                'service' => $service
-            ]);
-        } catch (Exception $e) {
-            // Handle unique constraint violation
-            if ($e->getCode() == 23000) {
-                 http_response_code(409); // Conflict
-                 return json_encode(['error' => 'A service with this name already exists.']);
-            }
-            http_response_code(500);
-            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
-        }
-    }
-
-    /**
-     * Updates an existing service record.
-     * @param int $id The ID of the service to update.
-     * @param string|null $body The raw JSON request body.
-     * @return string JSON encoded success or error message.
-     */
-    public function update(int $id, ?string $body): string {
-        $data = json_decode($body);
-        
-        // Check if at least one field is being updated
-        $updateFields = [];
-        $params = [':id' => $id];
-        
-        if (isset($data->name) && !empty(trim($data->name))) {
-            $updateFields[] = 'name = :name';
-            $params[':name'] = trim($data->name);
-        }
-        
-        if (isset($data->description)) {
-            $updateFields[] = 'description = :description';
-            $params[':description'] = !empty(trim($data->description)) ? trim($data->description) : null;
-        }
-        
-        if (isset($data->price) && is_numeric($data->price)) {
-            if ($data->price < 0) {
-                http_response_code(400);
-                return json_encode(['error' => 'Bad request: price must be a positive number.']);
-            }
-            $updateFields[] = 'price = :price';
-            $params[':price'] = $data->price;
-        }
-        
-        if (empty($updateFields)) {
-            http_response_code(400);
-            return json_encode(['error' => 'Bad request: No fields to update.']);
-        }
-
-        try {
-            $sql = "UPDATE `service` SET " . implode(', ', $updateFields) . " WHERE id = :id";
-            $stmt = $this->conn->prepare($sql);
-            
-            foreach ($params as $key => $value) {
-                $paramType = strpos($key, ':price') !== false ? PDO::PARAM_INT : PDO::PARAM_STR;
-                $stmt->bindValue($key, $value, $paramType);
-            }
-            
-            $stmt->execute();
-
-            if ($stmt->rowCount() === 0) {
-                 http_response_code(404);
-                 return json_encode(['error' => 'Service not found or no changes made.']);
-            }
-
-            // Fetch the updated service to return complete data
-            $stmt = $this->conn->prepare("SELECT * FROM `service` WHERE id = :id");
-            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-            $stmt->execute();
-            $service = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            return json_encode([
-                'message' => 'Service updated successfully.',
-                'service' => $service
-            ]);
-        } catch (Exception $e) {
-            // Handle unique constraint violation
-            if ($e->getCode() == 23000) {
-                 http_response_code(409); // Conflict
-                 return json_encode(['error' => 'A service with this name already exists.']);
-            }
-            http_response_code(500);
-            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
-        }
-    }
-
-    /**
      * Fetches a single service by ID.
      * @param int $id The ID of the service.
      * @return string JSON encoded service data or error message.
@@ -199,6 +76,165 @@ class ServiceService {
     }
 
     /**
+     * Creates a new service record.
+     * @param string|null $body The raw JSON request body.
+     * @return string JSON encoded success or error message.
+     */
+    public function create(?string $body): string {
+        if ($body === null) {
+            http_response_code(400);
+            return json_encode(['error' => 'Bad request: Request body is required.']);
+        }
+        
+        $data = json_decode($body);
+        
+        if ($data === null) {
+            http_response_code(400);
+            return json_encode(['error' => 'Bad request: Invalid JSON format.']);
+        }
+        
+        // Validate required fields
+        if (!isset($data->name) || empty(trim($data->name))) {
+            http_response_code(400);
+            return json_encode(['error' => 'Bad request: name is required.']);
+        }
+        
+        if (!isset($data->price) || !is_numeric($data->price)) {
+            http_response_code(400);
+            return json_encode(['error' => 'Bad request: price must be a number.']);
+        }
+        
+        if ($data->price < 0) {
+            http_response_code(400);
+            return json_encode(['error' => 'Bad request: price must be a positive number.']);
+        }
+
+        try {
+            $stmt = $this->conn->prepare("INSERT INTO `service` (name, description, price) VALUES (:name, :description, :price)");
+            $stmt->bindValue(':name', trim($data->name), PDO::PARAM_STR);
+            $stmt->bindValue(':description', isset($data->description) ? trim($data->description) : null, PDO::PARAM_STR);
+            $stmt->bindValue(':price', (int)$data->price, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            $id = $this->conn->lastInsertId();
+            
+            // Fetch the created service to return complete data
+            $stmt = $this->conn->prepare("SELECT * FROM `service` WHERE id = :id");
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+            $service = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return json_encode([
+                'message' => 'Service created successfully.',
+                'service' => $service
+            ]);
+        } catch (Exception $e) {
+            // Handle unique constraint violation
+            if ($e->getCode() == 23000) {
+                 http_response_code(409);
+                 return json_encode(['error' => 'A service with this name already exists.']);
+            }
+            http_response_code(500);
+            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Updates an existing service record.
+     * @param int $id The ID of the service to update.
+     * @param string|null $body The raw JSON request body.
+     * @return string JSON encoded success or error message.
+     */
+    public function update(int $id, ?string $body): string {
+        if ($body === null) {
+            http_response_code(400);
+            return json_encode(['error' => 'Bad request: Request body is required.']);
+        }
+        
+        $data = json_decode($body);
+        
+        if ($data === null) {
+            http_response_code(400);
+            return json_encode(['error' => 'Bad request: Invalid JSON format.']);
+        }
+        
+        // Check if at least one field is being updated
+        $updateFields = [];
+        $params = [':id' => $id];
+        
+        if (isset($data->name)) {
+            if (empty(trim($data->name))) {
+                http_response_code(400);
+                return json_encode(['error' => 'Bad request: name cannot be empty.']);
+            }
+            $updateFields[] = 'name = :name';
+            $params[':name'] = trim($data->name);
+        }
+        
+        if (isset($data->description)) {
+            $updateFields[] = 'description = :description';
+            $params[':description'] = !empty(trim($data->description)) ? trim($data->description) : null;
+        }
+        
+        if (isset($data->price)) {
+            if (!is_numeric($data->price)) {
+                http_response_code(400);
+                return json_encode(['error' => 'Bad request: price must be a number.']);
+            }
+            if ($data->price < 0) {
+                http_response_code(400);
+                return json_encode(['error' => 'Bad request: price must be a positive number.']);
+            }
+            $updateFields[] = 'price = :price';
+            $params[':price'] = (int)$data->price;
+        }
+        
+        if (empty($updateFields)) {
+            http_response_code(400);
+            return json_encode(['error' => 'Bad request: No fields to update.']);
+        }
+
+        try {
+            $sql = "UPDATE `service` SET " . implode(', ', $updateFields) . " WHERE id = :id";
+            $stmt = $this->conn->prepare($sql);
+            
+            foreach ($params as $key => $value) {
+                if ($key === ':price') {
+                    $stmt->bindValue($key, $value, PDO::PARAM_INT);
+                } else {
+                    $stmt->bindValue($key, $value, $key === ':description' && $value === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+                }
+            }
+            
+            $stmt->execute();
+
+            if ($stmt->rowCount() === 0) {
+                 http_response_code(404);
+                 return json_encode(['error' => 'Service not found or no changes made.']);
+            }
+
+            // Fetch the updated service to return complete data
+            $stmt = $this->conn->prepare("SELECT * FROM `service` WHERE id = :id");
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+            $service = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            return json_encode([
+                'message' => 'Service updated successfully.',
+                'service' => $service
+            ]);
+        } catch (Exception $e) {
+            // Handle unique constraint violation
+            if ($e->getCode() == 23000) {
+                 http_response_code(409);
+                 return json_encode(['error' => 'A service with this name already exists.']);
+            }
+            http_response_code(500);
+            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
      * Deletes a service record.
      * @param int $id The ID of the service to delete.
      * @return string JSON encoded success or error message.
@@ -217,7 +253,7 @@ class ServiceService {
             return json_encode(['message' => 'Service deleted successfully.']);
         } catch (Exception $e) {
             http_response_code(500);
-            return json_encode(['error' => 'Database error: ' . e->getMessage()]);
+            return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
         }
     }
 }
