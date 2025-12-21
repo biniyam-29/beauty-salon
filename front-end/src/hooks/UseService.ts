@@ -43,7 +43,18 @@ export const useCreateService = () => {
 
   return useMutation({
     mutationFn: async (serviceData: CreateServiceDto) => {
-      return await apiClient.post<{ service: Service }>('/service', serviceData);
+      // Convert price to integer (as per DB schema)
+      const dataToSend = {
+        ...serviceData,
+        price: Math.round(serviceData.price) // Convert to integer
+      };
+      
+      const response = await apiClient.post<{ 
+        message: string; 
+        service: Service 
+      }>('/service', dataToSend);
+      
+      return response.service;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] });
@@ -58,7 +69,19 @@ export const useUpdateService = () => {
   return useMutation({
     mutationFn: async (serviceData: UpdateServiceDto) => {
       const { id, ...data } = serviceData;
-      return await apiClient.put<{ service: Service }>(`/service/${id}`, data);
+      
+      // Convert price to integer if provided
+      const dataToSend = data.price ? {
+        ...data,
+        price: Math.round(data.price)
+      } : data;
+      
+      const response = await apiClient.put<{ 
+        message: string; 
+        service: Service 
+      }>(`/service/${id}`, dataToSend);
+      
+      return response.service;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] });
@@ -72,7 +95,8 @@ export const useDeleteService = () => {
 
   return useMutation({
     mutationFn: async (id: number) => {
-      return await apiClient.delete(`/services/${id}`);
+      await apiClient.delete<{ message: string }>(`/service/${id}`);
+      return id;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] });

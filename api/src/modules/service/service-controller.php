@@ -18,13 +18,13 @@ class ServiceController implements ControllerInterface {
     }
 
     public function handleRequest(array $paths, string $method, ?string $body) {
-        $serviceType = $paths[1] ?? null;
         $id = isset($paths[2]) ? (int)$paths[2] : null;
 
-        $tableName = str_replace('-', '_', $serviceType);
-
         if ($method === 'GET') {
-            return $this->serviceService->getAll($tableName);
+            if ($id !== null) {
+                return $this->serviceService->getById($id);
+            }
+            return $this->serviceService->getAll();
         }
 
         // Protected access for POST, PUT, DELETE
@@ -35,19 +35,19 @@ class ServiceController implements ControllerInterface {
 
         switch ($method) {
             case 'POST':
-                return $this->serviceService->create($tableName, $body);
+                return $this->serviceService->create($body);
             case 'PUT':
                 if ($id === null) {
                     http_response_code(400);
                     return json_encode(['error' => 'Bad request: ID is required for update.']);
                 }
-                return $this->serviceService->update($tableName, $id, $body);
+                return $this->serviceService->update($id, $body);
             case 'DELETE':
                  if ($id === null) {
                     http_response_code(400);
                     return json_encode(['error' => 'Bad request: ID is required for delete.']);
                 }
-                return $this->serviceService->delete($tableName, $id);
+                return $this->serviceService->delete($id);
             default:
                 http_response_code(405);
                 return json_encode(['message' => 'Method Not Allowed']);

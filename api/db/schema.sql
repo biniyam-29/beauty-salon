@@ -319,7 +319,7 @@ CREATE TABLE IF NOT EXISTS `phone_bookings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `services` 
+-- Table `service` 
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `service` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
