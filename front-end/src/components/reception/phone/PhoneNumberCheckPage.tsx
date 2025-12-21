@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { PatientData } from "../../lib/types/types";
-import { dbUrl } from "../../config";
+import type { PatientData } from "../../../lib/types/types";
+import { dbUrl } from "../../../config";
 import {
   Card,
   CardHeader,
@@ -10,7 +10,7 @@ import {
   Button,
   Input,
   Label,
-} from "../../components/ui";
+} from "../../ui";
 
 // =================================================================================
 // FILE: src/pages/PhoneNumberCheckPage.tsx

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { Button } from '../../ui/button';
-import type { User, CreateUserDto, UpdateUserDto, UserRole } from '../../../hooks/UseUsers';
+import type { User, CreateUserDto, UpdateUserDto } from '../../../hooks/UseUsers';
 
 interface UserModalProps {
   user?: User | null;

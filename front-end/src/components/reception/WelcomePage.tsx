@@ -2,10 +2,6 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui";
 
-// =================================================================================
-// FILE: src/pages/WelcomePage.tsx
-// =================================================================================
-
 export const WelcomePage: React.FC = () => {
   return (
     <div className="text-center animate-fade-in">
@@ -57,6 +53,3 @@ export const WelcomePage: React.FC = () => {
   );
 };
 
-// =================================================================================
-// END FILE: src/pages/WelcomePage.tsx
-// =================================================================================

@@ -11,16 +11,16 @@ import {
 import { jwtDecode } from "jwt-decode";
 // Remove this import since we're using the wizard's type
 // import type { PatientData } from "./types";
-import { CustomerListPage } from "./pages/reception/CustomerListPage";
-import LandingPage from "./pages/reception/LandingPage";
-import { PatientRegistrationWizard } from "./components/PatientRegistrationWizard";
+import { CustomerDashboard } from "./components/reception/customer-profile/CustomerDashboard";
+import LandingPage from "./components/reception/LandingPage";
+import { PatientRegistrationWizard } from "./components/reception/new-customer/PatientRegistrationWizard";
 import LoginPage from "./pages/auth/LoginPage";
 import ProfessionalDashboardPage from "./pages/ProfessionalDashboard/index";
-import { RemindersPage } from "./pages/reception/RemindersPage";
-import AssignedPatientsPage from "./pages/admin/AdminDashboardPage";
+import { RemindersPage } from "./components/reception/RemindersPage";
+import AssignedPatientsPage from "./pages/admin/AdminPage";
 import HomePage from "./pages/HomePage";
-import PrescriptionFulfillmentPage from "./pages/reception/ProductDeductionPage";
-import PhoneBookingPage from "./pages/reception/PhoneBookingPage";
+import PrescriptionFulfillmentPage from "./components/reception/ProductDeductionPage";
+import PhoneBookingPage from "./components/reception/phone/PhoneBookingPage";
 
 // --- Font Import Component ---
 const FontLink = () => (
@@ -113,7 +113,7 @@ const AppRoutes: React.FC = () => {
         element={
           <RequireAuth role="reception">
             <GradientLayout>
-              <CustomerListPage />
+              <CustomerDashboard />
             </GradientLayout>
           </RequireAuth>
         }
