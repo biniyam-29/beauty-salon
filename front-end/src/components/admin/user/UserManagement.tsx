@@ -56,12 +56,14 @@ const UserManagementView: React.FC = () => {
   const isPhoneSearch = /^\d{3,}/.test(debouncedSearchTerm);
 
   // Roles
-  const roles: UserRoleFilter[] = ['all', 'reception', 'doctor', 'super-admin'];
+  const roles: UserRoleFilter[] = ['all', 'reception', 'doctor', 'admin', 'professional', 'cashier'];
   const roleLabels: Record<UserRoleFilter, string> = {
     'all': 'All Users',
     'reception': 'Reception',
-    'doctor': 'Professional',
-    'super-admin': 'Super Admin',
+    'doctor': 'Doctor',
+    'admin': 'Admin',
+    'professional': 'Professional',
+    'cashier': 'Cashier',
   };
 
   // Queries
@@ -100,7 +102,9 @@ const UserManagementView: React.FC = () => {
     const counts: Record<UserRole, number> = {
       'reception': 0,
       'doctor': 0,
-      'super-admin': 0,
+      'admin': 0,
+      'cashier': 0,
+      'professional': 0,
     };
     
     users.forEach(user => {
@@ -117,7 +121,9 @@ const UserManagementView: React.FC = () => {
     const colors: Record<UserRole, string> = {
       'reception': 'bg-blue-100 text-blue-800',
       'doctor': 'bg-green-100 text-green-800',
-      'super-admin': 'bg-red-100 text-red-800',
+      'admin': 'bg-red-100 text-red-800',
+      'cashier': 'bg-gray-100 text-gray-800',
+      'professional': 'bg-orange-100 text-orange-800',
     };
     return colors[role] || 'bg-gray-100 text-gray-800';
   };
@@ -127,7 +133,9 @@ const UserManagementView: React.FC = () => {
     const descriptions: Record<UserRole, string> = {
       'reception': 'Manages appointments and client communication',
       'doctor': 'Access to patient records and treatment history',
-      'super-admin': 'Full system access and user management',
+      'admin': 'Full system access and user management',
+      'cashier': 'Customer payment checkout',
+      'professional':'Provide the service for the customer',
     };
     return descriptions[role] || '';
   };

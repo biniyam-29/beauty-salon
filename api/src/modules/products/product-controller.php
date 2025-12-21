@@ -33,7 +33,7 @@ class ProductController implements ControllerInterface {
 
         switch ($method) {
             case 'GET':
-                if (!RoleGuard::roleGuard('reception') && !RoleGuard::roleGuard('doctor') && !RoleGuard::roleGuard('admin') && !RoleGuard::roleGuard('super-admin')) {
+                if (!RoleGuard::roleGuard('reception') && !RoleGuard::roleGuard('doctor') && !RoleGuard::roleGuard('admin')) {
                     http_response_code(403);
                     return json_encode(['message' => 'Forbidden: You do not have permission to view products.']);
                 }
@@ -49,7 +49,7 @@ class ProductController implements ControllerInterface {
             case 'POST':
                 // Handle sub-resources first
                 if ($id && $subResource === 'picture') {
-                    if (!RoleGuard::roleGuard('inventory-manager') && !RoleGuard::roleGuard('admin') && !RoleGuard::roleGuard('super-admin')) {
+                    if (!RoleGuard::roleGuard('inventory-manager') && !RoleGuard::roleGuard('admin')) {
                         http_response_code(403);
                         return json_encode(['message' => 'Forbidden: You do not have permission to manage products.']);
                     }
@@ -57,21 +57,21 @@ class ProductController implements ControllerInterface {
                     return $this->productService->updateProductPicture($id, $file);
                 }
                 if ($id && $subResource === 'contraindications') {
-                    if (!RoleGuard::roleGuard('super-admin')) {
+                    if (!RoleGuard::roleGuard('admin')) {
                         http_response_code(403);
-                        return json_encode(['message' => 'Forbidden: Only a super-admin can manage contraindication rules.']);
+                        return json_encode(['message' => 'Forbidden: Only a admin can manage contraindication rules.']);
                     }
                     return $this->contraindicationService->addRule($id, $body);
                 }
                 // Handle main resource creation
-                if (!RoleGuard::roleGuard('inventory-manager') && !RoleGuard::roleGuard('admin') && !RoleGuard::roleGuard('super-admin')) {
+                if (!RoleGuard::roleGuard('inventory-manager') && !RoleGuard::roleGuard('admin') ) {
                     http_response_code(403);
                     return json_encode(['message' => 'Forbidden: You do not have permission to manage products.']);
                 }
                 return $this->productService->createProduct($body);
 
             case 'PUT':
-                if (!RoleGuard::roleGuard('inventory-manager') && !RoleGuard::roleGuard('admin') && !RoleGuard::roleGuard('super-admin')) {
+                if (!RoleGuard::roleGuard('inventory-manager') && !RoleGuard::roleGuard('admin') ) {
                     http_response_code(403);
                     return json_encode(['message' => 'Forbidden: You do not have permission to manage products.']);
                 }
@@ -83,13 +83,13 @@ class ProductController implements ControllerInterface {
 
             case 'DELETE':
                 if ($id && $subResource === 'contraindications' && $subResourceId) {
-                     if (!RoleGuard::roleGuard('super-admin')) {
+                     if (!RoleGuard::roleGuard('admin')) {
                         http_response_code(403);
-                        return json_encode(['message' => 'Forbidden: Only a super-admin can manage contraindication rules.']);
+                        return json_encode(['message' => 'Forbidden: Only a admin can manage contraindication rules.']);
                     }
                     return $this->contraindicationService->deleteRule($id, $subResourceId);
                 }
-                if (!RoleGuard::roleGuard('inventory-manager') && !RoleGuard::roleGuard('admin') && !RoleGuard::roleGuard('super-admin')) {
+                if (!RoleGuard::roleGuard('admin')) {
                     http_response_code(403);
                     return json_encode(['message' => 'Forbidden: You do not have permission to manage products.']);
                 }

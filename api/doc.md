@@ -28,7 +28,7 @@ Authorization: Bearer <YOUR_JWT_TOKEN>
 ### User Roles & Permissions
 | Role                | Permissions                                                           |
 |---------------------|------------------------------------------------------------------------|
-| **super-admin**     | Full access to all endpoints, including user management.               |
+| **admin**     | Full access to all endpoints, including user management.               |
 | **doctor**          | Manage assigned customers, create consultations, prescribe products.  |
 | **reception**       | Create & manage customer profiles, view reminder list.                 |
 | **inventory-manager** | Manage products.                                                     |
@@ -83,12 +83,12 @@ All request and response bodies are in **JSON** format.
 ### 👥 User Management (`/users`)
 | Method | Endpoint               | Description                  | Permissions |
 |--------|------------------------|------------------------------|-------------|
-| POST   | `/users`               | Create new staff member.     | super-admin |
-| GET    | `/users`               | Get paginated list of users. | super-admin |
-| GET    | `/users/role/{role}`   | Get users by role.           | super-admin |
-| GET    | `/users/{id}`          | Get single user by ID.       | super-admin |
-| PUT    | `/users/{id}`          | Update user details.         | super-admin |
-| DELETE | `/users/{id}`          | Deactivate user account.     | super-admin |
+| POST   | `/users`               | Create new staff member.     | admin |
+| GET    | `/users`               | Get paginated list of users. | admin |
+| GET    | `/users/role/{role}`   | Get users by role.           | admin |
+| GET    | `/users/{id}`          | Get single user by ID.       | admin |
+| PUT    | `/users/{id}`          | Update user details.         | admin |
+| DELETE | `/users/{id}`          | Deactivate user account.     | admin |
 
 ---
 

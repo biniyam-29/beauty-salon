@@ -154,10 +154,11 @@ export const UserModal: React.FC<UserModalProps> = ({
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-300 focus:border-transparent transition-all appearance-none bg-white"
                 disabled={isSaving}
               >
-                <option value="super-admin">Super Admin</option>
-                <option value="doctor">Professional</option>
+                <option value="admin">Admin</option>
+                <option value="doctor">Doctor</option>
                 <option value="reception">Reception</option>
-                <option value="inventory-manager">Inventory Manager</option>
+                <option value="cashier">Cashier</option>
+                <option value="professional">Professional</option>
               </select>
             </div>
           </div>

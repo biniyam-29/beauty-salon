@@ -29,8 +29,9 @@ interface UserFormProps {
 const roles: UserRole[] = [
   "reception",
   "professional",
-  "inventory-manager",
-  "super-admin",
+  "doctor",
+  "admin",
+  "cashier",
 ];
 const statuses = ["active", "inactive", "pending"] as const
 const departments = [
@@ -103,10 +104,10 @@ export function UserForm({ initialData, onSubmit, onCancel }: UserFormProps) {
   const getRoleDescription = (role: UserRole) => {
     const descriptions: Record<UserRole, string> = {
       reception: "Manage patient registration, appointments, and front desk operations",
-      professional: "Full patient records access, consultations, and treatment planning",
-      "inventory-manager": "Manage product inventory, stock levels, and suppliers",
-      "super-admin": "Full system access including user management and system settings",
-      doctor: "this is the professional responsible to make treatment on the patient"
+      doctor: "Full patient records access, consultations, and treatment planning",
+      cashier: "Responsible for customer checkout related to payments",
+      admin: "Full system access including user management and system settings",
+      professional: "this is the professional responsible to make treatment on the patient"
     }
     return descriptions[role]
   }
@@ -261,19 +262,22 @@ export function UserForm({ initialData, onSubmit, onCancel }: UserFormProps) {
                 )}
                 {formData.role === "professional" && (
                   <>
+                    <li>• Responsible for delivering the service</li>
+                  </>
+                )}
+                {formData.role === "doctor" && (
+                  <>
                     <li>• Full patient records access</li>
                     <li>• Consultation management</li>
                     <li>• Prescription and treatment planning</li>
                   </>
                 )}
-                {formData.role === "inventory-manager" && (
+                {formData.role === "cashier" && (
                   <>
-                    <li>• Product inventory management</li>
-                    <li>• Stock level monitoring</li>
-                    <li>• Supplier management</li>
+                    <li>• customer check out payments</li>
                   </>
                 )}
-                {formData.role === "super-admin" && (
+                {formData.role === "admin" && (
                   <>
                     <li>• Full system access</li>
                     <li>• User management</li>
@@ -289,22 +293,21 @@ export function UserForm({ initialData, onSubmit, onCancel }: UserFormProps) {
               <ul className="space-y-1 text-gray-600">
                 <li>• Dashboard</li>
                 {(formData.role === "reception" ||
-                  formData.role === "super-admin") && (
+                  formData.role === "admin") && (
                   <li>• Patient Registration</li>
                 )}
                 {(formData.role === "professional" ||
                   formData.role === "reception" ||
-                  formData.role === "super-admin") && (
+                  formData.role === "admin") && (
                   <>
                     <li>• Patients List</li>
                     <li>• Appointments</li>
                   </>
                 )}
                 {(formData.role === "professional" ||
-                  formData.role === "super-admin") && <li>• Consultations</li>}
-                {(formData.role === "inventory-manager" ||
-                  formData.role === "super-admin") && <li>• Inventory</li>}
-                {formData.role === "super-admin" && <li>• User Management</li>}
+                  formData.role === "admin") && <li>• Consultations</li>}
+                {(formData.role === "admin") && <li>• Inventory</li>}
+                {formData.role === "admin" && <li>• User Management</li>}
               </ul>
             </div>
           </div>

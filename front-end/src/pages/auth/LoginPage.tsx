@@ -49,11 +49,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigate, onLoginSuccess }) => {
             case "reception":
               navigate("/reception");
               break;
-            case "super-admin":
+            case "admin":
               navigate("/admin/dashboard");
               break;
-            case "doctor":
+            case "professional":
               navigate("/professional");
+              break;
+            case "doctor":
+              navigate("/doctor");
               break;
             default:
               setError("Unknown user role");

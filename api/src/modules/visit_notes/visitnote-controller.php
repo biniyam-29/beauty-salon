@@ -25,7 +25,7 @@ class VisitNoteController implements ControllerInterface {
         }
 
         // Allow receptionists and doctors to manage notes
-        if (!RoleGuard::roleGuard('reception') && !RoleGuard::roleGuard('doctor') && !RoleGuard::roleGuard('super-admin')) {
+        if (!RoleGuard::roleGuard('reception') && !RoleGuard::roleGuard('doctor') && !RoleGuard::roleGuard('admin')) {
              http_response_code(403);
              return json_encode(['message' => 'Forbidden']);
         }

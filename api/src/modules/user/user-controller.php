@@ -28,7 +28,7 @@ class UserController implements ControllerInterface {
         $param = $paths[2] ?? null;
 
         if ($method === 'GET' && $idOrAction === 'role' && $roleName === 'doctor') {
-            if (RoleGuard::roleGuard('reception') || RoleGuard::roleGuard('super-admin')) {
+            if (RoleGuard::roleGuard('reception') || RoleGuard::roleGuard('admin')) {
                 $page = $_GET['page'] ?? 1;
                 return $this->userService->getUserByRole($roleName, $page);
             } else {
@@ -37,7 +37,7 @@ class UserController implements ControllerInterface {
             }
         }
 
-        if (!RoleGuard::roleGuard('super-admin') && !RoleGuard::roleGuard('admin')) {
+        if (!RoleGuard::roleGuard('admin')) {
              http_response_code(403);
              return json_encode(['message' => 'Forbidden: You do not have permission to manage users.']);
         }

@@ -18,7 +18,7 @@ class ImageController implements ControllerInterface {
     }
 
     public function handleRequest(array $paths, string $method, ?string $body) {
-        if (!AuthGuard::authenticate() || !RoleGuard::roleGuard('doctor') && !RoleGuard::roleGuard('super-admin') && !RoleGuard::roleGuard('admin')) {
+        if (!AuthGuard::authenticate() || !RoleGuard::roleGuard('doctor') && !RoleGuard::roleGuard('admin')) {
              http_response_code(403);
              return json_encode(['message' => 'Forbidden: You do not have permission to manage images.']);
         }

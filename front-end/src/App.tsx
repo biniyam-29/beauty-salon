@@ -174,7 +174,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/admin/dashboard"
         element={
-          <RequireAuth role="super-admin">
+          <RequireAuth role="admin">
             <AssignedPatientsPage />
           </RequireAuth>
         }
@@ -257,7 +257,7 @@ const RedirectIfAuth = ({ children }: { children: React.ReactElement }) => {
   switch (localStorage.getItem("role")) {
     case "reception":
       return <Navigate to="/reception" replace />;
-    case "super-admin":
+    case "admin":
       return <Navigate to="/admin/dashboard" replace />;
     case "doctor":
       return <Navigate to="/professional" replace />;

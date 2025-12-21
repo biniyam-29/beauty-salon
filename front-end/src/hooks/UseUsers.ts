@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api/Api';
 
 // --- Type Definitions ---
-export type UserRole = 'reception' | 'doctor' | 'super-admin' ;
+export type UserRole = 'reception' | 'doctor' | 'admin' | 'professional' | 'cashier' ;
 export type UserRoleFilter = UserRole | 'all';
 
 export interface User {

@@ -148,7 +148,7 @@ class PhoneService {
 
             // Verify the receptionist exists and has correct role
             $userStmt = $this->conn->prepare(
-                "SELECT id, role FROM users WHERE id = :user_id AND role IN ('reception', 'super-admin', 'admin') AND is_active = 1"
+                "SELECT id, role FROM users WHERE id = :user_id AND role IN ('reception', 'admin') AND is_active = 1"
             );
             $userStmt->execute([':user_id' => $reception_id]);
             $user = $userStmt->fetch(PDO::FETCH_ASSOC);

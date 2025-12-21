@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `email` VARCHAR(255) NOT NULL UNIQUE,
   `password_hash` VARCHAR(255) NOT NULL,
   `phone` VARCHAR(20) NULL,
-  `role` ENUM('super-admin', 'admin','doctor', 'reception', 'inventory-manager') NOT NULL,
+  `role` ENUM('cashier', 'admin','doctor', 'reception', 'professional') NOT NULL,
   `profile_picture` MEDIUMBLOB NULL,
   `profile_picture_mimetype` VARCHAR(20) NULL,
   `is_active` BOOLEAN NOT NULL DEFAULT TRUE,

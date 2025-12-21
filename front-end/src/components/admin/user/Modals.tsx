@@ -311,10 +311,11 @@ export const UserModal: React.FC<UserModalProps> = ({
                 onChange={handleChange}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500"
               >
-                <option value="super-admin">Super Admin</option>
-                <option value="doctor">Professional</option>
+                <option value="admin">Admin</option>
+                <option value="doctor">Doctor</option>
                 <option value="reception">Reception</option>
-                <option value="inventory-manager">Inventory Manager</option>
+                <option value="cashier">Cashier</option>
+                <option value="professional">Professional</option>
               </select>
             </div>
           </div>

@@ -39,7 +39,7 @@ class ConsultationService {
 
             // Verify the doctor exists and has the correct role
             $doctorStmt = $this->conn->prepare(
-                "SELECT id FROM users WHERE id = :doctor_id AND role IN ('doctor', 'super-admin', 'admin', 'reception') AND is_active = 1"
+                "SELECT id FROM users WHERE id = :doctor_id AND role IN ('doctor', 'admin', 'reception') AND is_active = 1"
             );
             $doctorStmt->execute([':doctor_id' => $data['doctor_id']]);
             $doctor = $doctorStmt->fetch(PDO::FETCH_ASSOC);

@@ -41,7 +41,7 @@ class ConsultationController implements ControllerInterface {
 
         // Handle professional assignment
         if ($method === 'PUT' && $id && $subResource === 'assign-professional') {
-            // if (!RoleGuard::roleGuard('super-admin') && !RoleGuard::roleGuard('admin')) {
+            // if (!RoleGuard::roleGuard('admin')) {
             //     http_response_code(403);
             //     return json_encode(['message' => 'Forbidden: Only admins can assign professionals.']);
             // }
@@ -49,7 +49,7 @@ class ConsultationController implements ControllerInterface {
         }
 
         if ($method === 'GET' && $id === 'follow-ups' && $subResource === 'today') {
-            if (RoleGuard::roleGuard('reception') || RoleGuard::roleGuard('super-admin') || RoleGuard::roleGuard('doctor')) {
+            if (RoleGuard::roleGuard('reception') || RoleGuard::roleGuard('doctor')) {
                 return $this->consultationService->getTodaysFollowUps();
             } else {
                 http_response_code(403);
@@ -57,7 +57,7 @@ class ConsultationController implements ControllerInterface {
             }
         }
 
-        // if (!RoleGuard::roleGuard('doctor') && !RoleGuard::roleGuard('super-admin')) {
+        // if (!RoleGuard::roleGuard('doctor')) {
         //     http_response_code(403);
         //     return json_encode(['message' => 'Forbidden']);
         // }

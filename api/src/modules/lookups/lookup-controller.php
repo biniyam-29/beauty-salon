@@ -28,7 +28,7 @@ class LookupController implements ControllerInterface {
         }
 
         // Protected access for POST, PUT, DELETE
-        if (!AuthGuard::authenticate() || !RoleGuard::roleGuard('super-admin') && !RoleGuard::roleGuard('admin')) {
+        if (!AuthGuard::authenticate() ||!RoleGuard::roleGuard('admin')) {
             http_response_code(403);
             return json_encode(['message' => 'Forbidden: You do not have permission to perform this action.']);
         }

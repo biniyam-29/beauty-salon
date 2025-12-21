@@ -23,7 +23,7 @@ class PrescriptionController implements ControllerInterface {
             return json_encode(['message' => 'Unauthorized']);
         }
 
-        if (!RoleGuard::roleGuard('reception') && !RoleGuard::roleGuard('doctor') && !RoleGuard::roleGuard('super-admin')) {
+        if (!RoleGuard::roleGuard('reception') && !RoleGuard::roleGuard('doctor')) {
              http_response_code(403);
              return json_encode(['message' => 'Forbidden: You do not have permission to access prescriptions.']);
         }

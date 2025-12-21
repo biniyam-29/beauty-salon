@@ -86,7 +86,7 @@ export interface User {
   name: string;
   email: string;
   phone: string;
-  role: 'super-admin' | 'doctor' | 'reception' | 'inventory-manager';
+  role: 'admin' | 'doctor' | 'reception' | 'cashier' | 'professional';
   is_active: boolean;
   avatar: string;
 }

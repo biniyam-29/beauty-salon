@@ -30,7 +30,7 @@ class PhoneController implements ControllerInterface {
 
         // Check role permissions for write operations
         if ($method !== 'GET') {
-            $allowedRoles = ['reception', 'super-admin', 'admin'];
+            $allowedRoles = ['reception', 'admin'];
             if (!in_array($this->currentUser['role'] ?? '', $allowedRoles)) {
                 http_response_code(403);
                 return json_encode(['error' => 'Forbidden: You do not have permission to access phone bookings.']);

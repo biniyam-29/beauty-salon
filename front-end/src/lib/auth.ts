@@ -2,8 +2,8 @@ export type UserRole =
   | "reception"
   | "professional"
   | "doctor"
-  | "inventory-manager"
-  | "super-admin";
+  | "cashier"
+  | "admin";
 
 export interface User {
   id: string
@@ -37,7 +37,7 @@ export const mockUsers: User[] = [
 //     id: "4",
 //     name: "Admin User",
 //     email: "admin@clinic.com",
-//     role: "super-admin",
+//     role: "admin",
 //   },
 ];
 
@@ -68,7 +68,7 @@ export const isAuthenticated = (): boolean => {
 
 export const getRoleDashboardRoute = (role: UserRole): string => {
   switch (role) {
-    // case "super-admin":
+    // case "admin":
     //   return "/users";
     // case "inventory-manager":
     //   return "/inventory";
