@@ -317,3 +317,17 @@ CREATE TABLE IF NOT EXISTS `phone_bookings` (
   INDEX `idx_phone_bookings_updated` (`updated_at`)
   
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------
+-- Table `services` 
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `service` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(255) NOT NULL COMMENT 'The name of the service',
+  `description` VARCHAR(255),
+  `price` INT UNSIGNED NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Service creation timestamp',
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

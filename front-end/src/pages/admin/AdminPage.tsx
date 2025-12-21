@@ -7,6 +7,7 @@ import { UserModal } from "../../components/admin/user/Modals";
 import { useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
 import  LookupsManagementView  from "../../components/admin/lookups/LookupsManagementView";
+import ServiceManagementView from "../../components/admin/service/ServiceManagement";
 
 const AdminDashboard: React.FC = () => {
   const [activeUser, setActiveUser] = useState<User | null>(null);
@@ -58,6 +59,8 @@ const AdminDashboard: React.FC = () => {
         return <ProductManagementView />;
       case "Customize Options":
         return <LookupsManagementView />;
+      case "Customize Services":
+        return <ServiceManagementView />;
       default:
         return <UserManagementView />;
     }

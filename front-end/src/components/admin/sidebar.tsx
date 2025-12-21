@@ -67,6 +67,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           isCollapsed={isCollapsed}
           onClick={() => setActiveTab("Customize Options")}
         />
+        <SidebarItem 
+          icon={<Settings size={20} />} 
+          label="Customize Services" 
+          active={activeTab === "Customize Services"}
+          isCollapsed={isCollapsed}
+          onClick={() => setActiveTab("Customize Services")}
+        />
       </nav>
 
       {/* Footer */}
