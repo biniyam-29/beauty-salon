@@ -210,7 +210,7 @@ class ServiceService {
 
             if ($stmt->rowCount() === 0) {
                  http_response_code(404);
-                 return json_encode(['error' => 'Service not found or no changes made.']);
+                 return json_encode(['error' => `Service not found or no changes made. $id` ]);
             }
 
             // Fetch the updated service to return complete data
