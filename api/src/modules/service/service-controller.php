@@ -1,5 +1,5 @@
 <?php
-namespace src\modules\services;
+namespace src\modules\service;
 
 require_once __DIR__ . '/../../modules/controller-interface.php';
 require_once __DIR__ . '/service-service.php';

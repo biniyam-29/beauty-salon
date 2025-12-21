@@ -32,7 +32,7 @@ export const useServices = (page: number = 1, pageSize: number = 10) => {
   return useQuery<ServiceResponse>({
     queryKey: ['services', page],
     queryFn: async () => {
-      return await apiClient.get<ServiceResponse>(`/services?page=${page}&pageSize=${pageSize}`);
+      return await apiClient.get<ServiceResponse>(`/service?page=${page}&pageSize=${pageSize}`);
     },
   });
 };
@@ -43,7 +43,7 @@ export const useCreateService = () => {
 
   return useMutation({
     mutationFn: async (serviceData: CreateServiceDto) => {
-      return await apiClient.post<{ service: Service }>('/services', serviceData);
+      return await apiClient.post<{ service: Service }>('/service', serviceData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] });
@@ -58,7 +58,7 @@ export const useUpdateService = () => {
   return useMutation({
     mutationFn: async (serviceData: UpdateServiceDto) => {
       const { id, ...data } = serviceData;
-      return await apiClient.put<{ service: Service }>(`/services/${id}`, data);
+      return await apiClient.put<{ service: Service }>(`/service/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] });
@@ -86,7 +86,7 @@ export const useService = (id: number | undefined) => {
     queryKey: ['service', id],
     queryFn: async () => {
       if (!id) throw new Error('Service ID is required');
-      return await apiClient.get<Service>(`/services/${id}`);
+      return await apiClient.get<Service>(`/service/${id}`);
     },
     enabled: !!id,
   });

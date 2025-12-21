@@ -1,5 +1,5 @@
 <?php
-namespace src\modules\services;
+namespace src\modules\service;
 
 header("Content-Type: application/json");
 require_once __DIR__ . '/../../config/Database.php';
@@ -143,7 +143,7 @@ class ServiceService {
      * @return bool True if the table is valid, false otherwise.
      */
     private function isValidTable(string $tableName): bool {
-        $allowedTables = ['services'];
+        $allowedTables = ['service'];
         return in_array($tableName, $allowedTables);
     }
 }
