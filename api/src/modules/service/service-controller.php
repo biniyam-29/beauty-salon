@@ -18,7 +18,7 @@ class ServiceController implements ControllerInterface {
     }
 
     public function handleRequest(array $paths, string $method, ?string $body) {
-        $id = isset($paths[2]);
+        $id = isset($paths[1]) ? (int)$paths[2] : null;
 
         if ($method === 'GET') {
             if ($id !== null) {
