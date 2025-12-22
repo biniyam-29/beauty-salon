@@ -1,4 +1,4 @@
-// Types
+
 export type PatientData = {
   // Personal Information
   name: string;
@@ -11,6 +11,7 @@ export type PatientData = {
   emergencyContactPhone: string;
   howHeard: string;
   initialNote: string;
+  assigned_doctor_id?: number | null;
   
   // Skin & Health Profile
   skinType: string;
@@ -29,16 +30,16 @@ export type PatientData = {
   alcoholOrSmoke: boolean;
   
   // New Questionnaire Fields (No Duplicates)
-  firstFacialExperience: boolean;
+  firstFacialExperience?: boolean;
   previousTreatmentLikes: string;
   treatmentGoals: string;
   vitaminADerivatives: string;
   recentBotoxFillers: boolean;
   takenAcneMedication: boolean;
   otherConditions: string;
-  hasAllergies: boolean;
+  hasAllergies?: boolean;
   allergiesDetails: string;
-  takesSupplements: boolean;
+  takesSupplements?: boolean;
   supplementsDetails: string;
   prescriptionMeds: string;
   drinksOrSmokes: boolean;
@@ -48,11 +49,8 @@ export type PatientData = {
   healthConditions: string[];
   skinCareHistory: string[];
   
-  // Assignment
-  assignedProfessionalId: string;
-  
   // Optional fields
-  id?: string;
+  id?: string | number;
   signature?: string;
   signatureDate?: string;
 };
@@ -85,6 +83,6 @@ export interface StepProps {
   formData: PatientData;
   updateFormData: (updates: Partial<PatientData>) => void;
   lookups: LookupsData;
-  professionals: ProfessionalData[];
   isLoading: boolean;
+  isEditing?: boolean;
 }

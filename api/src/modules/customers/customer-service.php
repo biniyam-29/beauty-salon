@@ -366,7 +366,7 @@ class CustomerService {
                     'skin_type', 'skin_feel', 'sun_exposure', 'foundation_type', 'healing_profile', 
                     'bruises_easily', 'used_products', 'uses_retinoids_acids', 'recent_dermal_fillers', 
                     'previous_acne_medication', 'known_allergies_details', 'dietary_supplements', 
-                    'current_prescription', 'other_conditions', 'other_medication', 'smokes', 'drinks'
+                    'current_prescription', 'other_conditions', 'other_medication', 'drinks_or_smokes'
                 ];
                 $this->updateTable('customer_profile', $id, $data['profile'], $allowedProfileFields, 'customer_id');
             }

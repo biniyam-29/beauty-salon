@@ -17,9 +17,7 @@ export interface RefreshResponse {
 
 export class BaseApiClient {
   private baseURL: string;
-  private isRefreshing = false;
-  private requestQueue: QueuedRequest[] = [];
-
+  
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL;
   }
@@ -44,10 +42,6 @@ export class BaseApiClient {
     try {
       const response = await fetch(url, config);
 
-      if ((response.status === 401 || response.status === 403)) {
-        return this.handleUnauthorized<T>(url, config);
-      }
-
       if (!response.ok) {
         await this.handleErrorResponse(response);
       }
@@ -62,77 +56,6 @@ export class BaseApiClient {
     }
   }
 
-  private async handleUnauthorized<T>(
-    url: string,
-    config: RequestInit
-  ): Promise<T> {
-    if (this.isRefreshing) {
-      return new Promise((resolve, reject) => {
-        this.requestQueue.push({ resolve, reject, url, config });
-      });
-    }
-
-    this.isRefreshing = true;
-
-    try {
-      const newToken = await this.refreshToken();
-
-      const retryConfig = {
-        ...config,
-        headers: {
-          ...config.headers,
-          Authorization: `Bearer ${newToken}`,
-        },
-      };
-
-      const retryResponse = await fetch(url, retryConfig);
-
-      if (!retryResponse.ok) {
-        await this.handleErrorResponse(retryResponse);
-      }
-
-      return await retryResponse.json();
-    } catch (refreshError) {
-      this.processQueue(refreshError, null);
-      throw refreshError;
-    } finally {
-      this.isRefreshing = false;
-    }
-  }
-
-  private async refreshToken(){
-    const accessToken: any = await apiClient.get('/api/v1/blog/refresh');
-    this.setAccessToken(accessToken.token);
-    return accessToken;
-  }
-
-  private processQueue(error: any, token: string | null) {
-    this.requestQueue.forEach(({ resolve, reject, url, config }) => {
-      if (error) {
-        reject(error);
-      } else if (token) {
-        const newConfig = {
-          ...config,
-          headers: {
-            ...config.headers,
-            Authorization: `Bearer ${token}`,
-          },
-        };
-
-        fetch(url, newConfig)
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(`HTTP ${response.status}`);
-            }
-            return response.json();
-          })
-          .then(resolve)
-          .catch(reject);
-      }
-    });
-
-    this.requestQueue = [];
-  }
 
   private async handleErrorResponse(response: Response) {
     let errorData: any;

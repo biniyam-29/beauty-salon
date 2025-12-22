@@ -90,16 +90,16 @@ class CustomerController implements ControllerInterface {
                     }
                 }
 
-                if ($id) {
-                    // If the user is a doctor, verify assignment
-                    if (RoleGuard::roleGuard('doctor')) {
-                        if (!$this->customerService->isCustomerAssignedToDoctor($id, $user->id)) {
-                            http_response_code(403);
-                            return json_encode(['message' => 'Forbidden: You are not assigned to this customer.']);
-                        }
-                    }
-                    return $this->customerService->getCustomerById($id);
-                }
+                // if ($id) {
+                //     // If the user is a doctor, verify assignment
+                //     if (RoleGuard::roleGuard('doctor')) {
+                //         if (!$this->customerService->isCustomerAssignedToDoctor($id, $user->id)) {
+                //             http_response_code(403);
+                //             return json_encode(['message' => 'Forbidden: You are not assigned to this customer.']);
+                //         }
+                //     }
+                //     return $this->customerService->getCustomerById($id);
+                // }
                 
                 // GET /customers/{id}
                 if ($id) {

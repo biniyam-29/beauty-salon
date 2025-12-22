@@ -21,6 +21,8 @@ import AssignedPatientsPage from "./pages/admin/AdminPage";
 import HomePage from "./pages/HomePage";
 import PrescriptionFulfillmentPage from "./components/reception/ProductDeductionPage";
 import PhoneBookingPage from "./components/reception/phone/PhoneBookingPage";
+import { DoctorCustomerDashboard } from "./components/doctor/DoctorCustomerDashboard";
+import PatientUpdateWizard from "./components/doctor/forms/PatientUpdateWizard";
 
 // --- Font Import Component ---
 const FontLink = () => (
@@ -39,7 +41,7 @@ const RegistrationPage: React.FC = () => {
   // Use the PatientData type from the wizard component
   const handleRegistrationComplete = (newUser: Parameters<typeof PatientRegistrationWizard>[0]['onRegistrationComplete'] extends (newUser: infer T) => void ? T : never) => {
     if (newUser.id) {
-      navigate(`/reception/profile/${newUser.id}`, {
+      navigate(`/reception/customers`, {
         state: { fromRegistration: true },
       });
     }
@@ -49,6 +51,29 @@ const RegistrationPage: React.FC = () => {
     <PatientRegistrationWizard
       phone={phone}
       onRegistrationComplete={handleRegistrationComplete}
+    />
+  );
+};
+
+
+const UpdatePage: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const phone = location.state?.phone || "";
+
+  // Use the PatientData type from the wizard component
+  const handleUpdateComplete = (newUser: Parameters<typeof PatientRegistrationWizard>[0]['onRegistrationComplete'] extends (newUser: infer T) => void ? T : never) => {
+    if (newUser.id) {
+      navigate(`/doctor`, {
+        state: { fromRegistration: true },
+      });
+    }
+  };
+
+  return (
+    <PatientUpdateWizard
+      phone={phone}
+      onRegistrationComplete={handleUpdateComplete}
     />
   );
 };
@@ -160,11 +185,10 @@ const AppRoutes: React.FC = () => {
         }
       />
 
-      {/* Professional Routes */}
       <Route
         path="/professional"
         element={
-          <RequireAuth role="doctor">
+            <RequireAuth role="professional">
             <ProfessionalDashboardPage />
           </RequireAuth>
         }
@@ -179,6 +203,24 @@ const AppRoutes: React.FC = () => {
           </RequireAuth>
         }
       />
+      {/* Doctor Routes*/}
+      <Route 
+        path="/doctor" 
+        element={
+          <RequireAuth role="doctor">
+            <DoctorCustomerDashboard />
+          </RequireAuth>
+        } 
+      />
+      <Route 
+        path="/doctor/patient/:id" 
+        element={
+          <RequireAuth role="doctor">
+            <UpdatePage />
+          </RequireAuth>
+        } 
+      />
+      
     </Routes>
   );
 };

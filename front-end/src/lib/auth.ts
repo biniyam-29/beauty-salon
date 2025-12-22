@@ -68,15 +68,20 @@ export const isAuthenticated = (): boolean => {
 
 export const getRoleDashboardRoute = (role: UserRole): string => {
   switch (role) {
-    // case "admin":
-    //   return "/users";
-    // case "inventory-manager":
-    //   return "/inventory";
+    case "admin":
+      return "/users";
+      break;
+    case "doctor":
+      return "/doctor";
+      break;
     case "reception":
       return "/reception";
-    // case "professional":
-    //   return "/professionals";
+      break;
+    case "professional":
+      return "/professional";
+      break;
     default:
       return "/";
+      break;
   }
 }
