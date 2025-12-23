@@ -15,7 +15,6 @@ import { CustomerDashboard } from "./components/reception/customer-profile/Custo
 import LandingPage from "./components/reception/LandingPage";
 import { PatientRegistrationWizard } from "./components/reception/new-customer/PatientRegistrationWizard";
 import LoginPage from "./pages/auth/LoginPage";
-import ProfessionalDashboardPage from "./pages/ProfessionalDashboard/index";
 import { RemindersPage } from "./components/reception/RemindersPage";
 import AssignedPatientsPage from "./pages/admin/AdminPage";
 import HomePage from "./pages/HomePage";
@@ -24,6 +23,7 @@ import PhoneBookingPage from "./components/reception/phone/PhoneBookingPage";
 import { DoctorCustomerDashboard } from "./components/doctor/DoctorCustomerDashboard";
 import PatientUpdateWizard from "./components/doctor/forms/PatientUpdateWizard";
 import { CashierPage } from "./pages/cashier/CashierPage";
+import { ProfessionalPage } from "./pages/professional/ProfessionalPage";
 
 // --- Font Import Component ---
 const FontLink = () => (
@@ -174,7 +174,7 @@ const AppRoutes: React.FC = () => {
         path="/professional"
         element={
             <RequireAuth role="professional">
-            <ProfessionalDashboardPage />
+            <ProfessionalPage />
           </RequireAuth>
         }
       />

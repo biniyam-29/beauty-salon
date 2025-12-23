@@ -257,4 +257,100 @@ class ConsultationService {
             return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
         }
     }
+
+    /**
+     * Assigns a professional to an existing consultation
+     * 
+     * Expected JSON body:
+     * {
+     *   "professional_id": 42,
+     *   "professional_name": "Maria Silva"    // optional but recommended
+     * }
+     */
+    public function professionalSignature(int $consultationId, string $body): string
+    {
+        $data = json_decode($body, true);
+
+        if (!$data || !isset($data['professional_id'])) {
+            http_response_code(400);
+            return json_encode(['error' => 'Bad request: professional_id is required']);
+        }
+
+        $professionalId   = (int)$data['professional_id'];
+        $professionalName = $data['professional_name'] ?? null;
+
+        try {
+            // 1. Verify consultation exists
+            $stmt = $this->conn->prepare("
+                SELECT id, customer_id 
+                FROM consultations 
+                WHERE id = :id
+            ");
+            $stmt->execute([':id' => $consultationId]);
+            $consultation = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$consultation) {
+                http_response_code(404);
+                return json_encode(['error' => 'Consultation not found']);
+            }
+
+            // 2. Optional: Verify that the professional exists and has proper role
+            if ($professionalName === null) {
+                $profStmt = $this->conn->prepare("
+                    SELECT id, name 
+                    FROM users 
+                    WHERE id = :id 
+                    AND role IN ('doctor', 'professional')
+                    AND is_active = 1
+                ");
+                $profStmt->execute([':id' => $professionalId]);
+                $prof = $profStmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$prof) {
+                    http_response_code(400);
+                    return json_encode([
+                        'error' => 'Invalid or inactive professional selected'
+                    ]);
+                }
+
+                $professionalName = $prof['name'];
+            }
+
+            // 3. Update consultation
+            $updateStmt = $this->conn->prepare("
+                UPDATE consultations 
+                SET 
+                    professional_id   = :prof_id,
+                    professional_name = :prof_name
+                WHERE id = :id
+            ");
+
+            $updateStmt->execute([
+                ':prof_id'   => $professionalId,
+                ':prof_name' => $professionalName,
+                ':id'        => $consultationId
+            ]);
+
+            if ($updateStmt->rowCount() === 0) {
+                http_response_code(500);
+                return json_encode(['error' => 'Failed to update consultation - no rows affected']);
+            }
+
+            // Success response
+            http_response_code(200);
+            return json_encode([
+                'message'           => 'Professional assigned successfully',
+                'consultation_id'   => $consultationId,
+                'professional_id'   => $professionalId,
+                'professional_name' => $professionalName
+            ]);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode([
+                'error'   => 'Database error while assigning professional',
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
 }

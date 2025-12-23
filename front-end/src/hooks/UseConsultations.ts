@@ -68,9 +68,9 @@ export interface AssignProfessionalInput {
   doctor_id: number;
 }
 
-export interface UploadImageInput {
-  file: File;
-  description?: string;
+export interface ProfessionalSignatureInput {
+  professional_id: number;
+  professional_name?: string;
 }
 
 export interface UploadImageResponse {
@@ -85,6 +85,13 @@ export interface BatchUploadImageResponse {
     success: boolean;
     error?: string;
   }>;
+}
+
+export interface ProfessionalSignatureResponse {
+  message: string;
+  consultation_id: number;
+  professional_id: number;
+  professional_name: string;
 }
 
 export const consultationKeys = {
@@ -115,6 +122,13 @@ export const consultationApi = {
   assignProfessional: async (consultationId: number, data: AssignProfessionalInput): Promise<{ message: string; consultation_id: number; doctor_id: number }> => {
     return apiClient.put<{ message: string; consultation_id: number; doctor_id: number }>(
       `/consultations/${consultationId}/assign-professional`,
+      data
+    );
+  },
+
+  professionalSignature: async (consultationId: number, data: ProfessionalSignatureInput): Promise<ProfessionalSignatureResponse> => {
+    return apiClient.put<ProfessionalSignatureResponse>(
+      `/consultations/${consultationId}/professiona-sign`,
       data
     );
   },
@@ -242,6 +256,28 @@ export function useAssignProfessional(
   });
 }
 
+export function useProfessionalSignature(
+  options?: UseMutationOptions<
+    ProfessionalSignatureResponse,
+    Error,
+    { consultationId: number; data: ProfessionalSignatureInput }
+  >
+) {
+  const queryClient = useQueryClient();
+  
+  return useMutation<
+    ProfessionalSignatureResponse,
+    Error,
+    { consultationId: number; data: ProfessionalSignatureInput }
+  >({
+    mutationFn: ({ consultationId, data }) => consultationApi.professionalSignature(consultationId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: consultationKeys.detail(variables.consultationId) });
+    },
+    ...options,
+  });
+}
+
 export function useUploadImage(
   options?: UseMutationOptions<UploadImageResponse, Error, { consultationId: number; file: File; description?: string }>
 ) {
@@ -292,6 +328,7 @@ export function useConsultationOperations() {
   const createMutation = useCreateConsultation();
   const updateMutation = useUpdateConsultation();
   const assignProfessionalMutation = useAssignProfessional();
+  const professionalSignatureMutation = useProfessionalSignature();
   const uploadImageMutation = useUploadImage();
   const uploadImagesBatchMutation = useUploadImagesBatch();
   
@@ -314,6 +351,8 @@ export function useConsultationOperations() {
     updateConsultationAsync: updateMutation.mutateAsync,
     assignProfessional: assignProfessionalMutation.mutate,
     assignProfessionalAsync: assignProfessionalMutation.mutateAsync,
+    professionalSignature: professionalSignatureMutation.mutate,
+    professionalSignatureAsync: professionalSignatureMutation.mutateAsync,
     uploadImage: uploadImageMutation.mutate,
     uploadImageAsync: uploadImageMutation.mutateAsync,
     uploadImagesBatch: uploadImagesBatchMutation.mutate,
@@ -321,12 +360,13 @@ export function useConsultationOperations() {
     refreshConsultation,
     refreshImages,
     refreshFollowUps,
-    isLoading: createMutation.isPending || updateMutation.isPending || assignProfessionalMutation.isPending || uploadImageMutation.isPending || uploadImagesBatchMutation.isPending,
-    isSuccess: createMutation.isSuccess || updateMutation.isSuccess || assignProfessionalMutation.isSuccess || uploadImageMutation.isSuccess || uploadImagesBatchMutation.isSuccess,
+    isLoading: createMutation.isPending || updateMutation.isPending || assignProfessionalMutation.isPending || professionalSignatureMutation.isPending || uploadImageMutation.isPending || uploadImagesBatchMutation.isPending,
+    isSuccess: createMutation.isSuccess || updateMutation.isSuccess || assignProfessionalMutation.isSuccess || professionalSignatureMutation.isSuccess || uploadImageMutation.isSuccess || uploadImagesBatchMutation.isSuccess,
     errors: {
       create: createMutation.error,
       update: updateMutation.error,
       assignProfessional: assignProfessionalMutation.error,
+      professionalSignature: professionalSignatureMutation.error,
       uploadImage: uploadImageMutation.error,
       uploadImagesBatch: uploadImagesBatchMutation.error,
     },

@@ -31,7 +31,7 @@ class CustomerController implements ControllerInterface {
         }
         
         // Allow reception and higher roles to manage customers
-        if (!RoleGuard::roleGuard('reception') && !RoleGuard::roleGuard('doctor') && !RoleGuard::roleGuard('admin')) {
+        if (!RoleGuard::roleGuard('reception') && !RoleGuard::roleGuard('doctor') && !RoleGuard::roleGuard('admin') && !RoleGuard::roleGuard('professional')) {
              http_response_code(403);
              return json_encode(['message' => 'Forbidden']);
         }

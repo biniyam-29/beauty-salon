@@ -47,6 +47,9 @@ class ConsultationController implements ControllerInterface {
             // }
             return $this->consultationService->assignProfessional($id, $body);
         }
+        if ($method === 'PUT' && $id && $subResource === 'professiona-sign') {
+            return $this->consultationService->professionalSignature($id, $body);
+        }
 
         if ($method === 'GET' && $id === 'follow-ups' && $subResource === 'today') {
             if (RoleGuard::roleGuard('reception') || RoleGuard::roleGuard('doctor')) {

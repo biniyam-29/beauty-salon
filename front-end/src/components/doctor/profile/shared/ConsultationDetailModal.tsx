@@ -10,9 +10,10 @@ import {
   Image as ImageIcon,
   UserCog,
   BadgeCheck,
-  UserX
+  UserX,
+  PenLine
 } from "lucide-react";
-import { useConsultation } from "../../../../hooks/UseConsultations";
+import { useConsultation, useConsultationOperations } from "../../../../hooks/UseConsultations";
 import { ImageGallery } from "./ImageGallery";
 
 interface ConsultationDetailModalProps {
@@ -62,6 +63,77 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
     <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${config.bgColor} ${config.textColor} border ${config.borderColor}`}>
       <Icon size={14} />
       <span className="text-sm font-medium">{config.label}</span>
+    </div>
+  );
+};
+
+const ProfessionalSignatureSection: React.FC<{
+  consultationId: number;
+  professionalName?: string;
+  professionalId?: number;
+}> = ({ consultationId, professionalName, professionalId }) => {
+  const { professionalSignature, refreshConsultation } = useConsultationOperations();
+  
+  // Get current user from localStorage
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const isProfessional = currentUser?.role === "professional";
+  const userId = currentUser?.id;
+  const userName = currentUser?.name;
+
+  // Check if signature button should be shown
+  const shouldShowSignatureButton = isProfessional && (!professionalId || !professionalName);
+
+  const handleSign = () => {
+    if (!userId || !userName) return;
+
+    professionalSignature(
+      { consultationId, data: { professional_id: userId, professional_name: userName } },
+      {
+        onSuccess: () => {
+          // Refresh consultation data to show updated signature
+          refreshConsultation(consultationId);
+          // You may add a nice toast notification here
+          // Example: toast.success("Consultation signed successfully");
+        },
+        onError: (error) => {
+          // You may add error toast here
+          // Example: toast.error("Failed to sign consultation");
+          console.error("Signature error:", error);
+        }
+      }
+    );
+  };
+
+  if (!isProfessional && !professionalName) return null;
+
+  return (
+    <div className="mt-4 pt-4 border-t border-gray-200">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <PenLine size={20} className="text-indigo-600" />
+          <div>
+            <h4 className="font-medium text-gray-800">Professional Signature</h4>
+            {professionalName && professionalId ? (
+              <p className="text-sm text-emerald-600">
+                Signed by {professionalName} (ID: {professionalId})
+              </p>
+            ) : (
+              <p className="text-sm text-gray-500">Awaiting professional signature</p>
+            )}
+          </div>
+        </div>
+
+        {shouldShowSignatureButton && (
+          <button
+            onClick={handleSign}
+            className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 
+                     transition-colors flex items-center gap-2 shadow-sm font-medium"
+          >
+            <PenLine size={16} />
+            Sign Consultation
+          </button>
+        )}
+      </div>
     </div>
   );
 };
@@ -130,7 +202,7 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
             </div>
           ) : consultation ? (
             <div className="space-y-6">
-              {/* Top Cards Grid - Updated to 5 columns */}
+              {/* Top Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <InfoCard
                   title="Consultation Date"
@@ -171,7 +243,7 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
                   ) : (
                     <div className="flex flex-col items-center justify-center py-2">
                       <UserX size={24} className="text-gray-400 mb-2" />
-                      <p className="text-gray-500 text-center">No professional </p>
+                      <p className="text-gray-500 text-center">No professional assigned</p>
                     </div>
                   )}
                 </InfoCard>
@@ -211,6 +283,13 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
                   </p>
                 </InfoCard>
               </div>
+
+              {/* Professional Signature Control */}
+              <ProfessionalSignatureSection 
+                consultationId={consultationId}
+                professionalName={consultation.professional_name}
+                professionalId={consultation.professional_id}
+              />
 
               {/* Images Gallery */}
               {consultation.images && consultation.images.length > 0 && (
