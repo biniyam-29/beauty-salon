@@ -92,11 +92,6 @@ export const DoctorCustomerDashboard: React.FC = () => {
     }
   };
 
-  const handlePrescribe = async (serviceId: number, dateTime: string, notes: string) => {
-    console.log("Prescribing service:", { serviceId, dateTime, notes, customerId: selectedCustomerId });
-    alert("Service prescribed successfully!");
-  };
-
   const handleEditSuccess = () => {
     console.log("Customer updated successfully!");
     // Refresh the customer details after edit
@@ -345,7 +340,10 @@ export const DoctorCustomerDashboard: React.FC = () => {
             }}
             customerName={selectedCustomerBasic?.full_name || ""}
             customerId={selectedCustomerId || ""}
-            onPrescribe={handlePrescribe}
+            onPrescribe={(servicePrescription) => {
+              console.log("Service prescription created:", servicePrescription);
+              alert(`Service "${servicePrescription.name}" prescribed successfully!`);
+            }}
           />
         </>
       )}
