@@ -1,52 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
 import { Phone, Check, Bell, ChevronLeft, Loader2 } from "lucide-react";
-
-// --- Type Definitions ---
-interface Reminder {
-  customer_id: number;
-  full_name: string;
-  phone: string;
-  last_session_date: string;
-  days_since_last_session: number;
-}
-
-// --- API Functions ---
-const API_BASE_URL = "https://api.in2skincare.com";
-
-const getAuthToken = () => {
-  const token = localStorage.getItem("auth_token");
-  if (!token) throw new Error("Authentication token not found.");
-  return token;
-};
-
-const fetchReminders = async (): Promise<Reminder[]> => {
-  const token = getAuthToken();
-  const response = await fetch(`${API_BASE_URL}/reminders`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) throw new Error("Failed to fetch reminders.");
-  const data = await response.json();
-  return data.reminders || [];
-};
-
-const completeReminder = async (customerId: number): Promise<void> => {
-  const token = getAuthToken();
-  const response = await fetch(`${API_BASE_URL}/reminders`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ customer_id: customerId, status: "completed" }),
-  });
-  if (!response.ok) throw new Error("Failed to mark reminder as completed.");
-};
+import { useCustomersToRemind, useLogReminder } from "../../hooks/UseReminders";
 
 // --- Modern UI Components ---
 const cn = (...classes: (string | boolean | undefined)[]) =>
@@ -89,7 +44,7 @@ const DaysAgoBadge: React.FC<{ days: number }> = ({ days }) => {
 };
 
 const ReminderItem: React.FC<{
-  reminder: Reminder;
+  reminder: any; // ReminderCustomer from hook
   onComplete: () => void;
   isCompleting: boolean;
 }> = ({ reminder, onComplete, isCompleting }) => (
@@ -104,7 +59,7 @@ const ReminderItem: React.FC<{
       </div>
     </div>
     <div className="w-full sm:w-auto flex items-center justify-between gap-4">
-      <DaysAgoBadge days={reminder.days_since_last_session} />
+      <DaysAgoBadge days={reminder.days_since_last_session ?? 0} />
       <div className="flex items-center gap-2">
         <a href={`tel:${reminder.phone}`}>
           <Button size="icon" variant="ghost" title="Call Client">
@@ -148,54 +103,25 @@ const SkeletonLoader: React.FC = () => (
   </div>
 );
 
-// --- Main Reminders Page Component ---
+// --- Main Reminders Page ---
 export const RemindersPage: React.FC = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   const {
     data: reminders = [],
     isLoading,
     isError,
     error,
-  } = useQuery({
-    queryKey: ["reminders"],
-    queryFn: fetchReminders,
-  });
+  } = useCustomersToRemind();
 
-  const completeMutation = useMutation({
-    mutationFn: completeReminder,
-    onMutate: async (customerId: number) => {
-      // Optimistically update the UI
-      await queryClient.cancelQueries({ queryKey: ["reminders"] });
-      const previousReminders = queryClient.getQueryData<Reminder[]>([
-        "reminders",
-      ]);
-      queryClient.setQueryData<Reminder[]>(["reminders"], (old) =>
-        old ? old.filter((r) => r.customer_id !== customerId) : []
-      );
-      return { previousReminders };
-    },
-    onError: (_err, _customerId, context) => {
-      // Roll back on error
-      if (context?.previousReminders) {
-        queryClient.setQueryData(["reminders"], context.previousReminders);
-      }
-    },
-    onSettled: () => {
-      // Refetch after mutation to ensure consistency
-      queryClient.invalidateQueries({ queryKey: ["reminders"] });
-    },
-  });
+  const { mutate: completeReminder, isPending: isCompleting } = useLogReminder();
 
   return (
     <div className="w-full bg-[#FDF8F5] min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
       <div className="max-w-4xl mx-auto">
         <header className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">
-              Follow-Up Reminders
-            </h1>
+            <h1 className="text-3xl font-bold text-gray-800">Follow-Up Reminders</h1>
             <p className="text-gray-500 mt-1">
               Clients needing a follow-up call after their last session.
             </p>
@@ -210,14 +136,12 @@ export const RemindersPage: React.FC = () => {
           <SkeletonLoader />
         ) : isError ? (
           <div className="text-center text-red-500 p-10 bg-white rounded-2xl">
-            Error: {error.message}
+            Error: {error?.message || "Failed to load reminders"}
           </div>
         ) : reminders.length === 0 ? (
           <div className="text-center p-12 bg-white rounded-2xl border border-rose-100/60">
             <Bell size={48} className="mx-auto text-green-400" />
-            <h3 className="mt-4 text-xl font-semibold text-gray-800">
-              All Caught Up!
-            </h3>
+            <h3 className="mt-4 text-xl font-semibold text-gray-800">All Caught Up!</h3>
             <p className="mt-1 text-gray-500">
               There are no follow-up reminders at this time. Great work!
             </p>
@@ -226,13 +150,19 @@ export const RemindersPage: React.FC = () => {
           <div className="space-y-4">
             {reminders.map((reminder) => (
               <ReminderItem
-                key={reminder.customer_id}
+                key={reminder.id}
                 reminder={reminder}
-                onComplete={() => completeMutation.mutate(reminder.customer_id)}
-                isCompleting={
-                  completeMutation.isPending &&
-                  completeMutation.variables === reminder.customer_id
+                onComplete={() =>
+                  completeReminder(
+                    { customer_id: reminder.id, status: "completed" },
+                    {
+                      onSuccess: () => {
+                        // Optional: show toast/success message
+                      },
+                    }
+                  )
                 }
+                isCompleting={isCompleting}
               />
             ))}
           </div>

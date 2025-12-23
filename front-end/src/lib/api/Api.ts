@@ -1,6 +1,6 @@
 
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = 'https://api.in2skincare.com';
 
 export interface QueuedRequest {
   resolve: (value: any) => void;

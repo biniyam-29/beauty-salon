@@ -18,7 +18,6 @@ import LoginPage from "./pages/auth/LoginPage";
 import { RemindersPage } from "./components/reception/RemindersPage";
 import AssignedPatientsPage from "./pages/admin/AdminPage";
 import HomePage from "./pages/HomePage";
-import PrescriptionFulfillmentPage from "./components/reception/PrescriptionCheckoutPage";
 import PhoneBookingPage from "./components/reception/phone/PhoneBookingPage";
 import { DoctorCustomerDashboard } from "./components/doctor/DoctorCustomerDashboard";
 import PatientUpdateWizard from "./components/doctor/forms/PatientUpdateWizard";
@@ -145,17 +144,6 @@ const AppRoutes: React.FC = () => {
           <RequireAuth role="reception">
             <GradientLayout>
               <RemindersPage />
-            </GradientLayout>
-          </RequireAuth>
-        }
-      />
-
-      <Route
-        path="/reception/product-deduction"
-        element={
-          <RequireAuth role="reception">
-            <GradientLayout>
-              <PrescriptionFulfillmentPage />
             </GradientLayout>
           </RequireAuth>
         }
