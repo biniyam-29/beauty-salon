@@ -1,5 +1,17 @@
 import React from "react";
-import { X, Calendar, FileText, Target, MessageSquare, CheckCircle, Clock, Image as ImageIcon } from "lucide-react";
+import { 
+  X, 
+  Calendar, 
+  FileText, 
+  Target, 
+  MessageSquare, 
+  CheckCircle, 
+  Clock, 
+  Image as ImageIcon,
+  UserCog,
+  BadgeCheck,
+  UserX
+} from "lucide-react";
 import { useConsultation } from "../../../../hooks/UseConsultations";
 import { ImageGallery } from "./ImageGallery";
 
@@ -25,6 +37,35 @@ const InfoCard: React.FC<{ title: string; icon: React.ReactNode; children: React
   </div>
 );
 
+const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
+  const statusConfig = {
+    pending: {
+      bgColor: "bg-amber-100",
+      textColor: "text-amber-800",
+      borderColor: "border-amber-200",
+      icon: Clock,
+      label: "Pending"
+    },
+    completed: {
+      bgColor: "bg-emerald-100",
+      textColor: "text-emerald-800",
+      borderColor: "border-emerald-200",
+      icon: BadgeCheck,
+      label: "Completed"
+    }
+  };
+
+  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+  const Icon = config.icon;
+
+  return (
+    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${config.bgColor} ${config.textColor} border ${config.borderColor}`}>
+      <Icon size={14} />
+      <span className="text-sm font-medium">{config.label}</span>
+    </div>
+  );
+};
+
 export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = ({
   consultationId,
   onClose,
@@ -48,13 +89,18 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
         {/* Header */}
         <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-rose-50 to-white">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                Consultation Details
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                ID: #{consultationId} • Customer ID: {consultation?.customer_id || "N/A"}
-              </p>
+            <div className="flex items-start gap-3">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                  Consultation Details
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  ID: #{consultationId} • Customer ID: {consultation?.customer_id || "N/A"}
+                </p>
+              </div>
+              {consultation?.status && (
+                <StatusBadge status={consultation.status} />
+              )}
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -84,8 +130,8 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
             </div>
           ) : consultation ? (
             <div className="space-y-6">
-              {/* Top Cards Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Top Cards Grid - Updated to 5 columns */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <InfoCard
                   title="Consultation Date"
                   icon={<Calendar size={18} />}
@@ -104,6 +150,30 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
                       minute: '2-digit',
                     })}
                   </p>
+                </InfoCard>
+
+                <InfoCard
+                  title="Professional"
+                  icon={<UserCog size={18} />}
+                  className={!consultation.professional_name ? "opacity-75" : ""}
+                >
+                  {consultation.professional_name ? (
+                    <>
+                      <p className="text-lg font-semibold text-gray-900">
+                        {consultation.professional_name}
+                      </p>
+                      {consultation.professional_id && (
+                        <p className="text-sm text-gray-500 mt-1">
+                          ID: {consultation.professional_id}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-2">
+                      <UserX size={24} className="text-gray-400 mb-2" />
+                      <p className="text-gray-500 text-center">No professional </p>
+                    </div>
+                  )}
                 </InfoCard>
 
                 <InfoCard
@@ -131,17 +201,13 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
 
                 <InfoCard
                   title="Status"
-                  icon={<CheckCircle size={18} />}
+                  icon={consultation.status === 'completed' ? <BadgeCheck size={18} /> : <Clock size={18} />}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="font-semibold text-gray-900">Completed</span>
+                  <div className="mb-2">
+                    <StatusBadge status={consultation.status || 'pending'} />
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {new Date(consultation.created_at).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}
+                  <p className="text-sm text-gray-500">
+                    {consultation.status === 'completed' ? 'Consultation completed' : 'Awaiting completion'}
                   </p>
                 </InfoCard>
               </div>
@@ -161,7 +227,7 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
                     image_url: img.image_url,
                     description: img.description,
                     created_at: img.created_at,
-                    consultation_id: consultation.id // Add missing property
+                    consultation_id: consultation.id
                   }))} />
                 </div>
               )}
@@ -219,7 +285,7 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
 
                 {/* Right Column - Feedback & Metadata */}
                 <div className="space-y-6">
-                  {/* Previous Feedback */}
+                  {/* Previous Feedback - All sections */}
                   {consultation.previous_treatment_feedback && typeof consultation.previous_treatment_feedback === 'object' && (
                     <InfoCard
                       title="Treatment Feedback"
@@ -237,6 +303,40 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
                                 <li key={idx} className="flex items-center gap-2 text-sm">
                                   <CheckCircle size={12} className="text-green-500 flex-shrink-0" />
                                   <span className="text-gray-700">{strength}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {'weaknesses' in consultation.previous_treatment_feedback && 
+                         consultation.previous_treatment_feedback.weaknesses && 
+                         Array.isArray(consultation.previous_treatment_feedback.weaknesses) && 
+                         consultation.previous_treatment_feedback.weaknesses.length > 0 && (
+                          <div>
+                            <h4 className="font-medium text-amber-700 mb-2">Areas for Improvement</h4>
+                            <ul className="space-y-1">
+                              {consultation.previous_treatment_feedback.weaknesses.map((weakness: string, idx: number) => (
+                                <li key={idx} className="flex items-center gap-2 text-sm">
+                                  <div className="w-1.5 h-1.5 bg-amber-400 rounded-full flex-shrink-0"></div>
+                                  <span className="text-gray-700">{weakness}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {'next_steps' in consultation.previous_treatment_feedback && 
+                         consultation.previous_treatment_feedback.next_steps && 
+                         Array.isArray(consultation.previous_treatment_feedback.next_steps) && 
+                         consultation.previous_treatment_feedback.next_steps.length > 0 && (
+                          <div>
+                            <h4 className="font-medium text-blue-700 mb-2">Next Steps</h4>
+                            <ul className="space-y-1">
+                              {consultation.previous_treatment_feedback.next_steps.map((step: string, idx: number) => (
+                                <li key={idx} className="flex items-center gap-2 text-sm">
+                                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full flex-shrink-0"></div>
+                                  <span className="text-gray-700">{step}</span>
                                 </li>
                               ))}
                             </ul>
@@ -286,9 +386,16 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
         {/* Footer */}
         <div className="flex-shrink-0 px-6 py-4 border-t border-gray-100 bg-gray-50">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <p className="text-sm text-gray-500">
-              Consultation ID: <span className="font-mono">#{consultationId}</span>
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-gray-500">
+                Consultation ID: <span className="font-mono">#{consultationId}</span>
+              </p>
+              {consultation?.status === 'pending' && (
+                <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-medium">
+                  Action Required
+                </span>
+              )}
+            </div>
             <div className="flex gap-3">
               <button
                 onClick={onClose}

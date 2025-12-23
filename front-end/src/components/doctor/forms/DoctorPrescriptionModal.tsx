@@ -41,6 +41,7 @@ export const DoctorPrescriptionModal: React.FC<DoctorPrescriptionModalProps> = (
   const [useCustom, setUseCustom] = useState(false);
   const [error, setError] = useState("");
   const [showQuickConsultModal, setShowQuickConsultModal] = useState(false);
+  const [pendingServicePrescription, setPendingServicePrescription] = useState<CreateServicePrescriptionInput | null>(null);
   const [pendingProductPrescription, setPendingProductPrescription] = useState<CreatePrescriptionInput | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -109,80 +110,83 @@ export const DoctorPrescriptionModal: React.FC<DoctorPrescriptionModalProps> = (
     onClose();
   };
 
+  const prepareServiceData = () => {
+    if (useCustom) {
+      const priceNum = Math.round(parseFloat(customPrice));
+      return {
+        name: customName.trim(),
+        prescription_notes: notes.trim() || undefined,
+        price: priceNum,
+        customer_id: Number(customerId),
+        status: "pending",
+      } as CreateServicePrescriptionInput;
+    } else {
+      if (!selectedService) {
+        setError("Please select a service");
+        return null;
+      }
+      return {
+        name: selectedService.name,
+        prescription_notes: notes.trim() || undefined,
+        price: Math.round(selectedService.price),
+        customer_id: Number(customerId),
+        status: "pending",
+      } as CreateServicePrescriptionInput;
+    }
+  };
+
+  const prepareProductData = () => {
+    if (useCustom) {
+      return {
+        consultation_id: consultationId || 0,
+        product_name_custom: customName.trim(),
+        quantity: parseInt(quantity) || 1,
+        instructions: notes.trim() || undefined,
+      } as CreatePrescriptionInput;
+    } else {
+      if (!selectedProduct) {
+        setError("Please select a product");
+        return null;
+      }
+      return {
+        consultation_id: consultationId || 0,
+        product_id: selectedProduct.id,
+        quantity: parseInt(quantity) || 1,
+        instructions: notes.trim() || undefined,
+      } as CreatePrescriptionInput;
+    }
+  };
+
   const handleSubmit = () => {
     setError("");
 
     if (useCustom) {
       if (!validateCustom()) return;
+    }
 
-      if (mode === "service") {
-        const priceNum = Math.round(parseFloat(customPrice));
-        const data: CreateServicePrescriptionInput = {
-          name: customName.trim(),
-          prescription_notes: notes.trim() || undefined,
-          price: priceNum,
-          customer_id: Number(customerId),
-          status: "pending",
-        };
-        createService.mutate(data);
+    // Check if consultation is needed
+    const requiresConsultation = !consultationId;
+
+    if (mode === "service") {
+      const serviceData = prepareServiceData();
+      if (!serviceData) return;
+
+      if (requiresConsultation) {
+        setPendingServicePrescription(serviceData);
+        setShowQuickConsultModal(true);
       } else {
-        if (!consultationId) {
-          setPendingProductPrescription({
-            consultation_id: 0,
-            product_name_custom: customName.trim(),
-            quantity: parseInt(quantity) || 1,
-            instructions: notes.trim() || undefined,
-          });
-          setShowQuickConsultModal(true);
-          return;
-        }
-
-        const data: CreatePrescriptionInput = {
-          consultation_id: consultationId,
-          product_name_custom: customName.trim(),
-          quantity: parseInt(quantity) || 1,
-          instructions: notes.trim() || undefined,
-        };
-        createProductPrescription.mutate(data);
+        createService.mutate(serviceData);
       }
     } else {
-      if (mode === "service") {
-        if (!selectedService) {
-          setError("Please select a service");
-          return;
-        }
-        const data: CreateServicePrescriptionInput = {
-          name: selectedService.name,
-          prescription_notes: notes.trim() || undefined,
-          price: Math.round(selectedService.price),
-          customer_id: Number(customerId),
-          status: "pending",
-        };
-        createService.mutate(data);
+      const productData = prepareProductData();
+      if (!productData) return;
+
+      if (requiresConsultation) {
+        // Store product data and show quick consultation modal
+        setPendingProductPrescription(productData);
+        setShowQuickConsultModal(true);
       } else {
-        if (!selectedProduct) {
-          setError("Please select a product");
-          return;
-        }
-
-        if (!consultationId) {
-          setPendingProductPrescription({
-            consultation_id: 0,
-            product_id: selectedProduct.id,
-            quantity: parseInt(quantity) || 1,
-            instructions: notes.trim() || undefined,
-          });
-          setShowQuickConsultModal(true);
-          return;
-        }
-
-        const data: CreatePrescriptionInput = {
-          consultation_id: consultationId,
-          product_id: selectedProduct.id,
-          quantity: parseInt(quantity) || 1,
-          instructions: notes.trim() || undefined,
-        };
-        createProductPrescription.mutate(data);
+        createProductPrescription.mutate(productData);
       }
     }
   };
@@ -198,6 +202,7 @@ export const DoctorPrescriptionModal: React.FC<DoctorPrescriptionModalProps> = (
     setUseCustom(false);
     setError("");
     setShowQuickConsultModal(false);
+    setPendingServicePrescription(null);
     setPendingProductPrescription(null);
     setShowSuccessModal(false);
     setSuccessMessage("");
@@ -217,6 +222,14 @@ export const DoctorPrescriptionModal: React.FC<DoctorPrescriptionModalProps> = (
             <div>
               <h2 className="text-2xl font-bold text-gray-800">Create Prescription</h2>
               <p className="text-sm text-gray-500">For: {customerName}</p>
+              {!consultationId && (
+                <div className="mt-1 flex items-center gap-2">
+                  <AlertCircle size={14} className="text-amber-600" />
+                  <span className="text-xs text-amber-600 font-medium">
+                    Consultation required for prescription
+                  </span>
+                </div>
+              )}
             </div>
             <button
               onClick={onClose}
@@ -251,6 +264,21 @@ export const DoctorPrescriptionModal: React.FC<DoctorPrescriptionModalProps> = (
                   <Package size={18} /> Product
                 </button>
               </div>
+
+              {!consultationId && (
+                <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle size={20} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-amber-800">Consultation Required</p>
+                      <p className="text-sm text-amber-700 mt-1">
+                        A consultation record is required before creating a prescription. 
+                        You'll be prompted to create one after selecting your prescription details.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="mb-6">
                 <button
@@ -467,10 +495,18 @@ export const DoctorPrescriptionModal: React.FC<DoctorPrescriptionModalProps> = (
                         <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
                         Processing...
                       </div>
+                    ) : !consultationId ? (
+                      `Continue to Create Consultation`
                     ) : (
                       `Create ${mode === "service" ? "Service" : "Product"} Prescription`
                     )}
                   </Button>
+                  
+                  {!consultationId && (
+                    <p className="mt-3 text-sm text-gray-500 text-center">
+                      A consultation record must be created before prescribing {mode === "service" ? "services" : "products"}.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -482,11 +518,15 @@ export const DoctorPrescriptionModal: React.FC<DoctorPrescriptionModalProps> = (
         isOpen={showQuickConsultModal}
         onClose={() => {
           setShowQuickConsultModal(false);
+          setPendingServicePrescription(null);
           setPendingProductPrescription(null);
         }}
         customerId={Number(customerId)}
         customerName={customerName}
         onSuccess={(newConsultationId) => {
+          if (pendingServicePrescription) {
+            createService.mutate(pendingServicePrescription);
+          }
           if (pendingProductPrescription) {
             const prescriptionData = {
               ...pendingProductPrescription,

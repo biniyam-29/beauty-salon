@@ -31,7 +31,9 @@ export interface Consultation {
   follow_up_date: string | null;
   created_at: string;
   images?: ConsultationImage[];
-  doctor_name?: string;
+  professional_name?: string;
+  status: string;
+  professional_id?: number;
 }
 
 export interface FollowUpCustomer {
