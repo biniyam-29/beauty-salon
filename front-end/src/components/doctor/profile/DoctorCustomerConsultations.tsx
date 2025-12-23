@@ -73,7 +73,6 @@ const ConsultationItem: React.FC<{
 
 export const CustomerConsultations: React.FC<CustomerConsultationsProps> = ({
   customerId,
-  customerName,
 }) => {
   const [selectedConsultation, setSelectedConsultation] = useState<number | null>(null);
 

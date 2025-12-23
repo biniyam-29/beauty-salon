@@ -1,165 +1,309 @@
 import React from "react";
-import { X, Users } from "lucide-react";
-import {
-  useConsultationDetail,
-} from "../../../../hooks/UseCustomer";
+import { X, Calendar, FileText, Target, MessageSquare, CheckCircle, Clock, Image as ImageIcon } from "lucide-react";
+import { useConsultation } from "../../../../hooks/UseConsultations";
 import { ImageGallery } from "./ImageGallery";
 
 interface ConsultationDetailModalProps {
   consultationId: number;
   onClose: () => void;
-  onAssignProfessional: (consultationId: number) => void;
 }
 
-export const ConsultationDetailModal: React.FC<
-  ConsultationDetailModalProps
-> = ({ consultationId, onClose, onAssignProfessional }) => {
-  const { data: consultation, isLoading } = useConsultationDetail(consultationId);
+const InfoCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode; className?: string }> = ({
+  title,
+  icon,
+  children,
+  className = "",
+}) => (
+  <div className={`bg-gradient-to-br from-white to-gray-50 p-4 rounded-xl border border-gray-100 shadow-sm ${className}`}>
+    <div className="flex items-center gap-2 mb-3">
+      <div className="p-1.5 bg-rose-50 rounded-lg">
+        <div className="text-rose-600">{icon}</div>
+      </div>
+      <h3 className="font-semibold text-gray-800">{title}</h3>
+    </div>
+    <div className="text-gray-700">{children}</div>
+  </div>
+);
 
-  if (!consultation) return null;
+export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = ({
+  consultationId,
+  onClose,
+}) => {
+  const { data: consultation, isLoading, error } = useConsultation(consultationId);
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  if (!consultation && !isLoading && !error) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
-      <div className="bg-white p-6 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-rose-100">
+    <div 
+      className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-50 p-2 sm:p-4 transition-opacity duration-300"
+      onClick={handleBackdropClick}
+    >
+      <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col shadow-2xl border border-gray-200">
         {/* Header */}
-        <div className="flex justify-between items-center border-b border-rose-200 pb-3 mb-4">
-          <h2 className="text-2xl font-bold text-rose-700">
-            Consultation Detail
-          </h2>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onAssignProfessional(consultation.id)}
-              className="flex items-center gap-2 px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition font-medium text-sm"
-            >
-              <Users size={16} />
-              Assign Professional
-            </button>
-            <button
-              onClick={onClose}
-              className="text-rose-500 hover:text-rose-700 font-semibold text-lg p-1"
-            >
-              <X size={24} />
-            </button>
+        <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-rose-50 to-white">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                Consultation Details
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                ID: #{consultationId} • Customer ID: {consultation?.customer_id || "N/A"}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Close modal"
+              >
+                <X size={24} className="text-gray-600" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {isLoading ? (
-          <p className="text-center text-gray-500 py-6">Loading...</p>
-        ) : (
-          <div className="space-y-5">
-            {/* Date & Follow-up */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-rose-50 p-3 rounded-lg border border-rose-100">
-                <p className="text-xs text-rose-600 uppercase font-semibold">
-                  Consultation Date
-                </p>
-                <p className="text-gray-800 font-medium">
-                  {new Date(consultation.consultation_date).toLocaleDateString(
-                    "en-US",
-                    {
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600"></div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                <X size={24} className="text-red-500" />
+              </div>
+              <p className="text-red-600 font-medium">Failed to load consultation details</p>
+              <p className="text-gray-500 text-sm mt-2">Please try again later</p>
+            </div>
+          ) : consultation ? (
+            <div className="space-y-6">
+              {/* Top Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <InfoCard
+                  title="Consultation Date"
+                  icon={<Calendar size={18} />}
+                >
+                  <p className="text-lg font-semibold text-gray-900">
+                    {new Date(consultation.consultation_date).toLocaleDateString("en-US", {
+                      weekday: 'short',
                       year: "numeric",
-                      month: "long",
+                      month: "short",
                       day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }
-                  )}
-                </p>
-              </div>
-              <div className="bg-rose-50 p-3 rounded-lg border border-rose-100">
-                <p className="text-xs text-rose-600 uppercase font-semibold">
-                  Follow-up Date
-                </p>
-                <p className="text-gray-800 font-medium">
+                    })}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {new Date(consultation.consultation_date).toLocaleTimeString("en-US", {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </InfoCard>
+
+                <InfoCard
+                  title="Follow-up Date"
+                  icon={<Clock size={18} />}
+                  className={!consultation.follow_up_date ? "opacity-75" : ""}
+                >
                   {consultation.follow_up_date ? (
-                    new Date(consultation.follow_up_date).toLocaleDateString(
-                      "en-US",
-                      {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      }
-                    )
+                    <>
+                      <p className="text-lg font-semibold text-gray-900">
+                        {new Date(consultation.follow_up_date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </p>
+                      <p className="text-sm text-amber-600 mt-1 font-medium">
+                        Scheduled
+                      </p>
+                    </>
                   ) : (
-                    <span className="text-gray-500">Not scheduled</span>
+                    <p className="text-gray-500 text-lg">Not scheduled</p>
                   )}
-                </p>
+                </InfoCard>
+
+                <InfoCard
+                  title="Status"
+                  icon={<CheckCircle size={18} />}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="font-semibold text-gray-900">Completed</span>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {new Date(consultation.created_at).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </p>
+                </InfoCard>
+              </div>
+
+              {/* Images Gallery */}
+              {consultation.images && consultation.images.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon size={20} className="text-rose-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">Visual Notes</h3>
+                    <span className="text-sm bg-rose-100 text-rose-700 px-3 py-1 rounded-full">
+                      {consultation.images.length} image{consultation.images.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <ImageGallery images={consultation.images.map((img: any) => ({
+                    id: img.id,
+                    image_url: img.image_url,
+                    description: img.description,
+                    created_at: img.created_at,
+                    consultation_id: consultation.id // Add missing property
+                  }))} />
+                </div>
+              )}
+
+              {/* Main Content Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column - Notes */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Doctor Notes */}
+                  <InfoCard
+                    title="Doctor's Notes"
+                    icon={<FileText size={18} />}
+                  >
+                    <div className="prose prose-sm max-w-none">
+                      <p className="text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        {consultation.doctor_notes || "No notes provided"}
+                      </p>
+                    </div>
+                  </InfoCard>
+
+                  {/* Treatment Goals */}
+                  {consultation.treatment_goals_today && typeof consultation.treatment_goals_today === 'object' && (
+                    <InfoCard
+                      title="Treatment Goals"
+                      icon={<Target size={18} />}
+                    >
+                      {'primary' in consultation.treatment_goals_today && consultation.treatment_goals_today.primary && (
+                        <div className="mb-4">
+                          <h4 className="font-medium text-gray-800 mb-2">Primary Goal</h4>
+                          <p className="text-gray-700 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                            {consultation.treatment_goals_today.primary}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {'secondary' in consultation.treatment_goals_today && 
+                       consultation.treatment_goals_today.secondary && 
+                       Array.isArray(consultation.treatment_goals_today.secondary) && 
+                       consultation.treatment_goals_today.secondary.length > 0 && (
+                        <div>
+                          <h4 className="font-medium text-gray-800 mb-2">Secondary Goals</h4>
+                          <ul className="space-y-2">
+                            {consultation.treatment_goals_today.secondary.map((goal: string, idx: number) => (
+                              <li key={idx} className="flex items-start gap-2">
+                                <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+                                <span className="text-gray-700">{goal}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </InfoCard>
+                  )}
+                </div>
+
+                {/* Right Column - Feedback & Metadata */}
+                <div className="space-y-6">
+                  {/* Previous Feedback */}
+                  {consultation.previous_treatment_feedback && typeof consultation.previous_treatment_feedback === 'object' && (
+                    <InfoCard
+                      title="Treatment Feedback"
+                      icon={<MessageSquare size={18} />}
+                    >
+                      <div className="space-y-4">
+                        {'strengths' in consultation.previous_treatment_feedback && 
+                         consultation.previous_treatment_feedback.strengths && 
+                         Array.isArray(consultation.previous_treatment_feedback.strengths) && 
+                         consultation.previous_treatment_feedback.strengths.length > 0 && (
+                          <div>
+                            <h4 className="font-medium text-green-700 mb-2">Strengths</h4>
+                            <ul className="space-y-1">
+                              {consultation.previous_treatment_feedback.strengths.map((strength: string, idx: number) => (
+                                <li key={idx} className="flex items-center gap-2 text-sm">
+                                  <CheckCircle size={12} className="text-green-500 flex-shrink-0" />
+                                  <span className="text-gray-700">{strength}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </InfoCard>
+                  )}
+
+                  {/* Metadata */}
+                  <InfoCard
+                    title="Record Information"
+                    icon={<Calendar size={18} />}
+                  >
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">
+                          Created
+                        </p>
+                        <p className="text-sm text-gray-700">
+                          {new Date(consultation.created_at).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">
+                          Customer ID
+                        </p>
+                        <p className="text-sm text-gray-700 font-mono">
+                          #{consultation.customer_id}
+                        </p>
+                      </div>
+                    </div>
+                  </InfoCard>
+                </div>
               </div>
             </div>
-
-            {/* Images Gallery */}
-            {consultation.images && consultation.images.length > 0 && (
-              <ImageGallery images={consultation.images} />
-            )}
-
-            {/* Doctor Notes */}
-            <div className="bg-white border border-rose-100 rounded-lg p-4 shadow-sm">
-              <h3 className="text-rose-700 font-semibold mb-2">Doctor Notes</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">
-                {consultation.doctor_notes || consultation.notes}
-              </p>
-            </div>
-
-            {/* Treatment Goals */}
-            {consultation.treatment_goals_today &&
-              consultation.treatment_goals_today.length > 0 && (
-                <div className="bg-white border border-rose-100 rounded-lg p-4 shadow-sm">
-                  <h3 className="text-rose-700 font-semibold mb-2">
-                    Treatment Goals
-                  </h3>
-                  <ul className="list-disc list-inside text-gray-700 space-y-1">
-                    {consultation.treatment_goals_today.map(
-                      (goal: string, idx: number) => (
-                        <li key={idx}>{goal}</li>
-                      )
-                    )}
-                  </ul>
-                </div>
-              )}
-
-            {/* Previous Feedback */}
-            {consultation.previous_treatment_feedback &&
-              consultation.previous_treatment_feedback.length > 0 && (
-                <div className="bg-white border border-rose-100 rounded-lg p-4 shadow-sm">
-                  <h3 className="text-rose-700 font-semibold mb-2">
-                    Previous Feedback
-                  </h3>
-                  <ul className="list-disc list-inside text-gray-700 space-y-1">
-                    {consultation.previous_treatment_feedback.map(
-                      (fb: string, idx: number) => (
-                        <li key={idx}>{fb}</li>
-                      )
-                    )}
-                  </ul>
-                </div>
-              )}
-
-            {/* Created At */}
-            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-              <p className="text-xs text-gray-600 uppercase font-semibold">
-                Record Created
-              </p>
-              <p className="text-gray-700 text-sm">
-                {new Date(consultation.created_at).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
-            </div>
-          </div>
-        )}
+          ) : null}
+        </div>
 
         {/* Footer */}
-        <div className="mt-6 flex justify-end border-t border-rose-200 pt-4">
-          <button
-            onClick={onClose}
-            className="px-5 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition font-medium"
-          >
-            Close
-          </button>
+        <div className="flex-shrink-0 px-6 py-4 border-t border-gray-100 bg-gray-50">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p className="text-sm text-gray-500">
+              Consultation ID: <span className="font-mono">#{consultationId}</span>
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="px-6 py-2.5 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors font-medium shadow-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onClose}
+                className="px-6 py-2.5 bg-gradient-to-r from-rose-600 to-rose-500 text-white rounded-lg hover:from-rose-700 hover:to-rose-600 transition-all font-medium shadow-sm"
+              >
+                Done
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

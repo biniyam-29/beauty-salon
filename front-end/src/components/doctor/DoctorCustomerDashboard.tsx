@@ -7,7 +7,7 @@ import { CustomerConsultations } from "./profile/DoctorCustomerConsultations";
 import { CustomerPrescriptions } from "./profile/DoctorCustomerPrescriptions";
 import { useNavigate } from "react-router-dom";
 import { DoctorCustomerEditModal } from "./DoctorCustomerEditModal";
-import { DoctorServicePrescriptionModal } from "./forms/DoctorServicePrescriptionModal";
+import { DoctorPrescriptionModal } from "./forms/DoctorPrescriptionModal";
 
 export const DoctorCustomerDashboard: React.FC = () => {
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | string | null>(null);
@@ -333,17 +333,13 @@ export const DoctorCustomerDashboard: React.FC = () => {
             onSuccess={handleEditSuccess}
           />
           
-          <DoctorServicePrescriptionModal
+          <DoctorPrescriptionModal
             isOpen={isPrescriptionModalOpen}
             onClose={() => {
               setIsPrescriptionModalOpen(false);
             }}
             customerName={selectedCustomerBasic?.full_name || ""}
             customerId={selectedCustomerId || ""}
-            onPrescribe={(servicePrescription) => {
-              console.log("Service prescription created:", servicePrescription);
-              alert(`Service "${servicePrescription.name}" prescribed successfully!`);
-            }}
           />
         </>
       )}
