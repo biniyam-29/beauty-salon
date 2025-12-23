@@ -19,10 +19,11 @@ import ProfessionalDashboardPage from "./pages/ProfessionalDashboard/index";
 import { RemindersPage } from "./components/reception/RemindersPage";
 import AssignedPatientsPage from "./pages/admin/AdminPage";
 import HomePage from "./pages/HomePage";
-import PrescriptionFulfillmentPage from "./components/reception/ProductDeductionPage";
+import PrescriptionFulfillmentPage from "./components/reception/PrescriptionCheckoutPage";
 import PhoneBookingPage from "./components/reception/phone/PhoneBookingPage";
 import { DoctorCustomerDashboard } from "./components/doctor/DoctorCustomerDashboard";
 import PatientUpdateWizard from "./components/doctor/forms/PatientUpdateWizard";
+import { CashierPage } from "./pages/cashier/CashierPage";
 
 // --- Font Import Component ---
 const FontLink = () => (
@@ -57,24 +58,8 @@ const RegistrationPage: React.FC = () => {
 
 
 const UpdatePage: React.FC = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const phone = location.state?.phone || "";
-
-  // Use the PatientData type from the wizard component
-  const handleUpdateComplete = (newUser: Parameters<typeof PatientRegistrationWizard>[0]['onRegistrationComplete'] extends (newUser: infer T) => void ? T : never) => {
-    if (newUser.id) {
-      navigate(`/doctor`, {
-        state: { fromRegistration: true },
-      });
-    }
-  };
-
   return (
-    <PatientUpdateWizard
-      phone={phone}
-      onRegistrationComplete={handleUpdateComplete}
-    />
+    <PatientUpdateWizard    />
   );
 };
 
@@ -221,6 +206,14 @@ const AppRoutes: React.FC = () => {
         } 
       />
       
+      <Route 
+        path="/checkout" 
+        element={
+          <RequireAuth role="cashier">
+            <CashierPage />
+          </RequireAuth>
+        } 
+      />
     </Routes>
   );
 };

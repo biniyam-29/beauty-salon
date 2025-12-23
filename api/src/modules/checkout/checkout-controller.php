@@ -24,13 +24,27 @@ class CheckoutController implements ControllerInterface {
             return json_encode(['message' => 'Unauthorized']);
         }
         
-        if (!RoleGuard::roleGuard('reception') && !RoleGuard::roleGuard('admin')) {
+        if (!RoleGuard::roleGuard('cashier') && !RoleGuard::roleGuard('admin')) {
              http_response_code(403);
              return json_encode(['message' => 'Forbidden: You do not have permission to process checkouts.']);
         }
 
         switch ($method) {
+            case 'GET':
+                if (isset($paths[1]) && $paths[1] === 'pending') {
+                    $customerId = isset($_GET['customer_id']) ? (int)$_GET['customer_id'] : null;
+                    if ($customerId) {
+                        return $this->checkoutService->getPendingPrescriptionsByCustomer($customerId);
+                    }
+                    return $this->checkoutService->getAllPendingPrescriptions();
+                }
+                http_response_code(400);
+                return json_encode(['error' => 'Bad request']);
+                
             case 'POST':
+                if (isset($paths[0]) && $paths[0] === 'update-status') {
+                    return $this->checkoutService->updatePrescriptionStatus($body, $user->id);
+                }
                 return $this->checkoutService->processCheckout($body, $user->id);
 
             default:
