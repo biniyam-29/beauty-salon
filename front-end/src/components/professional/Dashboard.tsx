@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { LogOut, Search, User as UserIcon, X, Signature } from "lucide-react";
+import { LogOut, Search, User as UserIcon, X } from "lucide-react";
 import { useCustomers, useSearchCustomers } from "../../hooks/UseCustomer";
 import { useNavigate } from "react-router-dom";
 import { CustomerProfile } from "../doctor/profile/DoctorCustomerProfile";
@@ -17,26 +17,17 @@ export const ProfessionalDashboard: React.FC = () => {
   // Use regular customers (not assigned) since doctor should see all
   const {
     data: customersData,
-    isLoading,
-    isError,
-    error,
   } = useCustomers(page);
 
   // Use search when there's a search term
   const {
     data: searchData,
-    isLoading: isSearching,
   } = useSearchCustomers({ searchTerm, page });
 
 
   // Determine which data to use for the list
   const customers = searchTerm ? searchData?.customers : customersData?.customers;
   const totalPages = searchTerm ? searchData?.totalPages : customersData?.totalPages;
-
-  const filteredCustomers = useMemo(
-    () => customers || [],
-    [customers]
-  );
 
   // Get basic customer info from list for display
   const selectedCustomerBasic = useMemo(
@@ -59,16 +50,6 @@ export const ProfessionalDashboard: React.FC = () => {
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
-  };
-
-  const handleSign = async () => {
-    if (selectedCustomerId) {
-      try {
-        
-      } catch (error) {
-        alert("Failed to Sign On. Please try again later.");
-      }
-    }
   };
 
 
@@ -131,10 +112,6 @@ export const ProfessionalDashboard: React.FC = () => {
           
           <div className="flex-1 overflow-y-auto p-2">
             <CustomerList
-              customers={filteredCustomers}
-              isLoading={isLoading || isSearching}
-              isError={isError}
-              error={error}
               selectedCustomerId={selectedCustomerId}
               onSelectCustomer={setSelectedCustomerId}
             />
@@ -176,16 +153,6 @@ export const ProfessionalDashboard: React.FC = () => {
                       {selectedCustomerBasic.full_name}
                     </h1>
                     <p className="text-gray-600">{selectedCustomerBasic.phone}</p>
-                  </div>
-                  
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleSign}
-                      className="flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition-colors"
-                    >
-                      <Signature size={16} />
-                      Sign On It
-                    </button>
                   </div>
                 </div>
 
@@ -245,15 +212,6 @@ export const ProfessionalDashboard: React.FC = () => {
                 className="p-2"
               >
                 <X size={24} />
-              </button>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleSign}
-                className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-lg"
-              >
-                <Signature size={16} />
-                Sign
               </button>
             </div>
           </div>

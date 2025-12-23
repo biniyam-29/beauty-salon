@@ -353,4 +353,43 @@ class ConsultationService {
             ]);
         }
     }
+    /**
+     * Returns list of customers who have consultations without professional assigned
+     * (professional_id IS NULL AND professional_name IS NULL)
+     */
+    public function getCustomersWithPendingProfessionalAssignment(): string
+    {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT DISTINCT
+                    c.id AS customer_id,
+                    c.full_name,
+                    c.phone,
+                    c.email,
+                    COUNT(co.id) AS consultation_count,
+                    MIN(co.consultation_date) AS first_consultation,
+                    MAX(co.consultation_date) AS last_consultation
+                FROM customers c
+                INNER JOIN consultations co ON co.customer_id = c.id
+                WHERE co.professional_id IS NULL
+                  AND co.professional_name IS NULL
+                GROUP BY c.id, c.full_name, c.phone, c.email
+                ORDER BY last_consultation DESC
+            ");
+
+            $stmt->execute();
+            $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            return json_encode([
+                'status' => 'success',
+                'data' => $customers
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode([
+                'error' => 'Database error',
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
 }

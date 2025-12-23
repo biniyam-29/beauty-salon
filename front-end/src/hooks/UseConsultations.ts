@@ -47,6 +47,21 @@ export interface FollowUpCustomer {
   health_conditions: string;
 }
 
+export interface PendingProfessionalCustomer {
+  customer_id: number;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  consultation_count: number;
+  first_consultation: string;
+  last_consultation: string;
+}
+
+export interface pendingProfessionalResponse{
+  sucess: boolean;
+  data: PendingProfessionalCustomer[]
+}
+
 export interface CreateConsultationInput {
   customer_id: number;
   doctor_id: number;
@@ -92,6 +107,7 @@ export interface ProfessionalSignatureResponse {
   consultation_id: number;
   professional_id: number;
   professional_name: string;
+  data?: PendingProfessionalCustomer[];
 }
 
 export const consultationKeys = {
@@ -102,6 +118,7 @@ export const consultationKeys = {
   detail: (id: number) => [...consultationKeys.details(), id] as const,
   followUps: () => [...consultationKeys.all, 'follow-ups'] as const,
   todaysFollowUps: () => [...consultationKeys.followUps(), 'today'] as const,
+  pendingProfessional: () => [...consultationKeys.all, 'pending-professional'] as const,
   prescriptions: (consultationId: number) => [...consultationKeys.detail(consultationId), 'prescriptions'] as const,
   images: (consultationId: number) => [...consultationKeys.detail(consultationId), 'images'] as const,
 };
@@ -119,54 +136,60 @@ export const consultationApi = {
     return apiClient.put<{ message: string }>(`/consultations/${id}`, data);
   },
 
-  assignProfessional: async (consultationId: number, data: AssignProfessionalInput): Promise<{ message: string; consultation_id: number; doctor_id: number }> => {
-    return apiClient.put<{ message: string; consultation_id: number; doctor_id: number }>(
-      `/consultations/${consultationId}/assign-professional`,
-      data
-    );
+  assignProfessional: async (
+    consultationId: number,
+    data: AssignProfessionalInput,
+  ): Promise<{ message: string; consultation_id: number; doctor_id: number }> => {
+    return apiClient.put(`/consultations/${consultationId}/assign-professional`, data);
   },
 
-  professionalSignature: async (consultationId: number, data: ProfessionalSignatureInput): Promise<ProfessionalSignatureResponse> => {
-    return apiClient.put<ProfessionalSignatureResponse>(
-      `/consultations/${consultationId}/professiona-sign`,
-      data
-    );
+  professionalSignature: async (
+    consultationId: number,
+    data: ProfessionalSignatureInput,
+  ): Promise<ProfessionalSignatureResponse> => {
+    return apiClient.put(`/consultations/${consultationId}/professional-sign`, data);
   },
 
   getTodaysFollowUps: async (): Promise<FollowUpCustomer[]> => {
     return apiClient.get<FollowUpCustomer[]>('/consultations/follow-ups/today');
   },
 
-  uploadImage: async (consultationId: number, file: File, description?: string): Promise<UploadImageResponse> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    if (description) {
-      formData.append('description', description);
-    }
-
-    return apiClient.post<UploadImageResponse>(
-      `/consultations/${consultationId}/images`,
-      formData,
-      { headers: {} }
-    );
+  getCustomersWithPendingProfessional: async (): Promise<ProfessionalSignatureResponse> => {
+    return apiClient.get<ProfessionalSignatureResponse>('/consultations/pending-professional');
   },
 
-  uploadImagesBatch: async (consultationId: number, files: File[], description?: string): Promise<BatchUploadImageResponse> => {
+  uploadImage: async (
+    consultationId: number,
+    file: File,
+    description?: string,
+  ): Promise<UploadImageResponse> => {
     const formData = new FormData();
-    
-    files.forEach(file => {
+    formData.append('file', file);
+    if (description) formData.append('description', description);
+
+    return apiClient.post<UploadImageResponse>(`/consultations/${consultationId}/images`, formData, {
+      headers: {},
+    });
+  },
+
+  uploadImagesBatch: async (
+    consultationId: number,
+    files: File[],
+    description?: string,
+  ): Promise<BatchUploadImageResponse> => {
+    const formData = new FormData();
+
+    files.forEach((file) => {
       formData.append('file[]', file);
     });
-    
+
     if (description) {
       formData.append('description', description);
     }
 
-    return apiClient.post<BatchUploadImageResponse>(
-      `/consultations/${consultationId}/images`,
-      formData,
-      { headers: {} }
-    );
+    return apiClient.post<BatchUploadImageResponse>(`/consultations/${consultationId}/images`, formData, {
+      headers: {},
+    });
   },
 
   getImages: async (consultationId: number): Promise<ConsultationImage[]> => {
@@ -174,11 +197,12 @@ export const consultationApi = {
   },
 };
 
+// hooks
 export function useConsultation(
   id: number | undefined,
-  options?: Omit<UseQueryOptions<Consultation, Error>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<Consultation, Error>, 'queryKey' | 'queryFn'>,
 ) {
-  return useQuery<Consultation, Error>({
+  return useQuery({
     queryKey: consultationKeys.detail(id!),
     queryFn: () => consultationApi.getById(id!),
     enabled: !!id,
@@ -189,9 +213,9 @@ export function useConsultation(
 }
 
 export function useTodaysFollowUps(
-  options?: Omit<UseQueryOptions<FollowUpCustomer[], Error>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<FollowUpCustomer[], Error>, 'queryKey' | 'queryFn'>,
 ) {
-  return useQuery<FollowUpCustomer[], Error>({
+  return useQuery({
     queryKey: consultationKeys.todaysFollowUps(),
     queryFn: consultationApi.getTodaysFollowUps,
     staleTime: 5 * 60 * 1000,
@@ -200,34 +224,46 @@ export function useTodaysFollowUps(
   });
 }
 
+export function useCustomersWithPendingProfessional(
+  options?: Omit<UseQueryOptions<ProfessionalSignatureResponse>, 'queryKey' | 'queryFn'>,
+) {
+  return useQuery({
+    queryKey: consultationKeys.pendingProfessional(),
+    queryFn: () => consultationApi.getCustomersWithPendingProfessional(),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    ...options,
+  });
+}
+
 export function useCreateConsultation(
-  options?: UseMutationOptions<{ message: string; consultationId: number }, Error, CreateConsultationInput>
+  options?: UseMutationOptions<{ message: string; consultationId: number }, Error, CreateConsultationInput>,
 ) {
   const queryClient = useQueryClient();
-  
-  return useMutation<{ message: string; consultationId: number }, Error, CreateConsultationInput>({
+
+  return useMutation({
     mutationFn: consultationApi.create,
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: consultationKeys.lists() });
-      queryClient.setQueryData(consultationKeys.detail(data.consultationId), {
-        id: data.consultationId,
-        ...data,
-      });
     },
     ...options,
   });
 }
 
 export function useUpdateConsultation(
-  options?: UseMutationOptions<{ message: string }, Error, { id: number; data: UpdateConsultationInput }>
+  options?: UseMutationOptions<
+    { message: string },
+    Error,
+    { id: number; data: UpdateConsultationInput }
+  >,
 ) {
   const queryClient = useQueryClient();
-  
-  return useMutation<{ message: string }, Error, { id: number; data: UpdateConsultationInput }>({
+
+  return useMutation({
     mutationFn: ({ id, data }) => consultationApi.update(id, data),
-    onSuccess: (_, variables) => {
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: consultationKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: consultationKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: consultationKeys.detail(variables.id) });
     },
     ...options,
   });
@@ -238,19 +274,14 @@ export function useAssignProfessional(
     { message: string; consultation_id: number; doctor_id: number },
     Error,
     { consultationId: number; data: AssignProfessionalInput }
-  >
+  >,
 ) {
   const queryClient = useQueryClient();
-  
-  return useMutation<
-    { message: string; consultation_id: number; doctor_id: number },
-    Error,
-    { consultationId: number; data: AssignProfessionalInput }
-  >({
+
+  return useMutation({
     mutationFn: ({ consultationId, data }) => consultationApi.assignProfessional(consultationId, data),
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: consultationKeys.detail(variables.consultationId) });
-      console.log(data);
+    onSuccess: (_, { consultationId }) => {
+      queryClient.invalidateQueries({ queryKey: consultationKeys.detail(consultationId) });
     },
     ...options,
   });
@@ -261,48 +292,54 @@ export function useProfessionalSignature(
     ProfessionalSignatureResponse,
     Error,
     { consultationId: number; data: ProfessionalSignatureInput }
-  >
+  >,
 ) {
   const queryClient = useQueryClient();
-  
-  return useMutation<
-    ProfessionalSignatureResponse,
-    Error,
-    { consultationId: number; data: ProfessionalSignatureInput }
-  >({
+
+  return useMutation({
     mutationFn: ({ consultationId, data }) => consultationApi.professionalSignature(consultationId, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: consultationKeys.detail(variables.consultationId) });
+    onSuccess: (_, { consultationId }) => {
+      queryClient.invalidateQueries({ queryKey: consultationKeys.detail(consultationId) });
     },
     ...options,
   });
 }
 
 export function useUploadImage(
-  options?: UseMutationOptions<UploadImageResponse, Error, { consultationId: number; file: File; description?: string }>
+  options?: UseMutationOptions<
+    UploadImageResponse,
+    Error,
+    { consultationId: number; file: File; description?: string }
+  >,
 ) {
   const queryClient = useQueryClient();
-  
-  return useMutation<UploadImageResponse, Error, { consultationId: number; file: File; description?: string }>({
-    mutationFn: ({ consultationId, file, description }) => consultationApi.uploadImage(consultationId, file, description),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: consultationKeys.images(variables.consultationId) });
-      queryClient.invalidateQueries({ queryKey: consultationKeys.detail(variables.consultationId) });
+
+  return useMutation({
+    mutationFn: ({ consultationId, file, description }) =>
+      consultationApi.uploadImage(consultationId, file, description),
+    onSuccess: (_, { consultationId }) => {
+      queryClient.invalidateQueries({ queryKey: consultationKeys.images(consultationId) });
+      queryClient.invalidateQueries({ queryKey: consultationKeys.detail(consultationId) });
     },
     ...options,
   });
 }
 
 export function useUploadImagesBatch(
-  options?: UseMutationOptions<BatchUploadImageResponse, Error, { consultationId: number; files: File[]; description?: string }>
+  options?: UseMutationOptions<
+    BatchUploadImageResponse,
+    Error,
+    { consultationId: number; files: File[]; description?: string }
+  >,
 ) {
   const queryClient = useQueryClient();
-  
-  return useMutation<BatchUploadImageResponse, Error, { consultationId: number; files: File[]; description?: string }>({
-    mutationFn: ({ consultationId, files, description }) => consultationApi.uploadImagesBatch(consultationId, files, description),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: consultationKeys.images(variables.consultationId) });
-      queryClient.invalidateQueries({ queryKey: consultationKeys.detail(variables.consultationId) });
+
+  return useMutation({
+    mutationFn: ({ consultationId, files, description }) =>
+      consultationApi.uploadImagesBatch(consultationId, files, description),
+    onSuccess: (_, { consultationId }) => {
+      queryClient.invalidateQueries({ queryKey: consultationKeys.images(consultationId) });
+      queryClient.invalidateQueries({ queryKey: consultationKeys.detail(consultationId) });
     },
     ...options,
   });
@@ -310,9 +347,9 @@ export function useUploadImagesBatch(
 
 export function useConsultationImages(
   consultationId: number | undefined,
-  options?: Omit<UseQueryOptions<ConsultationImage[], Error>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<ConsultationImage[], Error>, 'queryKey' | 'queryFn'>,
 ) {
-  return useQuery<ConsultationImage[], Error>({
+  return useQuery({
     queryKey: consultationKeys.images(consultationId!),
     queryFn: () => consultationApi.getImages(consultationId!),
     enabled: !!consultationId,
@@ -324,26 +361,30 @@ export function useConsultationImages(
 
 export function useConsultationOperations() {
   const queryClient = useQueryClient();
-  
+
   const createMutation = useCreateConsultation();
   const updateMutation = useUpdateConsultation();
   const assignProfessionalMutation = useAssignProfessional();
   const professionalSignatureMutation = useProfessionalSignature();
   const uploadImageMutation = useUploadImage();
   const uploadImagesBatchMutation = useUploadImagesBatch();
-  
+
   const refreshConsultation = (id: number) => {
     queryClient.invalidateQueries({ queryKey: consultationKeys.detail(id) });
   };
-  
+
   const refreshImages = (consultationId: number) => {
     queryClient.invalidateQueries({ queryKey: consultationKeys.images(consultationId) });
   };
-  
+
   const refreshFollowUps = () => {
     queryClient.invalidateQueries({ queryKey: consultationKeys.todaysFollowUps() });
   };
-  
+
+  const refreshPendingProfessional = () => {
+    queryClient.invalidateQueries({ queryKey: consultationKeys.pendingProfessional() });
+  };
+
   return {
     createConsultation: createMutation.mutate,
     createConsultationAsync: createMutation.mutateAsync,
@@ -360,8 +401,21 @@ export function useConsultationOperations() {
     refreshConsultation,
     refreshImages,
     refreshFollowUps,
-    isLoading: createMutation.isPending || updateMutation.isPending || assignProfessionalMutation.isPending || professionalSignatureMutation.isPending || uploadImageMutation.isPending || uploadImagesBatchMutation.isPending,
-    isSuccess: createMutation.isSuccess || updateMutation.isSuccess || assignProfessionalMutation.isSuccess || professionalSignatureMutation.isSuccess || uploadImageMutation.isSuccess || uploadImagesBatchMutation.isSuccess,
+    refreshPendingProfessional,
+    isLoading:
+      createMutation.isPending ||
+      updateMutation.isPending ||
+      assignProfessionalMutation.isPending ||
+      professionalSignatureMutation.isPending ||
+      uploadImageMutation.isPending ||
+      uploadImagesBatchMutation.isPending,
+    isSuccess:
+      createMutation.isSuccess ||
+      updateMutation.isSuccess ||
+      assignProfessionalMutation.isSuccess ||
+      professionalSignatureMutation.isSuccess ||
+      uploadImageMutation.isSuccess ||
+      uploadImagesBatchMutation.isSuccess,
     errors: {
       create: createMutation.error,
       update: updateMutation.error,

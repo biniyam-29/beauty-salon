@@ -9,31 +9,32 @@ import { CustomerPrescriptions } from "./CustomerPrescriptions";
 
 export const CustomerDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [selectedCustomerId, setSelectedCustomerId] = useState<
-    number | string | null
-  >(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"profile" | "consultations" | "prescriptions">("profile");
 
   const {
-    data: customers,
+    data: customersResponse,
     isLoading,
     isError,
     error,
   } = useCustomers();
 
+  // Extract the actual customers array (most common pattern)
+  const customers = customersResponse?.customers ?? [];
+
   const filteredCustomers = useMemo(
     () =>
-      customers?.filter(
+      customers.filter(
         (c) =>
           c.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
           c.full_name.toLowerCase().includes(searchTerm.toLowerCase())
-      ) ?? [],
+      ),
     [customers, searchTerm]
   );
 
   const selectedCustomer = useMemo(
-    () => customers?.find(c => c.id === selectedCustomerId),
+    () => customers.find((c) => c.id === selectedCustomerId),
     [customers, selectedCustomerId]
   );
 

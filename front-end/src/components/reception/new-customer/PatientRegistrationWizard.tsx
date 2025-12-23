@@ -120,7 +120,7 @@ const initialData: PatientData = {
   skinCareHistory: [],
 
   // Step 4 - Assignment
-  assignedProfessionalId: "",
+  // assignedProfessionalId: "",
 };
 
 // Main Component
@@ -205,10 +205,10 @@ export const PatientRegistrationWizard: React.FC<{
       email: formData.email,
       address: formData.address,
       city: formData.city,
-      birth_date: formData.dateOfBirth,
-      assigned_doctor_id: formData.assignedProfessionalId
-        ? parseInt(formData.assignedProfessionalId, 10)
-        : null,
+      // birth_date: formData.dateOfBirth,
+      // assigned_doctor_id: formData.assignedProfessionalId
+      //   ? parseInt(formData.assignedProfessionalId, 10)
+      //   : null,
       emergency_contact_name: formData.emergencyContactName,
       emergency_contact_phone: formData.emergencyContactPhone,
       how_heard: formData.howHeard,
@@ -348,7 +348,7 @@ export const PatientRegistrationWizard: React.FC<{
                   lookups={
                     lookupsQuery.data || { concerns: [], conditions: [], skinCareHistory: [] }
                   }
-                  professionals={professionalsQuery.data || []}
+                  // professionals={professionalsQuery.data || []}
                   isLoading={
                     lookupsQuery.isLoading || professionalsQuery.isLoading
                   }

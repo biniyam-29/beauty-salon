@@ -32,7 +32,6 @@ export const formatPatientUpdateData = (data: PatientData) => {
     address: data.address,
     city: data.city,
     birth_date: data.dateOfBirth,
-    assigned_doctor_id: data.assignedProfessionalId ? parseInt(data.assignedProfessionalId, 10) : null,
     emergency_contact_name: data.emergencyContactName,
     emergency_contact_phone: data.emergencyContactPhone,
     how_heard: data.howHeard,

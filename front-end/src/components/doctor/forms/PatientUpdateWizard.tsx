@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
   ChevronLeft,
@@ -14,10 +13,7 @@ import { PersonalInfoStep } from "./PersonalInfoStep";
 import { HealthHistoryStep } from "./HealthHistoryStep";
 import { QuestionnaireStep } from "./QuestionnaireStep";
 import { ConsentReviewStep } from "./ConsentReviewStep";
-import { 
-  fetchLookups
-} from "../../../lib/api/patientRegistrationApi";
-import type { PatientData, LookupsData } from "../../../lib/types/patientRegistrationTypes";
+import type { PatientData } from "../../../lib/types/patientRegistrationTypes";
 import { Card, CardHeader, CardContent, CardTitle, Button, cn } from "./PatientUpdateComponents";
 import { useCustomerDetails, useUpdateCustomer } from "../../../hooks/UseCustomer";
 
@@ -163,7 +159,6 @@ export const DoctorPatientWizard: React.FC<{
   initialCustomerId?: string | number;
 }> = ({ mode = 'edit', onComplete, initialCustomerId }) => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<PatientData | null>(null);
   const [statusModal, setStatusModal] = useState<{status: 'success' | 'error', message: string} | null>(null);
@@ -173,10 +168,7 @@ export const DoctorPatientWizard: React.FC<{
   const customerId = initialCustomerId || paramCustomerId || '';
 
   // Queries
-  const { data: customerData, isLoading: isLoadingCustomer } = useCustomerDetails(
-    customerId as string,
-    { enabled: mode === 'edit' && !!customerId }
-  );
+  const { data: customerData, isLoading: isLoadingCustomer } = useCustomerDetails( customerId as string );
 
   // Mutations
   const updateCustomerMutation = useUpdateCustomer();

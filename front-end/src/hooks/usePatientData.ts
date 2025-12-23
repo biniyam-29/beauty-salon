@@ -66,9 +66,9 @@ const fetchPatientLookups = async (): Promise<LookupsData> => {
   ]);
 
   return {
-    concerns: concernsRes || [],
-    conditions: conditionsRes || [],
-    skinCareHistory: skinCareHistoryRes || [],
+    concerns: Array.isArray(concernsRes) ? concernsRes : [],
+    conditions: Array.isArray(conditionsRes) ? conditionsRes : [],
+    skinCareHistory: Array.isArray(skinCareHistoryRes) ? skinCareHistoryRes : [],
   };
 };
 
