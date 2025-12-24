@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS `consultations` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `customer_id` INT UNSIGNED NOT NULL,
   `doctor_id` INT UNSIGNED NOT NULL,
-  'professional_id' INT NULL,
+  `professional_id` INT NULL,
   `professional_name` TEXT NULL,
   `status` ENUM('pending', 'completed') DEFAULT 'pending',
   `consultation_date` DATETIME NOT NULL,
