@@ -27,13 +27,14 @@ class ConsultationController implements ControllerInterface {
 
     public function handleRequest(array $paths, string $method, ?string $body) {
         $user = AuthGuard::authenticate('guard');
-        if (!$user) {
+        $id = $paths[1] ?? null;
+        $subResource = $paths[2] ?? null;
+
+        if (!$user && ($subResource != 'images')) {
             http_response_code(401);
             return json_encode(['message' => 'Unauthorized']);
         }
 
-        $id = $paths[1] ?? null;
-        $subResource = $paths[2] ?? null;
 
         // New endpoint: GET /consultations/pending-professional
         if ($method === 'GET' && $id === 'pending-professional') {
@@ -112,7 +113,7 @@ class ConsultationController implements ControllerInterface {
                     return json_encode([
                         'message' => 'Batch upload process finished.',
                         'results' => $uploadResults
-                    ]);
+                    ], JSON_UNESCAPED_SLASHES);
                 }
 
                 return $this->consultationService->createConsultation($body);

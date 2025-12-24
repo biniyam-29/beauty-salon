@@ -187,9 +187,7 @@ export const consultationApi = {
       formData.append('description', description);
     }
 
-    return apiClient.post<BatchUploadImageResponse>(`/consultations/${consultationId}/images`, formData, {
-      headers: {},
-    });
+    return apiClient.post<BatchUploadImageResponse>(`/consultations/${consultationId}/images`, formData);
   },
 
   getImages: async (consultationId: number): Promise<ConsultationImage[]> => {

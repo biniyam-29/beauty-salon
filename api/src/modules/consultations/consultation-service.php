@@ -123,7 +123,7 @@ class ConsultationService {
             $stmt->execute([':customer_id' => $customerId]);
             $consultations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            return json_encode($consultations);
+            return json_encode($consultations, JSON_UNESCAPED_SLASHES);
         } catch (Exception $e) {
             http_response_code(500);
             return json_encode(['error' => 'Database error: ' . $e->getMessage()]);
@@ -158,7 +158,7 @@ class ConsultationService {
             $consultation['treatment_goals_today'] = json_decode($consultation['treatment_goals_today']);
             $consultation['images'] = $images;
 
-            return json_encode($consultation);
+            return json_encode($consultation, JSON_UNESCAPED_SLASHES);
         } catch (Exception $e) {
             http_response_code(500);
             return json_encode(['error' => 'Database error: ' . $e->getMessage()]);

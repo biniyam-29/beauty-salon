@@ -116,18 +116,30 @@ export class BaseApiClient {
     return this.request<T>(endpoint, { method: 'GET', ...options });
   }
 
+
   public async post<T>(
     endpoint: string,
     data?: any,
     options?: RequestInit
   ): Promise<T> {
+    const isFormData = data instanceof FormData;
+
+    const headers: HeadersInit = {
+      ...(this.getAccessToken() && { Authorization: `Bearer ${this.getAccessToken()}` }),
+      // Only add Content-Type if NOT FormData
+      ...(!isFormData && { 'Content-Type': 'application/json' }),
+      ...(options?.headers || {}),
+    };
+
+    const body = isFormData ? data : data ? JSON.stringify(data) : undefined;
+
     return this.request<T>(endpoint, {
       method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
+      headers,
+      body,
       ...options,
     });
   }
-
   public async put<T>(
     endpoint: string,
     data?: any,
