@@ -111,7 +111,7 @@ class AuthService{
             $sql = "REPLACE INTO password_reset (email, token, created_at) VALUES (?, ?, ?)";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([$data->email, $token, date('Y-m-d H:i:s')]);
-            $emailBody = "Hello $user[name], click the link below to reset your password: https://dire-delivery.netlify.app/" . addslashes($token);
+            $emailBody = "Hello $user[name], click the link below to reset your password: https://in2skincare.com/" . addslashes($token);
             $subject = "Reset Password";
             $this->mailer->send($data->email, $subject, $emailBody);
 
@@ -121,32 +121,61 @@ class AuthService{
         }
     }
 
-    public function resetPassword($body, $token) {
+    // public function resetPassword($body, $token) {
+    //     try{
+    //         $data = json_decode($body);
+    //         if( !$data->password){
+    //             http_response_code(400);
+    //             return json_encode(["message" => "Bad request! Please fill out all fields!"]);
+    //         }
+    //         $cachedToken = $this->fetchData('password_reset', $token, 'token');
+    //         if (!$cachedToken ) {
+    //             return json_encode(["message" => "Invalid token!"]);
+    //         }
+    //         $user = $this->fetchData('users', $cachedToken['email'], 'email');
+    //         if (!$user) {
+    //             return json_encode(["message" => "User not found!", "user" => $user, "cachedToken" => $cachedToken]);
+    //         }
+    //         $hashedPassword = password_hash($data->password, PASSWORD_BCRYPT);
+    //         $sql = "UPDATE users SET password_hash = ? WHERE email = ?";
+    //         $stmt = $this->conn->prepare($sql);
+    //         $stmt->execute([$hashedPassword, $cachedToken['email']]);
+    //         $sql = "DELETE FROM password_reset WHERE email = ?";
+    //         $stmt = $this->conn->prepare($sql);
+    //         $stmt->execute([$cachedToken['email']]);
+    //         return json_encode(["message" => "Password reset successfully!"]);
+    //     }catch(Exception $e){
+    //         return json_encode(['error' => $e->getMessage()]);
+    //     }
+    // }
+    public function resetPassword($body) {
         try{
             $data = json_decode($body);
-            if( !$data->password){
+            if( !$data->password || !$data->email){
                 http_response_code(400);
-                return json_encode(["message" => "Bad request! Please fill out all fields!"]);
+                return json_encode(["message" => "Bad request! Password and email are required!"]);
             }
-            $cachedToken = $this->fetchData('password_reset', $token, 'token');
-            if (!$cachedToken ) {
-                return json_encode(["message" => "Invalid token!"]);
-            }
-            $user = $this->fetchData('users', $cachedToken['email'], 'email');
+            
+            $user = $this->getUserByEmail($data->email);
             if (!$user) {
-                return json_encode(["message" => "User not found!", "user" => $user, "cachedToken" => $cachedToken]);
+                return json_encode(["message" => "User not found!"]);
             }
+            
             $hashedPassword = password_hash($data->password, PASSWORD_BCRYPT);
             $sql = "UPDATE users SET password_hash = ? WHERE email = ?";
             $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$hashedPassword, $cachedToken['email']]);
-            $sql = "DELETE FROM password_reset WHERE email = ?";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$cachedToken['email']]);
+            $stmt->execute([$hashedPassword, $data->email]);
+            
             return json_encode(["message" => "Password reset successfully!"]);
         }catch(Exception $e){
             return json_encode(['error' => $e->getMessage()]);
         }
+    }
+
+    private function getUserByEmail($email) {
+        $stmt = $this->conn->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     private function fetchData($table, $id, $column = 'id') {

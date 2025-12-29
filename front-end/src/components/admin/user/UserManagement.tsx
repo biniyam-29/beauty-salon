@@ -12,7 +12,8 @@ import {
   useDeleteUser,
   type User,
   type UserRole,
-  type UserRoleFilter
+  type UserRoleFilter,
+  useResetPassword
 } from '../../../hooks/UseUsers';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
@@ -80,6 +81,7 @@ const UserManagementView: React.FC = () => {
   const createMutation = useCreateUser();
   const updateMutation = useUpdateUser();
   const deleteMutation = useDeleteUser();
+  const resetPasswordMutation = useResetPassword();
 
   const users = isPhoneSearch 
     ? (searchResults ?? []) 
@@ -202,6 +204,14 @@ const UserManagementView: React.FC = () => {
       setCurrentPage(1);
     }
   };
+  const handleResetPassword = async (data: { password: string; email: string }) => {
+  try {
+    await resetPasswordMutation.mutateAsync(data);
+  } catch (error: any) {
+    console.error('Reset password failed:', error);
+    throw error;
+  }
+};
 
   const UserCard = ({ user }: { user: User }) => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
@@ -473,6 +483,8 @@ const UserManagementView: React.FC = () => {
           setSelectedUser(null);
         }}
         onSave={handleSaveUser}
+        onResetPassword={handleResetPassword}
+        isResettingPassword={resetPasswordMutation.isPending}
         title="Edit User"
         isPending={updateMutation.isPending}
       />

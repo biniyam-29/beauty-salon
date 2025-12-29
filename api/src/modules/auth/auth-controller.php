@@ -56,9 +56,7 @@ class AuthController implements ControllerInterface {
                 return $this->authService->forgotPassword($body);
 
             case 'reset-password':
-                 // Assuming the path is /auth/reset-password/{resetToken}
-                $resetToken = $paths[2] ?? null;
-                return $this->authService->resetPassword($body, $resetToken);
+                return $this->authService->resetPassword($body);
 
             default:
                 http_response_code(404);

@@ -107,6 +107,10 @@ export class UsersService {
   async deleteUser(id: number): Promise<void> {
     return apiClient.delete(`/users/${id}`);
   }
+
+  async resetPassword(body: {password: string, email: string}){
+    return apiClient.post(`/auth/reset-password`, body);
+  }
 }
 
 export const usersService = new UsersService();
@@ -180,3 +184,9 @@ export const useDeleteUser = () => {
     },
   });
 };
+
+export const useResetPassword = () => {
+  return useMutation({
+    mutationFn: (body: {password: string, email: string}) => usersService.resetPassword(body)
+  });
+}
