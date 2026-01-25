@@ -40,7 +40,7 @@ export const PersonalInfoStep: React.FC<StepProps> = ({ formData, updateFormData
         placeholder="e.g., janedoe@example.com"
         value={formData.email}
         onChange={(e) => updateFormData({ email: e.target.value })}
-        required
+        // required
       />
     </div>
 
