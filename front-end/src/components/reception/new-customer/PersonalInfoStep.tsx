@@ -32,7 +32,7 @@ export const PersonalInfoStep: React.FC<StepProps> = ({ formData, updateFormData
 
     <div>
       <Label htmlFor="email" helperText="We'll send appointment confirmations and updates here">
-        Email Address *
+        Email Address (optional)
       </Label>
       <Input
         id="email"
